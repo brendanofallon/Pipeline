@@ -37,9 +37,10 @@ public class Pipeline {
 	
 	/**
 	 * Attempt to run the pipeline defined in the source input file
-	 * @throws PipelineDocException 
+	 * @throws PipelineDocException If there are errors in document structure
+	 * @throws ObjectCreationException If errors arise regarding instiation of particular objects
 	 */
-	public void execute() throws PipelineDocException {
+	public void execute() throws PipelineDocException, ObjectCreationException {
 		if (xmlDoc == null) {
 			throw new IllegalStateException("XMLDoc not defined");
 		}
@@ -50,9 +51,17 @@ public class Pipeline {
 			throw new PipelineDocException("Document root name should be " + PipelineXMLConstants.DOCUMENT_ROOT + ", but found : " + docRootName);
 		}
 		
+		ObjectHandler handler = new ObjectHandler(xmlDoc);
+
 		//A quick scan for errors / validity would be a good idea
 		
-		System.out.println("Document root name : " + docRootName);
+		
+		handler.readObjects();
+		
+		
+		
+		
+		
 	}
 	
 	public static void main(String[] args) {
@@ -62,6 +71,9 @@ public class Pipeline {
 		try {
 			pipeline.execute();
 		} catch (PipelineDocException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ObjectCreationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

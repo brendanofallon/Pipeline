@@ -8,5 +8,6 @@ package pipeline;
 public class PipelineXMLConstants {
 	
 	public static final String DOCUMENT_ROOT = "Pipeline";
-
+	public static final String CLASS_ATTR = "class";
+	
 }

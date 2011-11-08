@@ -1,6 +1,15 @@
 
 <Pipeline>
 
-<reference class="RefClass" />
+<reference class="buffer.ReferenceFile" filename="testRef.fa"/>
+
+<testOp class="operator.TestOperator" >
+	<input>
+		<reference />
+	</input>
+	<output >
+		<someNewFile class="buffer.TextBuffer" filename="product.txt" />
+	</output>
+</testOp>
 
 </Pipeline>
