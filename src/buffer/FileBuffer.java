@@ -1,6 +1,10 @@
 package buffer;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,12 +21,43 @@ import pipeline.PipelineObject;
 public abstract class FileBuffer extends PipelineObject {
 
 	public static final String FILENAME_ATTR = "filename";
+	public static final String BINARY_ATTR = "binary";
 	
 	protected File file;
 	protected Map<String, String> properties = new HashMap<String, String>();
 	
 	public void setAttribute(String key, String value) {
 		properties.put(key, value);
+	}
+	
+	/**
+	 * Returns true if the binary flag has been set for this FileBuffer, indicating that reads/writes
+	 * should be done in binary form
+	 * @return
+	 */
+	public boolean isBinary() {
+		String binStr = properties.get(BINARY_ATTR);
+		if (binStr == null) {
+			return false;
+		}
+		else {
+			Boolean binary = Boolean.parseBoolean(binStr);
+			return binary;
+		}
+	}
+	
+	public FileInputStream getInputStream() throws FileNotFoundException {
+		if (file == null)
+			return null;
+		else
+			return new FileInputStream(file);
+	}
+	
+	public FileOutputStream getOutputStream() throws FileNotFoundException {
+		if (file == null)
+			return null;
+		else 
+			return new FileOutputStream(file);
 	}
 	
 	public void initialize(NodeList children) throws IllegalStateException {
