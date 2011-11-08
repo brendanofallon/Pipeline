@@ -67,7 +67,7 @@ public abstract class PipelineObject {
 	 * @return
 	 */
 	protected static Element getChildForLabel(String key, NodeList children) {
-		for(int i=children.getLength(); i<children.getLength(); i++) {
+		for(int i=0; i<children.getLength(); i++) {
 			Node child = children.item(i);
 			if (child.getNodeType() == Node.ELEMENT_NODE) {
 				if (key.equals( child.getNodeName() )) {

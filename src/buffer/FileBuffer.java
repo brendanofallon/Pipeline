@@ -34,6 +34,14 @@ public abstract class FileBuffer extends PipelineObject {
 	}
 	
 	/**
+	 * Obtain the file object associated with this buffer
+	 * @return
+	 */
+	public File getFile() {
+		return file;
+	}
+	
+	/**
 	 * Return the name of the file
 	 * @return
 	 */

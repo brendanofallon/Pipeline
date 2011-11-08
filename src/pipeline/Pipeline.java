@@ -2,10 +2,16 @@ package pipeline;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+
+import operator.OperationFailedException;
+import operator.Operator;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -15,6 +21,10 @@ public class Pipeline {
 
 	protected File source;
 	protected Document xmlDoc;
+	public static final String primaryLoggerName = "pipeline.primary";
+	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
+	
+	public static final boolean DEBUG = true;
 	
 	public Pipeline(File inputFile) {
 		this.source = inputFile;
@@ -55,10 +65,38 @@ public class Pipeline {
 
 		//A quick scan for errors / validity would be a good idea
 		
-		
+		if (DEBUG) {
+			primaryLogger.addHandler(new Handler() {
+				@Override
+				public void publish(LogRecord record) {
+					System.out.println(record.getMessage());
+				}
+
+				@Override
+				public void flush() {
+					System.out.flush();
+				}
+
+				@Override
+				public void close() throws SecurityException {					
+				}
+				
+			});
+		}
 		handler.readObjects();
 		
 		
+		
+		for(Operator op : handler.getOperatorList()) {
+			try {
+				primaryLogger.info("Executing operator : " + op.getObjectLabel() + " class: " + op.getClass());
+				op.performOperation();
+				
+			} catch (OperationFailedException e) {
+				e.printStackTrace();
+				primaryLogger.severe("ERROR : Operator : " + op.getObjectLabel() + " (class " + op.getClass() + ") failed \n Cause : " + e.getMessage());
+			}
+		}
 	}
 	
 	public static void main(String[] args) {

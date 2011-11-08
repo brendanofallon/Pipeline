@@ -5,30 +5,25 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import buffer.FileBuffer;
 
+import pipeline.Pipeline;
 import pipeline.PipelineObject;
 
 public abstract class Operator extends PipelineObject {
 
 	protected Map<String, String> properties = new HashMap<String, String>();
-	protected List<FileBuffer> inputBuffers = new ArrayList<FileBuffer>();
-	protected List<FileBuffer> outputBuffers = new ArrayList<FileBuffer>();
 	
+	protected boolean verbose = true;
 	
 	@Override
 	public void setAttribute(String key, String value) {
 		properties.put(key, value);
+		Logger.getLogger(Pipeline.primaryLoggerName).info("Operator : " + this.getObjectLabel() + " adding attribute " + key + " = " + value);
 	}
 		
-	public void addInputBuffer(FileBuffer buff) {
-		inputBuffers.add(buff);
-	}
-	
-	public void addOutputBuffer(FileBuffer buff) {
-		outputBuffers.add(buff);
-	}
 	
 	public abstract void performOperation() throws OperationFailedException;
 }

@@ -1,7 +1,11 @@
 package pipeline;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import operator.Operator;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -13,8 +17,7 @@ import org.w3c.dom.NodeList;
 public class ObjectHandler {
 
 	protected Document doc;
-	protected Map<String, Object> buffers = new HashMap<String, Object>();
-	protected Map<String, Object> operators = new HashMap<String, Object>();
+	protected List<Operator> operatorList = null;
 	
 	protected Map<String, PipelineObject> objectMap = new HashMap<String, PipelineObject>();
 	
@@ -35,18 +38,34 @@ public class ObjectHandler {
 	}
 	
 	public void readObjects() throws ObjectCreationException {
+		
 		//Instantiate top-level buffers
 		Element root = doc.getDocumentElement();
+		createElement(root); //Recursively creates all child elements
+				
+		//Build operator list. WE assume all operators are at top level for now
+		operatorList = new ArrayList<Operator>();
 		NodeList children = root.getChildNodes();
 		for(int i=0; i<children.getLength(); i++) {
 			Node child = children.item(i);
 			if (child.getNodeType() == Node.ELEMENT_NODE) {
-				Element el = (Element)child;
-				createElement(el);
+				String label = child.getNodeName();
+				PipelineObject obj = objectMap.get(label);
+				if (obj instanceof Operator) {
+					operatorList.add( (Operator)obj);
+				}
 			}
 		}
+		
 	}
 	
+	/**
+	 * Get the list of Operators defined at top level in the xml file 
+	 * @return
+	 */
+	public List<Operator> getOperatorList() {
+		return operatorList;
+	}
 	
 	
 	private PipelineObject createElement(Element el) throws ObjectCreationException {
@@ -83,6 +102,9 @@ public class ObjectHandler {
 				if (verbose) {
 					System.out.println("Creating object with label : " + obj.getObjectLabel() + " and class " + obj.getClass());
 				}
+				
+				obj.initialize(children);
+				
 				objectMap.put(obj.getObjectLabel(), obj);
 
 				

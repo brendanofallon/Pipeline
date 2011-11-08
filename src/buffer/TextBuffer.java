@@ -14,9 +14,5 @@ public class TextBuffer extends FileBuffer {
 		return "Text buffer";
 	}
 
-	@Override
-	public void initialize(NodeList children) {
-		//Don't think we need to do anything
-	}
 
 }

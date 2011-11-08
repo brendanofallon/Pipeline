@@ -1,9 +1,12 @@
 package operator;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -13,59 +16,47 @@ import buffer.FileBuffer;
 
 import pipeline.PipelineObject;
 
-public class TestOperator extends Operator {
+public class TestOperator extends IOOperator {
 
 	protected File inputFile = null;
 	
 	@Override
-	public void performOperation() {
+	public void performOperation() throws OperationFailedException {
+		if (verbose) {
+			System.out.println("TestOperator is performing operation");
+		}
+
+		inputFile = inputBuffers.get(0).getFile();
+		
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+			FileBuffer output = outputBuffers.get(0);
+			
+			String line = reader.readLine();
+			
+			BufferedWriter writer = new BufferedWriter(new FileWriter(output.getFile()));
+			writer.write("Top of the new output buffer!\n");
+			
+			int count = 0;
+			while (line != null) {
+				System.out.println("Read this line from input file : " + line);
+				writer.write(count + "\t " + line + "\n");
+				count++;
+				line = reader.readLine();
+			}
+			
+			reader.close();
+			writer.close();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new OperationFailedException(e.getCause() + "\t" + e.getMessage(), this);
+		} catch (IOException e) {
+			throw new OperationFailedException(e.getCause() + "\t" + e.getMessage(), this);
 		}
 	}
 
 
 
-	@Override
-	public void initialize(NodeList children) {
-		System.out.println("Initializing operator ");
-		
-		Element inputList = getChildForLabel("input", children);
-		Element outputList = getChildForLabel("output", children);
-		
-		
-		NodeList inputChildren = inputList.getChildNodes();
-		for(int i=0; i<inputChildren.getLength(); i++) {
-			Node iChild = inputChildren.item(i);
-			if (iChild.getNodeType() == Node.ELEMENT_NODE) {
-				PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
-				if (obj instanceof FileBuffer) {
-					addInputBuffer( (FileBuffer)obj );
-				}
-				else {
-					throw new IllegalArgumentException("Found non-FileBuffer object in input list for Operator " + getObjectLabel());
-				}
-			}
-		}
-		
-		NodeList outputChilden = outputList.getChildNodes();
-		for(int i=0; i<outputChilden.getLength(); i++) {
-			Node iChild = outputChilden.item(i);
-			if (iChild.getNodeType() == Node.ELEMENT_NODE) {
-				PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
-				if (obj instanceof FileBuffer) {
-					addOutputBuffer( (FileBuffer)obj );
-				}
-				else {
-					throw new IllegalArgumentException("Found non-FileBuffer object in output list for Operator " + getObjectLabel());
-				}
-			}
-		}
-		
-	}
+	
 
 	
 }
