@@ -9,7 +9,7 @@ import java.io.InputStreamReader;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-public class BWAIndexer extends IOOperator {
+public class BWAIndexer extends IOCommandOp {
 
 	public static final String PATH = "path";
 	public static final String ALGORITHM = "algorithm";
@@ -22,10 +22,7 @@ public class BWAIndexer extends IOOperator {
 	protected String pathToBWA = "bwa";
 	
 	@Override
-	public void performOperation() throws OperationFailedException {
-
-		Runtime r = Runtime.getRuntime();
-
+	public String getCommand() {
 		String bwaPathAttr = properties.get(PATH);
 		if (bwaPathAttr != null) {
 			pathToBWA = bwaPathAttr;
@@ -39,35 +36,7 @@ public class BWAIndexer extends IOOperator {
 		filePathToIndex = inputBuffers.get(0).getAbsolutePath();
 		
 		String command = pathToBWA + " index -a " + algorithm + " " + filePathToIndex;
-		
-		if (verbose) {
-			System.out.println("BWA indexer command : " + command);
-		}
-		
-		try {
-			Process p = r.exec(command);
-			BufferedReader outputReader = new BufferedReader( new InputStreamReader( p.getInputStream() ) );
-			
-			// Emit output to stdout
-			String line = outputReader.readLine();
-			while (line != null) {
-				System.out.println(line);
-				outputReader.readLine();
-			}
-			
-			try {
-				if (p.waitFor() != 0) {
-					throw new OperationFailedException("BWA index process terminated with nonzero exit value", this);
-				}
-			} catch (InterruptedException e) {
-				throw new OperationFailedException("BWA index process was interrupted : " + e.getLocalizedMessage(), this);
-			}
-			
-			outputReader.close();
-			
-		} catch (IOException e) {
-			throw new OperationFailedException("BWA index process was failed with IOException : " + e.getLocalizedMessage(), this);
-		}
+		return command;		
 	}
 
 	

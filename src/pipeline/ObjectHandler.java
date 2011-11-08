@@ -87,6 +87,18 @@ public class ObjectHandler {
 		}
 		
 		try {
+			
+			//We're here because a class string has been listed as an argument to this element, meaning that it maps
+			//to an object we should create. If there's already an object with the same label but a different
+			//class in the objectMap, we should throw an error
+			String label = el.getNodeName();
+			PipelineObject preObj = objectMap.get(label);
+			if (preObj != null) {
+				if (! preObj.getClass().getCanonicalName().equals(classStr)) {
+					throw new ObjectCreationException("Found two objects with label " + label + " but conflicting classes", el);
+				}
+			}
+			
 			Class<Object> clz = loadClass(classStr);
 			if (PipelineObject.class.isAssignableFrom(clz)) {
 				PipelineObject obj = (PipelineObject) clz.newInstance();

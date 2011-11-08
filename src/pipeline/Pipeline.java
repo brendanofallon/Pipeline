@@ -95,6 +95,7 @@ public class Pipeline {
 			} catch (OperationFailedException e) {
 				e.printStackTrace();
 				primaryLogger.severe("ERROR : Operator : " + op.getObjectLabel() + " (class " + op.getClass() + ") failed \n Cause : " + e.getMessage());
+				System.exit(1);
 			}
 		}
 	}

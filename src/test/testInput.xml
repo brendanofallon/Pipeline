@@ -23,4 +23,28 @@
 	</output>
 </bwaAlign>
 
+<bwaAlign class="operator.BWAAligner" path="/home/brendan/bwa-0.5.9/bwa">
+	<input>
+		<reference />
+		<readsTwo />
+	</input>
+	<output >
+		<readsTwoSAI class="buffer.SAIFile" filename="readsTwo.sai" />
+	</output>
+</bwaAlign>
+
+
+<bwaSampe class="operator.BWASampe" path="/home/brendan/bwa-0.5.9/bwa">
+	<input>
+		<reference />
+		<readsOneSAI />
+		<readsTwoSAI />
+		<readsOne />
+		<readsTwo />
+	</input>
+	<output>
+		<readsSAM class="buffer.SAMFile" filename="reads.sam" />	
+	</output>
+</bwaSampe>
+
 </Pipeline>
