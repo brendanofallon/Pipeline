@@ -59,9 +59,6 @@ public class Pipeline {
 		handler.readObjects();
 		
 		
-		
-		
-		
 	}
 	
 	public static void main(String[] args) {
