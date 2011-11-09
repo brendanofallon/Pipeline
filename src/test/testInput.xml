@@ -1,19 +1,19 @@
 
 <Pipeline>
 
-<reference class="buffer.ReferenceFile" filename="human_tiny_ref.fa" />
+<reference class="buffer.ReferenceFile" filename="ref.fa" />
 
 <readsOne class="buffer.FastQFile" filename="reads1.fq" />
 <readsTwo class="buffer.FastQFile" filename="reads2.fq" />
 
 <!--  Build index of the reference sequence -->
-<bwaIndex class="operator.BWAIndexer" path="/home/brendan/bwa-0.5.9/bwa" algorithm="is" >
+<bwaIndex class="operator.BWAIndexer" path="bwa" algorithm="is" >
 	<input>
 		<reference />
 	</input>
 </bwaIndex>
 
-<bwaAlign class="operator.BWAAligner" path="/home/brendan/bwa-0.5.9/bwa">
+<bwaAlign class="operator.BWAAligner" path="bwa">
 	<input>
 		<reference />
 		<readsOne />
@@ -23,7 +23,7 @@
 	</output>
 </bwaAlign>
 
-<bwaAlign class="operator.BWAAligner" path="/home/brendan/bwa-0.5.9/bwa">
+<bwaAlignTwo class="operator.BWAAligner" path="/home/brendan/bwa-0.5.9/bwa">
 	<input>
 		<reference />
 		<readsTwo />
@@ -31,10 +31,10 @@
 	<output >
 		<readsTwoSAI class="buffer.SAIFile" filename="readsTwo.sai" />
 	</output>
-</bwaAlign>
+</bwaAlignTwo>
 
 
-<bwaSampe class="operator.BWASampe" path="/home/brendan/bwa-0.5.9/bwa">
+<bwaSampe class="operator.BWASampe" path="bwa">
 	<input>
 		<reference />
 		<readsOneSAI />

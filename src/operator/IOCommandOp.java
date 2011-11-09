@@ -7,7 +7,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -22,11 +24,13 @@ public abstract class IOCommandOp extends IOOperator {
 		String command = getCommand();
 		
 		//Default to writing to first output buffer if it exists
-		FileOutputStream writer = null;
+		OutputStream writer = null;
 		String outputPath = null;
 				
+		boolean binaryOutput = false;
 		if (outputBuffers.size()>0) {
 			outputPath = outputBuffers.get(0).getAbsolutePath();
+			binaryOutput = outputBuffers.get(0).isBinary();
 			try {
 				writer = new FileOutputStream(outputPath);
 			} catch (IOException e1) {
@@ -39,54 +43,47 @@ public abstract class IOCommandOp extends IOOperator {
 		if (writer != null);
 			logger.info(" Operator : " + getObjectLabel() + " is writing to path : " + outputPath);
 			
-		try {
 			Runtime r = Runtime.getRuntime();
-			Process p = r.exec(command);
-			
+			Process p;
 			try {
-				if (p.waitFor() != 0) {
-					throw new OperationFailedException("Operator: " + getObjectLabel() + " terminated with nonzero exit value", this);
-				}
-			} catch (InterruptedException e) {
-				throw new OperationFailedException("Operator: " + getObjectLabel() + " was interrupted : " + e.getLocalizedMessage(), this);
-			}
-			
-			BufferedReader errorReader = new BufferedReader(new InputStreamReader( p.getErrorStream() ));
-			String errLine = errorReader.readLine();
-			while (errLine != null) {
-				System.err.println("Error stream : " + errLine);
-				errLine = errorReader.readLine();
-			}
-			System.err.flush();
-			
-			if (writer != null) {
-				InputStream outputReader =  p.getInputStream();
+				p = r.exec(command);
 
-				if (outputBuffers.get(0).isBinary()) {
-					logger.info("Output buffer " + outputBuffers.get(0).getObjectLabel() + " is binary, switching to binary IO mode");
-					int c;
-					while ((c = outputReader.read()) != -1) {
-						writer.write(c);
-					}
+
+				Thread outputHandler = null; 
+				if (writer != null) {
+					if (binaryOutput)
+						outputHandler = new BinaryPipeHandler(p.getInputStream(), writer);
+					else
+						outputHandler = new StringPipeHandler(p.getInputStream(), new PrintStream(outputBuffers.get(0).getFile()));
+					
+
+					outputHandler.start();
 				}
-				else {
-					BufferedReader reader = new BufferedReader(new InputStreamReader( p.getInputStream() ));
-					String line = reader.readLine();
-					while (line != null) {
-						writer.write(line.getBytes());
-						line = reader.readLine();
-					}
-				}
+
+				Thread errorHandler = new StringPipeHandler(p.getErrorStream(), System.out);
+				errorHandler.start();
 				
-				outputReader.close();
-				writer.close();
+				try {
+					if (p.waitFor() != 0) {
+						throw new OperationFailedException("Operator: " + getObjectLabel() + " terminated with nonzero exit value", this);
+					}
+				} catch (InterruptedException e) {
+					throw new OperationFailedException("Operator: " + getObjectLabel() + " was interrupted : " + e.getLocalizedMessage(), this);
+				}
+
+				//Wait for output handling thread to die
+				if (outputHandler != null && outputHandler.isAlive())
+					outputHandler.join();
+			}
+			catch (IOException e1) {
+				throw new OperationFailedException("Operator: " + getObjectLabel() + " was encountered an IO exception : " + e1.getLocalizedMessage(), this);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 			
 			logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed");
-			
-		} catch (IOException e) {
-			throw new OperationFailedException("Operator: " + getObjectLabel() + " failed with IOException : " + e.getLocalizedMessage(), this);
-		}
+		
 	}
 
 	/**

@@ -102,34 +102,34 @@ public class Pipeline {
 	
 	public static void main(String[] args) {
 		
-		Runtime r = Runtime.getRuntime();
-		Process p;
-		try {
-			String command = "./cheater.sh";
-			p = r.exec(command);
-			System.out.println("Executing bwa : "  + command);
-			p.waitFor();
-			System.out.println("Done");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
-//		File input = new File("src/test/testInput.xml");
-//		Pipeline pipeline = new Pipeline(input);
-//		
+//		Runtime r = Runtime.getRuntime();
+//		Process p;
 //		try {
-//			pipeline.execute();
-//		} catch (PipelineDocException e) {
+//			String command = "bwa ";
+//			p = r.exec(command);
+//			System.out.println("Executing bwa : "  + command);
+//			p.waitFor();
+//			System.out.println("Done");
+//		} catch (IOException e) {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
-//		} catch (ObjectCreationException e) {
+//		} catch (InterruptedException e) {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
+		
+		
+		File input = new File("src/test/testInput.xml");
+		Pipeline pipeline = new Pipeline(input);
+		
+		try {
+			pipeline.execute();
+		} catch (PipelineDocException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ObjectCreationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
