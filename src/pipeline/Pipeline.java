@@ -27,7 +27,8 @@ public class Pipeline {
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
 	protected String defaultLogFilename = "pipelinelog.txt";
 	
-	public static final boolean DEBUG = true;
+	//Right now DEBUG just emits all log messages to std out
+	public static final boolean DEBUG = false;
 	
 	public Pipeline(File inputFile) {
 		this.source = inputFile;
@@ -113,9 +114,13 @@ public class Pipeline {
 
 		//A quick scan for errors / validity would be a good idea
 		
-
-		handler.readObjects();
-		
+		try {
+			handler.readObjects();
+		}
+		catch (ObjectCreationException ex) {
+			primaryLogger.severe("Error creating objects : " + ex.getCause() + "\n" + ex.getLocalizedMessage());
+			return;
+		}
 
 		primaryLogger.info("Document parsed and objects are read, attempting to begin pipeline");
 		

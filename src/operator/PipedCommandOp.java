@@ -14,8 +14,11 @@ import java.util.Date;
 import java.util.logging.Logger;
 
 import pipeline.Pipeline;
+import util.StringOutputStream;
 
 public abstract class PipedCommandOp extends IOOperator {
+	
+	protected StringOutputStream errStream = new StringOutputStream();
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -60,15 +63,15 @@ public abstract class PipedCommandOp extends IOOperator {
 					outputHandler.start();
 				}
 
-				Thread errorHandler = new StringPipeHandler(p.getErrorStream(), System.out);
+				Thread errorHandler = new StringPipeHandler(p.getErrorStream(), errStream);
 				errorHandler.start();
 				
 				try {
 					if (p.waitFor() != 0) {
-						throw new OperationFailedException("Operator: " + getObjectLabel() + " terminated with nonzero exit value", this);
+						throw new OperationFailedException("Operator: " + getObjectLabel() + " terminated with nonzero exit value \n" + errStream.toString(), this);
 					}
 				} catch (InterruptedException e) {
-					throw new OperationFailedException("Operator: " + getObjectLabel() + " was interrupted : " + e.getLocalizedMessage(), this);
+					throw new OperationFailedException("Operator: " + getObjectLabel() + " was interrupted \n" + errStream.toString() + "\n" + e.getLocalizedMessage(), this);
 				}
 
 				//Wait for output handling thread to die
@@ -76,7 +79,7 @@ public abstract class PipedCommandOp extends IOOperator {
 					outputHandler.join();
 			}
 			catch (IOException e1) {
-				throw new OperationFailedException("Operator: " + getObjectLabel() + " was encountered an IO exception : " + e1.getLocalizedMessage(), this);
+				throw new OperationFailedException("Operator: " + getObjectLabel() + " was encountered an IO exception : \n" + errStream.toString() + "\n" + e1.getLocalizedMessage(), this);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

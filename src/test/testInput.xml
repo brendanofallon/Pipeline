@@ -1,17 +1,23 @@
 
 <Pipeline>
 
-<reference class="buffer.ReferenceFile" filename="human_tiny_ref.fa" />
+<reference class="buffer.ReferenceFile" filename="human_tiny_ref.fasta" />
 
 <readsOne class="buffer.FastQFile" filename="reads1.fq" />
 <readsTwo class="buffer.FastQFile" filename="reads2.fq" />
 
 <!--  Build index of the reference sequence -->
-<bwaIndex class="operator.BWAIndexer" path="bwa" algorithm="is" >
+<bwaIndex class="operator.BWAIndexer" path="/home/brendan/bwa-0.5.9/bwa" algorithm="is" >
 	<input>
 		<reference />
 	</input>
 </bwaIndex>
+
+<samfaidx class="operator.SamFaidx" path="/home/brendan/samtools-0.1.18/samtools">
+	<input>
+		<reference />
+	</input>
+</samfaidx>
 
 <bwaAlign class="operator.BWAAligner" path="/home/brendan/bwa-0.5.9/bwa">
 	<input>
@@ -66,7 +72,7 @@
 	</output>
 </removeDups>
 
-<CoordSort class="operator.CoordinateSort" path="/home/brendan/picard-tools-1.55">
+<CoordSort class="operator.CoordinateSort" path="/home/brendan/picard-tools-1.55" createindex="true">
 	<input>
 		<readsDeDupBAM />
 	</input>
@@ -74,5 +80,60 @@
 		<readsSorted class="buffer.BAMFile" filename="reads.sort.bam" />
 	</output>
 </CoordSort>
+
+<TargetCreator class="operator.TargetCreator"  path="/home/brendan/workspace/gatk/dist/GenomeAnalysisTK.jar">
+	<input>
+		<reference />
+		<readsSorted />
+	</input>
+	<output>
+		<targetIntervals class="buffer.CSVFile" filename="realign_targets.intervals"/>
+	</output>
+</TargetCreator>
+
+<IndelRealign class="operator.IndelRealign"  path="/home/brendan/workspace/gatk/dist/GenomeAnalysisTK.jar">
+	<input>
+		<reference />
+		<readsSorted />
+		<targetIntervals />
+	</input>
+	<output>
+		<realignedBAM class="buffer.BAMFile" filename="reads.realigned.bam" />	
+	</output>
+</IndelRealign>
+
+
+<CountCovariates class="operator.CountCovariates" path="/home/brendan/workspace/gatk/dist/GenomeAnalysisTK.jar">
+	<input>
+		<reference />
+		<readsSorted />
+		<dbsnp class="buffer.VCFFile" filename="/home/brendan/resources/dbsnp_132.b37.vcf" />
+	</input>
+	<output>
+		<covariatesFile class="buffer.CSVFile" filename="recal.csv" />
+	</output>
+</CountCovariates>
+
+<TableRecalibration class="operator.TableRecalibrator" path="/home/brendan/workspace/gatk/dist/GenomeAnalysisTK.jar">
+	<input>
+		<reference />
+		<realignedBAM />
+		<covariatesFile />
+	</input>
+	<output>
+		<recalBAM class="buffer.BAMFile" filename="reads.recal.bam" />
+	</output>
+</TableRecalibration>
+
+<Genotyper class="operator.Genotyper" path="/home/brendan/workspace/gatk/dist/GenomeAnalysisTK.jar">
+	<input>
+		<reference />
+		<recalBAM />
+		<dbsnp />
+	</input>
+	<output>
+		<variants class="buffer.VCFFile" filename="variants.vcf" />
+	</output>
+</Genotyper>
 
 </Pipeline>

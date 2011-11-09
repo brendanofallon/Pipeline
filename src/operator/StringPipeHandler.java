@@ -12,6 +12,11 @@ public class StringPipeHandler extends Thread {
 		InputStream inpStr;
 		PrintStream stream;
 		
+		public StringPipeHandler(InputStream inpStr, OutputStream stream) {
+			this.inpStr = inpStr;
+			this.stream = new PrintStream(stream);
+		}
+		
 		public StringPipeHandler(InputStream inpStr, PrintStream stream) {
 			this.inpStr = inpStr;
 			this.stream = stream;

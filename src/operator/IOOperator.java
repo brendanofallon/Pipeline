@@ -31,6 +31,45 @@ public abstract class IOOperator extends Operator {
 		outputBuffers.add(buff);
 	}
 	
+	/**
+	 * Returns the first input buffer of the given class
+	 * @param clz
+	 * @return
+	 */
+	public FileBuffer getInputBufferForClass(Class clz) {
+		for(FileBuffer buff :  inputBuffers) {
+			if (buff.getClass().equals( clz ))
+				return buff;
+		}
+		return null;
+	}
+	
+	/**
+	 * Returns a list of all input buffers whose class matches the given class
+	 * @param clz
+	 * @return
+	 */
+	public List<FileBuffer> getAllInputBuffersForClass(Class clz) {
+		List<FileBuffer> buffers = new ArrayList<FileBuffer>();
+		for(FileBuffer buff :  inputBuffers) {
+			if (buff.getClass().equals( clz ))
+				buffers.add(buff);
+		}
+		return buffers;
+	}
+	
+	/**
+	 * Returns the first output buffer of the given class
+	 * @param clz
+	 * @return
+	 */
+	public FileBuffer getOutputBufferForClass(Class clz) {
+		for(FileBuffer buff :  outputBuffers) {
+			if (buff.getClass().equals( clz ))
+				return buff;
+		}
+		return null;
+	}
 	
 	@Override
 	public void initialize(NodeList children) {
