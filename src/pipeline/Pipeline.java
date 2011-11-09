@@ -2,6 +2,8 @@ package pipeline;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
+import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -23,6 +25,7 @@ public class Pipeline {
 	protected Document xmlDoc;
 	public static final String primaryLoggerName = "pipeline.primary";
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
+	protected String defaultLogFilename = "pipelinelog.txt";
 	
 	public static final boolean DEBUG = true;
 	
@@ -43,27 +46,6 @@ public class Pipeline {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-	
-	/**
-	 * Attempt to run the pipeline defined in the source input file
-	 * @throws PipelineDocException If there are errors in document structure
-	 * @throws ObjectCreationException If errors arise regarding instiation of particular objects
-	 */
-	public void execute() throws PipelineDocException, ObjectCreationException {
-		if (xmlDoc == null) {
-			throw new IllegalStateException("XMLDoc not defined");
-		}
-		
-		Element docElement = xmlDoc.getDocumentElement();
-		String docRootName = docElement.getNodeName();
-		if (! docRootName.equals(PipelineXMLConstants.DOCUMENT_ROOT)) {
-			throw new PipelineDocException("Document root name should be " + PipelineXMLConstants.DOCUMENT_ROOT + ", but found : " + docRootName);
-		}
-		
-		ObjectHandler handler = new ObjectHandler(xmlDoc);
-
-		//A quick scan for errors / validity would be a good idea
 		
 		if (DEBUG) {
 			primaryLogger.addHandler(new Handler() {
@@ -83,9 +65,59 @@ public class Pipeline {
 				
 			});
 		}
+	
+		initializeLogger();
+		
+	}
+	
+	/**
+	 * Perform a bit of initialization for the main Logger
+	 */
+	private void initializeLogger() {
+
+		try {
+			FileHandler logHandler = new FileHandler(defaultLogFilename);
+			primaryLogger.addHandler( logHandler );
+		} catch (SecurityException e) {
+			// TODO Auto-generated catch block
+			System.err.println("ERROR :  Could not open log file for writing! \n " + e.getCause() + e.getLocalizedMessage());
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.err.println("ERROR :  Could not open log file for writing! \n " + e.getCause() + e.getLocalizedMessage());
+			e.printStackTrace();
+		}
+		
+	}
+	/**
+	 * Attempt to run the pipeline defined in the source input file
+	 * @throws PipelineDocException If there are errors in document structure
+	 * @throws ObjectCreationException If errors arise regarding instiation of particular objects
+	 */
+	public void execute() throws PipelineDocException, ObjectCreationException {
+		
+		primaryLogger.info("***************************************************************** \n " + new Date() + " Beginning new Pipeline run");
+		if (xmlDoc == null) {
+			primaryLogger.severe(" ERROR : XML document not found / defined, aborting run ");
+			throw new IllegalStateException("XMLDoc not defined");
+		}
+		
+		
+		Element docElement = xmlDoc.getDocumentElement();
+		String docRootName = docElement.getNodeName();
+		if (! docRootName.equals(PipelineXMLConstants.DOCUMENT_ROOT)) {
+			throw new PipelineDocException("Document root name should be " + PipelineXMLConstants.DOCUMENT_ROOT + ", but found : " + docRootName);
+		}
+		
+		primaryLogger.info("XML Document at path " + source.getAbsolutePath() + " found and parsed, attempting to read objects");
+		ObjectHandler handler = new ObjectHandler(xmlDoc);
+
+		//A quick scan for errors / validity would be a good idea
+		
+
 		handler.readObjects();
 		
-		
+
+		primaryLogger.info("Document parsed and objects are read, attempting to begin pipeline");
 		
 		for(Operator op : handler.getOperatorList()) {
 			try {
@@ -101,23 +133,6 @@ public class Pipeline {
 	}
 	
 	public static void main(String[] args) {
-		
-//		Runtime r = Runtime.getRuntime();
-//		Process p;
-//		try {
-//			String command = "bwa ";
-//			p = r.exec(command);
-//			System.out.println("Executing bwa : "  + command);
-//			p.waitFor();
-//			System.out.println("Done");
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-		
 		
 		File input = new File("src/test/testInput.xml");
 		Pipeline pipeline = new Pipeline(input);
