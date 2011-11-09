@@ -5,7 +5,7 @@ package operator;
  * @author brendan
  *
  */
-public class SamtoolsRemoveDuplicates extends IOCommandOp {
+public class SamtoolsRemoveDuplicates extends PipedCommandOp {
 
 	public static final String PATH = "path";
 	protected String defaultSamtoolsPath = "samtools";

@@ -1,6 +1,6 @@
 package operator;
 
-public class BWAAligner extends IOCommandOp {
+public class BWAAligner extends PipedCommandOp {
 	
 	
 	public static final String PATH = "path";

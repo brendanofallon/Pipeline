@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 
 import pipeline.Pipeline;
 
-public class BWASampe extends IOCommandOp {
+public class BWASampe extends PipedCommandOp {
 
 	public static final String READ_GROUP = "readgroup";
 	public static final String PATH = "path";

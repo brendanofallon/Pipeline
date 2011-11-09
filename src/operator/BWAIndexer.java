@@ -9,7 +9,7 @@ import java.io.InputStreamReader;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-public class BWAIndexer extends IOCommandOp {
+public class BWAIndexer extends PipedCommandOp {
 
 	public static final String PATH = "path";
 	public static final String ALGORITHM = "algorithm";

@@ -5,7 +5,7 @@ package operator;
  * @author brendan
  *
  */
-public class ConvertSamBam extends IOCommandOp {
+public class ConvertSamBam extends PipedCommandOp {
 
 
 	public static final String PATH = "path";

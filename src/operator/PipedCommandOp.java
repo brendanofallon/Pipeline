@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 
 import pipeline.Pipeline;
 
-public abstract class IOCommandOp extends IOOperator {
+public abstract class PipedCommandOp extends IOOperator {
 	
 	@Override
 	public void performOperation() throws OperationFailedException {

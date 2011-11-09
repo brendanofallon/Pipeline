@@ -66,4 +66,13 @@
 	</output>
 </removeDups>
 
+<CoordSort class="operator.CoordinateSort" path="/home/brendan/picard-tools-1.55">
+	<input>
+		<readsDeDupBAM />
+	</input>
+	<output>
+		<readsSorted class="buffer.BAMFile" filename="reads.sort.bam" />
+	</output>
+</CoordSort>
+
 </Pipeline>
