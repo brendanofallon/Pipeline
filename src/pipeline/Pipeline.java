@@ -25,10 +25,10 @@ public class Pipeline {
 	protected Document xmlDoc;
 	public static final String primaryLoggerName = "pipeline.primary";
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
-	protected String defaultLogFilename = "pipelinelog.txt";
+	protected String defaultLogFilename = "pipelinelog.xml";
 	
 	//Right now DEBUG just emits all log messages to std out
-	public static final boolean DEBUG = false;
+	public static final boolean DEBUG = true;
 	
 	public Pipeline(File inputFile) {
 		this.source = inputFile;
@@ -96,7 +96,7 @@ public class Pipeline {
 	 */
 	public void execute() throws PipelineDocException, ObjectCreationException {
 		
-		primaryLogger.info("***************************************************************** \n " + new Date() + " Beginning new Pipeline run");
+		primaryLogger.info("\n\n***************************************************************** \n " + new Date() + " Beginning new Pipeline run");
 		if (xmlDoc == null) {
 			primaryLogger.severe(" ERROR : XML document not found / defined, aborting run ");
 			throw new IllegalStateException("XMLDoc not defined");
@@ -132,24 +132,32 @@ public class Pipeline {
 			} catch (OperationFailedException e) {
 				e.printStackTrace();
 				primaryLogger.severe("ERROR : Operator : " + op.getObjectLabel() + " (class " + op.getClass() + ") failed \n Cause : " + e.getMessage());
-				System.exit(1);
+				return;
 			}
 		}
 	}
 	
 	public static void main(String[] args) {
 		
-		File input = new File("src/test/testInput.xml");
-		Pipeline pipeline = new Pipeline(input);
+		//If no args, assume this is a test run and attempt to execute testInput.xml
+		if (args.length == 0) {
+			args = new String[]{"src/test/testInput.xml"};
+		}
 		
-		try {
-			pipeline.execute();
-		} catch (PipelineDocException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ObjectCreationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		//Otherwise, assume all args are input files and execute them in order
+		for(int i=0; i<args.length; i++) {
+			File input = new File(args[i]);
+			Pipeline pipeline = new Pipeline(input);
+
+			try {
+				pipeline.execute();
+			} catch (PipelineDocException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ObjectCreationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 }
