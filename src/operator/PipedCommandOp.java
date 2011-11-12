@@ -13,12 +13,22 @@ import java.io.PrintStream;
 import java.util.Date;
 import java.util.logging.Logger;
 
+import buffer.FileBuffer;
+
 import pipeline.Pipeline;
 import util.StringOutputStream;
 
 public abstract class PipedCommandOp extends IOOperator {
 	
 	protected StringOutputStream errStream = new StringOutputStream();
+	
+	/**
+	 * The file buffer to which output to stdout will be directed
+	 * @return
+	 */
+	public FileBuffer getPipeDestinationBuffer() {
+		return outputBuffers.get(0);
+	}
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -32,8 +42,8 @@ public abstract class PipedCommandOp extends IOOperator {
 				
 		boolean binaryOutput = false;
 		if (outputBuffers.size()>0) {
-			outputPath = outputBuffers.get(0).getAbsolutePath();
-			binaryOutput = outputBuffers.get(0).isBinary();
+			outputPath = getPipeDestinationBuffer().getAbsolutePath();
+			binaryOutput = getPipeDestinationBuffer().isBinary();
 			try {
 				writer = new FileOutputStream(outputPath);
 			} catch (IOException e1) {
@@ -51,13 +61,16 @@ public abstract class PipedCommandOp extends IOOperator {
 			try {
 				p = r.exec(command);
 
-
+				//The process we just started may hang if the output buffer its writing into gets full
+				//to avoid this, we start a couple of threads whose job it is to immediately 
+				//read from the output (both to stdout and to stderr) and store the resulting data
+				//Furthermore, binary output and text output are handled a bit differently
 				Thread outputHandler = null; 
 				if (writer != null) {
 					if (binaryOutput)
 						outputHandler = new BinaryPipeHandler(p.getInputStream(), writer);
 					else
-						outputHandler = new StringPipeHandler(p.getInputStream(), new PrintStream(outputBuffers.get(0).getFile()));
+						outputHandler = new StringPipeHandler(p.getInputStream(), new PrintStream(getPipeDestinationBuffer().getFile()));
 					
 
 					outputHandler.start();

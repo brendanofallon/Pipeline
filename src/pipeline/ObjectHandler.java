@@ -13,7 +13,15 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-
+/**
+ * This class is responsible for reading an xml DOM document and creating Pipeline objects based
+ * on the xml. Element creation is recursively handled by a call to createElement(root of DOM), which happens
+ * prior to any actual execution of the document. Execution occurs when some other object calls .performOperation()
+ * on an operator object, causing the operator to perform its operation (whatever it may be).
+ *  
+ * @author brendan
+ *
+ */
 public class ObjectHandler {
 
 	protected Document doc;
@@ -21,11 +29,10 @@ public class ObjectHandler {
 	
 	protected Map<String, PipelineObject> objectMap = new HashMap<String, PipelineObject>();
 	
-	private final boolean verbose = true;
+	private final boolean verbose = false;
 	
 	public ObjectHandler(Document doc) {
 		this.doc = doc;
-		scanDocument();
 	}
 
 	/**
@@ -153,30 +160,7 @@ public class ObjectHandler {
 		String val = el.getAttribute(PipelineXMLConstants.CLASS_ATTR);
 		return val;
 	}
+
 	
-	/**
-	 * Scan over all first-level elements in the document 
-	 */
-	private void scanDocument() {
-		Element root = doc.getDocumentElement();
-		NodeList children = root.getChildNodes();
-		for(int i=0; i<children.getLength(); i++) {
-			Node child = children.item(i);
-			if (child.getNodeType() == Node.ELEMENT_NODE) {
-				addElement( (Element)child);
-				
-			}
-		}
-	}
-	
-	
-	
-	/**
-	 * Add 
-	 * @param el
-	 */
-	private void addElement(Element el) {
-		// ?
-	}
 	
 }

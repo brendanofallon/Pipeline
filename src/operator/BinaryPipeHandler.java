@@ -18,8 +18,13 @@ public class BinaryPipeHandler extends Thread {
 	public void run() {
 			int c;
 			try {
-				while ((c = inpStr.read()) != -1) {
-					writer.write(c);
+				//Attempt to read data in 1Mb chunks, this is a lot faster than
+				//doing things one byte at a time
+				byte[] data = new byte[1024];
+				int bytesRead = inpStr.read(data);
+				while(bytesRead >= 0) {
+					writer.write(data, 0, bytesRead);
+					bytesRead = inpStr.read(data);
 				}
 				writer.close();
 			} catch (IOException e) {

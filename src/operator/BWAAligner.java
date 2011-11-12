@@ -4,6 +4,7 @@ public class BWAAligner extends PipedCommandOp {
 	
 	
 	public static final String PATH = "path";
+	public static final String THREADS = "threads";
 	protected String pathToBWA = "bwa";
 	protected int defaultThreads = 4;
 	protected int threads = defaultThreads;
@@ -13,6 +14,11 @@ public class BWAAligner extends PipedCommandOp {
 		String bwaPathAttr = properties.get(PATH);
 		if (bwaPathAttr != null) {
 			pathToBWA = bwaPathAttr;
+		}
+		
+		String threadsAttr = properties.get(THREADS);
+		if (threadsAttr != null) {
+			threads = Integer.parseInt(threadsAttr);
 		}
 			
 		String referencePath = inputBuffers.get(0).getAbsolutePath();

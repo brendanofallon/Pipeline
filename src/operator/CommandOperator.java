@@ -1,6 +1,7 @@
 package operator;
 
 import java.io.IOException;
+import java.sql.Time;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -30,6 +31,7 @@ public abstract class CommandOperator extends IOOperator {
 		
 		Date now = new Date();
 		
+		long beginMillis = System.currentTimeMillis();
 		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " Executing command : " + command );
 		Runtime r = Runtime.getRuntime();
 		Process p;
@@ -54,8 +56,12 @@ public abstract class CommandOperator extends IOOperator {
 		catch (IOException e1) {
 			throw new OperationFailedException("Operator: " + getObjectLabel() + " was encountered an IO exception : " + errStream.toString() + "\n" + e1.getLocalizedMessage(), this);
 		}
+		
 
-		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed");
+		long endMillis = System.currentTimeMillis();
+		long elapsedMillis = endMillis - beginMillis;
+		Time elapsedDate = new Time(elapsedMillis);
+		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed. Time taken = " + elapsedMillis + " ( " + elapsedDate + " )");
 		
 	}
 
