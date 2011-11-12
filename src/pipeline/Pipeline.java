@@ -79,6 +79,7 @@ public class Pipeline {
 		try {
 			FileHandler logHandler = new FileHandler(defaultLogFilename);
 			primaryLogger.addHandler( logHandler );
+	
 		} catch (SecurityException e) {
 			// TODO Auto-generated catch block
 			System.err.println("ERROR :  Could not open log file for writing! \n " + e.getCause() + e.getLocalizedMessage());
