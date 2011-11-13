@@ -1,8 +1,12 @@
 package pipeline;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Date;
+import java.util.InvalidPropertiesFormatException;
+import java.util.Properties;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -19,6 +23,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
+import util.ElapsedTimeFormatter;
+
 public class Pipeline {
 
 	protected File source;
@@ -30,6 +36,10 @@ public class Pipeline {
 	//Right now DEBUG just emits all log messages to std out
 	public static final boolean DEBUG = true;
 	
+	//Stores some basic properties, such as paths to some commonly used executables
+	protected Properties props;
+	public static final String defaultPropertiesPath = ".pipeline.props";
+	
 	public Pipeline(File inputFile) {
 		this.source = inputFile;
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -38,16 +48,49 @@ public class Pipeline {
 			builder = factory.newDocumentBuilder();
 			xmlDoc = builder.parse(source);
 		} catch (ParserConfigurationException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (SAXException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
+
+		initializeLogger();
+		loadProperties();
+		
+	}
+	
+	/**
+	 * Attempt to load some basic properties from a persistent file
+	 */
+	private void loadProperties() {
+		String homeDir = System.getProperty("user.home");
+		File propsFile = new File(homeDir + "/" + defaultPropertiesPath);
+		if (! propsFile.exists()) {
+			primaryLogger.warning("Could not find default properties file, no file at path " + propsFile.getAbsolutePath());
+			return;
+		}
+		
+		props = new Properties();
+		try {
+			FileInputStream propStream = new FileInputStream(propsFile);
+			props.loadFromXML(propStream);
+		} catch (FileNotFoundException e) {
+			primaryLogger.warning("Could not open stream for properties file at path " + propsFile.getAbsolutePath());
+		} catch (InvalidPropertiesFormatException e) {
+			primaryLogger.warning("Could not read from default properties file: \n" + e.getCause() + "\n" + e.getLocalizedMessage());
+		} catch (IOException e) {
+			primaryLogger.warning("Could not read from default properties file: \n" + e.getCause() + "\n" + e.getLocalizedMessage());
+		}
+		
+	}
+
+	/**
+	 * Perform a bit of initialization for the main Logger
+	 */
+	private void initializeLogger() {
+
 		if (DEBUG) {
 			primaryLogger.addHandler(new Handler() {
 				@Override
@@ -59,23 +102,10 @@ public class Pipeline {
 				public void flush() {
 					System.out.flush();
 				}
-
-				@Override
-				public void close() throws SecurityException {					
-				}
-				
+				public void close() throws SecurityException { }
 			});
 		}
-	
-		initializeLogger();
 		
-	}
-	
-	/**
-	 * Perform a bit of initialization for the main Logger
-	 */
-	private void initializeLogger() {
-
 		try {
 			FileHandler logHandler = new FileHandler(defaultLogFilename);
 			primaryLogger.addHandler( logHandler );
@@ -97,7 +127,8 @@ public class Pipeline {
 	 */
 	public void execute() throws PipelineDocException, ObjectCreationException {
 		
-		primaryLogger.info("\n\n***************************************************************** \n " + new Date() + " Beginning new Pipeline run");
+		Date now = new Date();
+		primaryLogger.info("\n\n***************************************************************** \n " + now + " Beginning new Pipeline run");
 		if (xmlDoc == null) {
 			primaryLogger.severe(" ERROR : XML document not found / defined, aborting run ");
 			throw new IllegalStateException("XMLDoc not defined");
@@ -136,6 +167,11 @@ public class Pipeline {
 				return;
 			}
 		}
+		
+		long elapsedMillis = (new Date()).getTime() - now.getTime();
+		
+		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(now, (new Date()).getTime() ));
+		
 	}
 	
 	public static void main(String[] args) {

@@ -32,7 +32,7 @@ public class Genotyper extends CommandOperator {
 		command = command + " -R " + reference + " -I " + inputFile + " -T UnifiedGenotyper";
 		command = command + " -o " + outputVCF;
 		command = command + " --dbsnp " + dbsnpFile;
-		command = command + " --glm BOTH";
+		command = command + " -glm BOTH";
 		command = command + " -stand_call_conf 30.0";
 		command = command + " -stand_emit_conf 10.0";
 		command = command + " -nt " + threads;
