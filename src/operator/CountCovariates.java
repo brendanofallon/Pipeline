@@ -2,6 +2,9 @@ package operator;
 
 import java.util.List;
 
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
+
 import buffer.BAMFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
@@ -23,6 +26,11 @@ public class CountCovariates extends CommandOperator {
 	
 	@Override
 	protected String getCommand() {
+		
+		
+		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
+		if (propsPath != null)
+			gatkPath = propsPath.toString();
 		
 		String path = properties.get(PATH);
 		if (path != null) {

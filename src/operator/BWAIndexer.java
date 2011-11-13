@@ -9,6 +9,9 @@ import java.io.InputStreamReader;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
+
 public class BWAIndexer extends PipedCommandOp {
 
 	public static final String PATH = "path";
@@ -23,6 +26,11 @@ public class BWAIndexer extends PipedCommandOp {
 	
 	@Override
 	public String getCommand() {
+		
+		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.BWA_PATH);
+		if (propsPath != null)
+			pathToBWA = propsPath.toString();
+		
 		String bwaPathAttr = properties.get(PATH);
 		if (bwaPathAttr != null) {
 			pathToBWA = bwaPathAttr;

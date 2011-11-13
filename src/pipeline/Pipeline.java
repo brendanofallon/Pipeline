@@ -38,10 +38,12 @@ public class Pipeline {
 	
 	//Stores some basic properties, such as paths to some commonly used executables
 	protected Properties props;
-	public static final String defaultPropertiesPath = ".pipeline.props";
+	public static final String defaultPropertiesPath = ".pipelineprops.xml";
+	public static Pipeline pipelineInstance;
 	
 	public Pipeline(File inputFile) {
 		this.source = inputFile;
+		pipelineInstance = this;
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder;
 		try {
@@ -62,20 +64,60 @@ public class Pipeline {
 	}
 	
 	/**
+	 * Static getter for main application object
+	 * @return
+	 */
+	public static Pipeline getPipelineInstance() {
+		return pipelineInstance;
+	}
+	
+	/**
+	 * Obtain the value of the property associated with the given key, or null
+	 * if no such property exists or if the properties were not successfully loaded
+	 * (for instance, if no properties file was found)
+	 * @param key
+	 * @return Value associated with key provided
+	 */
+	public static Object getPropertyStatic(String key) {
+		return pipelineInstance.getProperty(key);
+	}
+	
+	public Object getProperty(String key) {
+		if (props != null)
+			return props.get(key);
+		else
+			return null;
+	}
+	
+	/**
 	 * Attempt to load some basic properties from a persistent file
 	 */
 	private void loadProperties() {
-		String homeDir = System.getProperty("user.home");
-		File propsFile = new File(homeDir + "/" + defaultPropertiesPath);
+		//First check to see if properties file is in user dir, if so use it
+		String userDir = System.getProperty("user.dir");
+		File propsFile = new File(userDir + "/" + defaultPropertiesPath);
+		
+		//If its not in user.dir, then check home directory, if not there then abort
 		if (! propsFile.exists()) {
-			primaryLogger.warning("Could not find default properties file, no file at path " + propsFile.getAbsolutePath());
-			return;
+			String homeDir = System.getProperty("user.home");
+			propsFile = new File(homeDir + "/" + defaultPropertiesPath);
+			if (! propsFile.exists()) {
+				primaryLogger.warning("Could not find default properties file, no file at path " + propsFile.getAbsolutePath());
+				return;
+			}
 		}
 		
 		props = new Properties();
 		try {
 			FileInputStream propStream = new FileInputStream(propsFile);
 			props.loadFromXML(propStream);
+			
+			StringBuffer msg = new StringBuffer("Loaded following properties: \n");
+			
+			for(Object key : props.keySet()) {
+				msg.append(key.toString() + " = " + props.getProperty(key.toString()) + "\n");
+			}
+			primaryLogger.info(msg.toString());
 		} catch (FileNotFoundException e) {
 			primaryLogger.warning("Could not open stream for properties file at path " + propsFile.getAbsolutePath());
 		} catch (InvalidPropertiesFormatException e) {
@@ -119,6 +161,9 @@ public class Pipeline {
 			e.printStackTrace();
 		}
 		
+
+		Date beginTime = new Date();
+		primaryLogger.info("\n\n***************************************************************** \n " + beginTime + " Beginning new Pipeline run");
 	}
 	/**
 	 * Attempt to run the pipeline defined in the source input file
@@ -127,8 +172,8 @@ public class Pipeline {
 	 */
 	public void execute() throws PipelineDocException, ObjectCreationException {
 		
-		Date now = new Date();
-		primaryLogger.info("\n\n***************************************************************** \n " + now + " Beginning new Pipeline run");
+		Date beginTime = new Date();
+		
 		if (xmlDoc == null) {
 			primaryLogger.severe(" ERROR : XML document not found / defined, aborting run ");
 			throw new IllegalStateException("XMLDoc not defined");
@@ -168,10 +213,9 @@ public class Pipeline {
 			}
 		}
 		
-		long elapsedMillis = (new Date()).getTime() - now.getTime();
 		
-		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(now, (new Date()).getTime() ));
-		
+		long endTime = System.currentTimeMillis();
+		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(beginTime.getTime(), endTime ));
 	}
 	
 	public static void main(String[] args) {

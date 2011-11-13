@@ -15,6 +15,7 @@ import buffer.ReferenceFile;
  */
 public class TableRecalibrator extends CommandOperator {
 
+	public static final String GATK_PATH = "gatk.path";
 	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
 	public static final String PATH = "path";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
@@ -22,6 +23,11 @@ public class TableRecalibrator extends CommandOperator {
 	
 	@Override
 	protected String getCommand() {
+		
+		Object propsPath = Pipeline.getPropertyStatic(GATK_PATH);
+		if (propsPath != null)
+			gatkPath = propsPath.toString();
+	
 		
 		String path = properties.get(PATH);
 		if (path != null) {

@@ -1,5 +1,7 @@
 package operator;
 
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.ReferenceFile;
 
@@ -17,6 +19,10 @@ public class TargetCreator extends CommandOperator {
 	
 	@Override
 	protected String getCommand() {
+		
+		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
+		if (propsPath != null)
+			gatkPath = propsPath.toString();
 		
 		String path = properties.get(PATH);
 		if (path != null) {

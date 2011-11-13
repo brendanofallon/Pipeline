@@ -7,6 +7,10 @@ package pipeline;
  */
 public class PipelineXMLConstants {
 	
+	public static final String PICARD_PATH = "picard.path";
+	public static final String SAMTOOLS_PATH = "samtools.path";
+	public static final String BWA_PATH = "bwa.path";
+	public static final String GATK_PATH = "gatk.path";
 	public static final String DOCUMENT_ROOT = "Pipeline";
 	public static final String CLASS_ATTR = "class";
 	

@@ -1,5 +1,8 @@
 package operator;
 
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
+
 public class BuildBamIndex extends CommandOperator {
 
 	public static final String PATH = "path";
@@ -12,10 +15,16 @@ public class BuildBamIndex extends CommandOperator {
 	@Override
 	protected String getCommand() {
 	
-		String path = properties.get(PATH);
-		if (path != null) {
-			 picardDir = path;
+		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.PICARD_PATH);
+		if (path != null)
+			picardDir = path.toString();
+		
+		//User can override path specified in properties
+		String userPath = properties.get(PATH);
+		if (userPath != null) {
+			 picardDir = userPath;
 		}
+		
 		if (picardDir.endsWith("/")) {
 			picardDir = picardDir.substring(0, picardDir.length()-1);
 		}

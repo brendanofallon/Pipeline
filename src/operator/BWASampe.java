@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.logging.Logger;
 
 import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
 
 public class BWASampe extends PipedCommandOp {
 
@@ -22,6 +23,11 @@ public class BWASampe extends PipedCommandOp {
 	
 	@Override
 	protected String getCommand() {
+		
+		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.BWA_PATH);
+		if (propsPath != null)
+			pathToBWA = propsPath.toString();
+	
 		
 		String bwaPathAttr = properties.get(PATH);
 		if (bwaPathAttr != null) {
