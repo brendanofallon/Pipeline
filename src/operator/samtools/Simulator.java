@@ -1,4 +1,6 @@
-package operator;
+package operator.samtools;
+
+import operator.PipedCommandOp;
 
 public class Simulator extends PipedCommandOp {
 

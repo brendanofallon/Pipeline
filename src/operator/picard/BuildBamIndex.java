@@ -1,5 +1,6 @@
-package operator;
+package operator.picard;
 
+import operator.CommandOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 

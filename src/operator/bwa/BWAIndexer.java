@@ -1,10 +1,12 @@
-package operator;
+package operator.bwa;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+
+import operator.PipedCommandOp;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;

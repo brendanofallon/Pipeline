@@ -1,6 +1,8 @@
-package operator;
+package operator.gatk;
 
 import java.util.List;
+
+import operator.CommandOperator;
 
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;

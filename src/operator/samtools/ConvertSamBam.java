@@ -1,5 +1,6 @@
-package operator;
+package operator.samtools;
 
+import operator.PipedCommandOp;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 
@@ -9,7 +10,6 @@ import pipeline.PipelineXMLConstants;
  *
  */
 public class ConvertSamBam extends PipedCommandOp {
-
 
 
 	public static final String PATH = "path";

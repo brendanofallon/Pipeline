@@ -1,5 +1,6 @@
-package operator;
+package operator.gatk;
 
+import operator.CommandOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
