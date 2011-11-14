@@ -34,7 +34,7 @@ public class SamtoolsRemoveDuplicates extends PipedCommandOp {
 		if (inputPath.endsWith("sam"))
 			fileIsSam = " -S ";
 		
-		String command = samPath + " rmdup " + fileIsSam + inputPath + " " + outputPath;
+		String command = samtoolsPath + " rmdup " + fileIsSam + inputPath + " " + outputPath;
 		return command;
 	}
 

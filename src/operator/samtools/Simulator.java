@@ -1,6 +1,8 @@
 package operator.samtools;
 
 import operator.PipedCommandOp;
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
 
 public class Simulator extends PipedCommandOp {
 
@@ -14,6 +16,10 @@ public class Simulator extends PipedCommandOp {
 	@Override
 	protected String getCommand() {
 	
+		Object samPropPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+		if (samPropPath != null)
+			samtoolsPath = samPropPath.toString();
+		
 		String samPath = properties.get(PATH);
 		if (samPath != null) {
 			samtoolsPath = samPath;
@@ -30,9 +36,13 @@ public class Simulator extends PipedCommandOp {
 		String outputReads1 = outputBuffers.get(1).getAbsolutePath();
 		String outputReads2 = outputBuffers.get(2).getAbsolutePath();
 		
+		if (samtoolsPath.endsWith("samtools")) {
+			samtoolsPath = samtoolsPath.substring(0, samtoolsPath.length()-8);
+			samtoolsPath = samtoolsPath + "/misc/";
+		}
 		
 		//Ouput handled automagically!
-		String command = samPath + "wgsim " + inputPath + " " + outputReads1 + " " + outputReads2;
+		String command = samtoolsPath + "wgsim " + inputPath + " " + outputReads1 + " " + outputReads2;
 		return command;
 	}
 

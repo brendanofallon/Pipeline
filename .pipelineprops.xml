@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
 <properties>
+<entry key="annovar.path">/home/brendan/annovar/</entry>
 <entry key="picard.path">/home/brendan/picard-tools-1.55</entry>
 <entry key="samtools.path">/home/brendan/samtools-0.1.18/samtools</entry>
 <entry key="bwa.path">/home/brendan/bwa-0.5.9/bwa</entry>
