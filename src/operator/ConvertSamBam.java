@@ -1,11 +1,15 @@
 package operator;
 
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
+
 /**
  * Uses samtools to convert a SAM file to a BAM file
  * @author brendan
  *
  */
 public class ConvertSamBam extends PipedCommandOp {
+
 
 
 	public static final String PATH = "path";
@@ -15,15 +19,19 @@ public class ConvertSamBam extends PipedCommandOp {
 	@Override
 	protected String getCommand() {
 	
-		String samPath = properties.get(PATH);
-		if (samPath != null) {
-			samtoolsPath = samPath;
+		Object samPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+		if (samPath != null)
+			samtoolsPath = samPath.toString();
+		
+		String samUserPath = properties.get(PATH);
+		if (samUserPath != null) {
+			samtoolsPath = samUserPath;
 		}
 		
 		String inputPath = inputBuffers.get(0).getAbsolutePath();
 				
 		//Ouput handled automagically!
-		String command = samPath + " view -Sb " + inputPath;
+		String command = samtoolsPath + " view -Sb " + inputPath;
 		return command;
 	}
 

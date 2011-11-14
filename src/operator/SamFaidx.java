@@ -1,5 +1,8 @@
 package operator;
 
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
+
 /**
  * Builds an index of the sequence in question using samtools' faidx command
  * @author brendan
@@ -13,6 +16,10 @@ public class SamFaidx extends CommandOperator {
 	
 	@Override
 	protected String getCommand() {
+	
+		Object samPropPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+		if (samPropPath != null)
+			samtoolsPath = samPropPath.toString();
 	
 		String samPath = properties.get(PATH);
 		if (samPath != null) {

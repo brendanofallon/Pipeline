@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.logging.Logger;
 
 import pipeline.Pipeline;
+import util.ElapsedTimeFormatter;
 import util.StringOutputStream;
 
 /**
@@ -60,9 +61,8 @@ public abstract class CommandOperator extends IOOperator {
 
 		long endMillis = System.currentTimeMillis();
 		long elapsedMillis = endMillis - beginMillis;
-		Time elapsedDate = new Time(elapsedMillis);
-		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed. Time taken = " + elapsedMillis + " ( " + elapsedDate + " )");
-		
+		//Time elapsedDate = new Time(elapsedMillis);
+		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed. Time taken = " + elapsedMillis + " ms ( " + ElapsedTimeFormatter.getElapsedTime(beginMillis, endMillis) + " )");		
 	}
 
 

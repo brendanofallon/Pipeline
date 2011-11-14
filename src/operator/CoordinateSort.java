@@ -1,5 +1,8 @@
 package operator;
 
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
+
 /**
  * Uses Picard to coorindate sort a BAM file
  * @author brendan
@@ -7,22 +10,39 @@ package operator;
  */
 public class CoordinateSort extends CommandOperator {
 
+	
 	public static final String PATH = "path";
 	public static final String CREATE_INDEX = "createindex";
+	public static final String JVM_ARGS="jvmargs";
+	public static final String MAX_RECORDS="maxrecords"; //Max records to keep in RAM
 	protected String defaultPicardDir = "~/picard-tools-1.55/";
 	protected String picardDir = defaultPicardDir;
 	protected boolean defaultCreateIndex = true;
 	protected boolean createIndex = defaultCreateIndex;
+	protected int defaultMaxRecords = 500000; //This is the default for picard anyway
+	
 	
 	@Override
 	protected String getCommand() {
 	
-		String path = properties.get(PATH);
-		if (path != null) {
-			 picardDir = path;
+		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.PICARD_PATH);
+		if (path != null)
+			picardDir = path.toString();
+		
+		//User can override path specified in properties
+		String userPath = properties.get(PATH);
+		if (userPath != null) {
+			 picardDir = userPath;
 		}
+		
 		if (picardDir.endsWith("/")) {
 			picardDir = picardDir.substring(0, picardDir.length()-1);
+		}
+		
+		String recordsStr = properties.get(MAX_RECORDS);
+		int maxRecords = defaultMaxRecords;
+		if (recordsStr != null) {
+			maxRecords = Integer.parseInt(recordsStr);
 		}
 		
 		String createIndxStr = properties.get(CREATE_INDEX);
@@ -31,10 +51,15 @@ public class CoordinateSort extends CommandOperator {
 			createIndex = b;
 		}
 		
+		//Additional args for jvm
+		String jvmARGStr = properties.get(JVM_ARGS);
+		if (jvmARGStr == null)
+			jvmARGStr = "";
+				
 		String inputPath = inputBuffers.get(0).getAbsolutePath();
 		String outputPath = outputBuffers.get(0).getAbsolutePath();
 		
-		String command = "java -Xms2g -Xmx8g -jar " + picardDir + "/SortSam.jar" + " INPUT=" + inputPath + " OUTPUT=" + outputPath + " SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=" + createIndex + " ";
+		String command = "java -Xms2g -Xmx8g " + jvmARGStr + " -jar " + picardDir + "/SortSam.jar" + " INPUT=" + inputPath + " OUTPUT=" + outputPath + " SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=" + createIndex + " MAX_RECORDS_IN_RAM=" + maxRecords + " ";
 		return command;
 	}
 

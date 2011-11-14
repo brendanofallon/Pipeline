@@ -1,7 +1,9 @@
 package operator;
 
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
+
 public class BWAAligner extends PipedCommandOp {
-	
 	
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
@@ -11,6 +13,11 @@ public class BWAAligner extends PipedCommandOp {
 
 	@Override
 	protected String getCommand() {
+		
+		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.BWA_PATH);
+		if (propsPath != null)
+			pathToBWA = propsPath.toString();
+		
 		String bwaPathAttr = properties.get(PATH);
 		if (bwaPathAttr != null) {
 			pathToBWA = bwaPathAttr;
