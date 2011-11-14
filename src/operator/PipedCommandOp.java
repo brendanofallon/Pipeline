@@ -54,7 +54,7 @@ public abstract class PipedCommandOp extends IOOperator {
 		Date now = new Date();
 		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " Executing command : " + command );
 		if (writer != null);
-			logger.info(" Operator : " + getObjectLabel() + " is writing to path : " + outputPath);
+			logger.info(" Operator " + getObjectLabel() + " is writing to path : " + outputPath);
 			
 			Runtime r = Runtime.getRuntime();
 			Process p;

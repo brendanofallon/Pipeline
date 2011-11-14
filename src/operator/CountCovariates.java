@@ -19,7 +19,7 @@ public class CountCovariates extends CommandOperator {
 	public static final String CREATE_INDEX = "createindex";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
-	protected int threads = 16;
+	protected int threads = 4;
 	
 	@Override
 	protected String getCommand() {
@@ -41,7 +41,7 @@ public class CountCovariates extends CommandOperator {
 		
 		String csvOutput = outputBuffers.get(0).getAbsolutePath();
 		
-		String covariateList = "-cov QualityScoreCovariate -cov CycleCovariate -cov DinucCovariate";
+		String covariateList = "-cov QualityScoreCovariate -cov CycleCovariate -cov DinucCovariate -cov MappingQualityCovariate ";
 		
 		String command = "java " + defaultMemOptions + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T CountCovariates -nt " + threads + " " + covariateList + " " + knownSitesStr.toString() + " -recalFile " + csvOutput;
 		return command;

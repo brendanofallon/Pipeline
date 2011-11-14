@@ -2,6 +2,7 @@ package pipeline;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.Time;
 import java.util.Date;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -23,9 +24,11 @@ public class Pipeline {
 
 	protected File source;
 	protected Document xmlDoc;
+	public static final String PROJECT_HOME="projecthome";
 	public static final String primaryLoggerName = "pipeline.primary";
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
-	protected String defaultLogFilename = "pipelinelog.xml";
+	protected String defaultLogFilename = "pipelinelog";
+	
 	
 	//Right now DEBUG just emits all log messages to std out
 	public static final boolean DEBUG = true;
@@ -77,7 +80,9 @@ public class Pipeline {
 	private void initializeLogger() {
 
 		try {
-			FileHandler logHandler = new FileHandler(defaultLogFilename);
+			String timestamp = "" + System.currentTimeMillis();
+			timestamp = timestamp.substring( timestamp.length()-6 );
+			FileHandler logHandler = new FileHandler(defaultLogFilename + "-" + timestamp + ".xml");
 			primaryLogger.addHandler( logHandler );
 		} catch (SecurityException e) {
 			// TODO Auto-generated catch block
@@ -109,9 +114,25 @@ public class Pipeline {
 			throw new PipelineDocException("Document root name should be " + PipelineXMLConstants.DOCUMENT_ROOT + ", but found : " + docRootName);
 		}
 		
+		
+		
 		primaryLogger.info("XML Document at path " + source.getAbsolutePath() + " found and parsed, attempting to read objects");
+		
+		
+				
 		ObjectHandler handler = new ObjectHandler(xmlDoc);
-
+		
+		//Set the project home field
+		String projectHomeStr = docElement.getAttribute(PROJECT_HOME);
+		if (projectHomeStr.length() > 0) {
+			//make sure home dir ends with a /
+			if (! projectHomeStr.endsWith("/")) {
+				projectHomeStr += "/";
+			}
+			handler.setProjectHome(projectHomeStr);
+			primaryLogger.info("Setting project home to : " + projectHomeStr);
+		}
+				
 		//A quick scan for errors / validity would be a good idea
 		
 		try {
