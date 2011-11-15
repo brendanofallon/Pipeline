@@ -7,7 +7,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import buffer.FileBuffer;
@@ -52,14 +55,36 @@ public class SimComparison extends IOOperator {
 			line = reader.readLine();
 		
 		while(line != null) {
-		//	System.out.println("Splitting line " + line );
 			String[] toks = line.split("\\s");
-			//System.out.println("Found " + toks.length + " tokens");
 			int pos = Integer.parseInt(toks[1]);
 			simVariantMap.put(pos, 1);
 			line = reader.readLine();
 		}
 		reader.close();
+	}
+	
+	private String inspectSim(File file, List<Integer> positions) throws IOException {
+		BufferedReader reader = new BufferedReader(new FileReader(file));
+		String line = reader.readLine();
+		Collections.sort(positions);
+		
+		//skip initial comments, etc
+		while(line != null && line.startsWith("#"))
+			line = reader.readLine();
+		
+		StringBuffer msg = new StringBuffer();
+		
+		while(line != null) {
+			String[] toks = line.split("\\s");
+			int pos = Integer.parseInt(toks[1]);
+			if (Collections.binarySearch(positions, pos) >= 0) {
+				msg.append("false.pos.line=\"" + line + " \" \n");
+			}
+			
+			line = reader.readLine();
+		}
+		reader.close();
+		return msg.toString();
 	}
 	
 	private void buildTrueMap(File file) throws IOException {
@@ -97,16 +122,27 @@ public class SimComparison extends IOOperator {
 			report.write("true.variants.total=" + trueTotalCount + "\n");
 			report.write("sim.variants.total=" + simTotalCount + "\n");
 			
-			buildSimMap(simVariants.getFile());
+			
 			buildTrueMap(trueVariants.getFile());
+			
+			buildSimMap(simVariants.getFile());
+			
 			
 			//Count number of variants found that are actually true variants
 			int simsInTrue = 0;
+			List<Integer> falsePositivesList = new ArrayList<Integer>();
 			for(Integer simPos : simVariantMap.keySet()) {
 				boolean truth = trueVariantMap.get(simPos) != null;
 				if (truth)
 					simsInTrue++;
+				else {
+					//This was a snp found in the simulates set, but NOT in the true set, so it's a false negative
+					falsePositivesList.add(simPos);
+				}
 			}
+			
+
+			
 			
 			report.write("true.variants.found=" + simsInTrue + "\n");
 			
@@ -115,6 +151,9 @@ public class SimComparison extends IOOperator {
 			
 			int falsePositives = simTotalCount - simsInTrue;
 			report.write("false.positives=" + falsePositives + "\n");
+			
+			String fpSummary = inspectSim(simVariants.getFile(), falsePositivesList);
+			report.write(fpSummary + "\n");
 			
 			
 			report.close();
