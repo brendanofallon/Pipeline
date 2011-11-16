@@ -11,6 +11,10 @@ public class ElapsedTimeFormatter {
 		int minutes = (int)Math.round( elapsedMillis / (1000.0 * 60.0) );
 		int hours = (int)Math.round( elapsedMillis / (1000.0 * 60.0 * 60.0));
 		
+		//I think this is right?
+		seconds = seconds % 60;
+		minutes  = minutes % 60;
+		
 		return hours + ":" + minutes + ":" + seconds;
 	}
 }

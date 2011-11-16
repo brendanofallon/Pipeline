@@ -7,6 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,23 +30,6 @@ public class SimComparison extends IOOperator {
 	protected Map<Integer, Integer> simVariantMap = new HashMap<Integer, Integer>();
 	protected Map<Integer, Integer> trueVariantMap = new HashMap<Integer, Integer>();
 	
-	/**
-	 * Returns the total number of lines in a file
-	 * @param file
-	 * @return
-	 * @throws IOException 
-	 */
-	private static int countLines(File file) throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(file));
-		String line = reader.readLine();
-		int count = 0;
-		while (line != null) {
-			count++;
-			line = reader.readLine();
-		}
-		reader.close();
-		return count;
-	}
 	
 	private void buildSimMap(File file) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(file));
@@ -113,8 +98,13 @@ public class SimComparison extends IOOperator {
 		try {
 
 			BufferedWriter report = new BufferedWriter(new FileWriter(reportBuffer.getFile()));
-			int trueTotalCount = countLines(trueVariants.getFile());
-			int simTotalCount = countLines(simVariants.getFile());
+			
+			buildTrueMap(trueVariants.getFile());
+			
+			buildSimMap(simVariants.getFile());
+			
+			int simTotalCount = simVariantMap.size();
+			int trueTotalCount = trueVariantMap.size();
 			
 			report.write("# Simulation validation report : \n");
 			report.write("true.variants.file=" + trueVariants.getFile().getAbsolutePath() + "\n");
@@ -122,35 +112,33 @@ public class SimComparison extends IOOperator {
 			report.write("true.variants.total=" + trueTotalCount + "\n");
 			report.write("sim.variants.total=" + simTotalCount + "\n");
 			
-			
-			buildTrueMap(trueVariants.getFile());
-			
-			buildSimMap(simVariants.getFile());
-			
-			
+		
 			//Count number of variants found that are actually true variants
 			int simsInTrue = 0;
 			List<Integer> falsePositivesList = new ArrayList<Integer>();
 			for(Integer simPos : simVariantMap.keySet()) {
 				boolean truth = trueVariantMap.get(simPos) != null;
 				if (truth)
-					simsInTrue++;
+					simsInTrue++; //True positives
 				else {
-					//This was a snp found in the simulates set, but NOT in the true set, so it's a false negative
+					//This was a snp found in the simulated set, but NOT in the true set, so it's a false positive
 					falsePositivesList.add(simPos);
 				}
 			}
 			
 
-			
+			NumberFormat formatter = new DecimalFormat("##0.000");
 			
 			report.write("true.variants.found=" + simsInTrue + "\n");
 			
 			int trueVariantsMissed = trueTotalCount - simsInTrue;
-			report.write("false.negatives=" + trueVariantsMissed + "\n");
+			double falseNegPercentage = trueVariantsMissed / (double)trueTotalCount;
 			
-			int falsePositives = simTotalCount - simsInTrue;
-			report.write("false.positives=" + falsePositives + "\n");
+			report.write("false.negatives=" + trueVariantsMissed + " (" + formatter.format(falseNegPercentage) + ") \n");
+			
+			int falsePositives = falsePositivesList.size();
+			double falsePosPercentage = falsePositives / (double)simTotalCount;
+			report.write("false.positives=" + falsePositives + " (" + formatter.format(falsePosPercentage) + ") \n");
 			
 			String fpSummary = inspectSim(simVariants.getFile(), falsePositivesList);
 			report.write(fpSummary + "\n");

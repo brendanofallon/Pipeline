@@ -22,6 +22,7 @@ public class CountCovariates extends CommandOperator {
 	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
 	public static final String PATH = "path";
 	public static final String CREATE_INDEX = "createindex";
+	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
 	protected int threads = 4;
@@ -39,6 +40,11 @@ public class CountCovariates extends CommandOperator {
 			gatkPath = path;
 		}
 		
+		//Additional args for jvm
+		String jvmARGStr = properties.get(JVM_ARGS);
+		if (jvmARGStr == null)
+			jvmARGStr = "";
+		
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
 		String inputFile = getInputBufferForClass(BAMFile.class).getAbsolutePath();
 		List<FileBuffer> knownSitesFiles = getAllInputBuffersForClass(VCFFile.class);
@@ -53,7 +59,7 @@ public class CountCovariates extends CommandOperator {
 		
 		String covariateList = "-cov QualityScoreCovariate -cov CycleCovariate -cov DinucCovariate -cov MappingQualityCovariate ";
 		
-		String command = "java " + defaultMemOptions + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T CountCovariates -nt " + threads + " " + covariateList + " " + knownSitesStr.toString() + " -recalFile " + csvOutput;
+		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T CountCovariates -nt " + threads + " " + covariateList + " " + knownSitesStr.toString() + " -recalFile " + csvOutput;
 		return command;
 	}
 
