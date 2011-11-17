@@ -49,7 +49,7 @@ public class VariantRecalibrator extends CommandOperator {
 		String outputRecal = outputBuffers.get(0).getAbsolutePath();
 				
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
-		command = command + " -R " + reference + " -I " + inputFile + " -T VariantRecalibrator";		
+		command = command + " -R " + reference + " -input " + inputFile + " -T VariantRecalibrator ";		
 		command = command + "-resource:hapmap,known=false,training=true,truth=true,prior=15.0 " + hapmapFile.getAbsolutePath() + " ";
 		command = command + "-resource:omni,known=false,training=true,truth=false,prior=12.0 " + genomesFile.getAbsolutePath() + " ";
 		command = command + "-resource:dbsnp,known=true,training=false,truth=false,prior=8.0 " + dbsnpFile.getAbsolutePath() + " ";

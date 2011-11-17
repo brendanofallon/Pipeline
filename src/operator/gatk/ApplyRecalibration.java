@@ -1,8 +1,6 @@
 package operator.gatk;
 
-import buffer.BAMFile;
 import buffer.CSVFile;
-import buffer.FileBuffer;
 import buffer.ReferenceFile;
 import buffer.VCFFile;
 import operator.CommandOperator;

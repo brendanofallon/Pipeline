@@ -5,24 +5,19 @@ import java.util.logging.Logger;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
 import buffer.SAMFile;
+import operator.OperationFailedException;
 import operator.PipedCommandOp;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 
-/**
- * Uses samtools to convert a SAM file to a BAM file
- * @author brendan
- *
- */
-public class ConvertSamBam extends PipedCommandOp {
-
+public class SamtoolsPileup extends PipedCommandOp {
 
 	public static final String PATH = "path";
 	protected String defaultSamtoolsPath = "samtools";
 	protected String samtoolsPath = defaultSamtoolsPath;
 	
 	@Override
-	protected String getCommand() {
+	protected String getCommand() throws OperationFailedException {
 	
 		Object samPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samPath != null)
@@ -42,12 +37,12 @@ public class ConvertSamBam extends PipedCommandOp {
 			refPath = " -t " + reference.getAbsolutePath() + " ";
 		}
 		else {
-			Logger.getLogger(Pipeline.primaryLoggerName).warning("No reference file provided for BAM conversion, not using reference");
+			throw new OperationFailedException("No reference specified", this);
 		}
 		
 		//Ouput handled automagically!
-		String command = samtoolsPath + " view " + refPath + " -Sb " + inputPath;
+		String command = samtoolsPath + " mpileup -C50 -E -D -f " + refPath + " " + inputPath;
 		return command;
 	}
-
+	
 }

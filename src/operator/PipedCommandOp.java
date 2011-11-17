@@ -105,7 +105,8 @@ public abstract class PipedCommandOp extends IOOperator {
 	/**
 	 * Return the string containing the command to be executed
 	 * @return
+	 * @throws OperationFailedException 
 	 */
-	protected abstract String getCommand();
+	protected abstract String getCommand() throws OperationFailedException;
 	
 }

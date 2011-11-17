@@ -152,9 +152,9 @@ public class Pipeline {
 		}
 		
 		try {
-			String timestamp = "" + System.currentTimeMillis();
-			timestamp = timestamp.substring( timestamp.length()-6 );
-			FileHandler logHandler = new FileHandler(defaultLogFilename + "-" + timestamp + ".xml");
+//			String timestamp = "" + System.currentTimeMillis();
+//			timestamp = timestamp.substring( timestamp.length()-6 );
+			FileHandler logHandler = new FileHandler(defaultLogFilename + ".xml", true); //Append to existing log
 			primaryLogger.addHandler( logHandler );
 	
 		} catch (SecurityException e) {
