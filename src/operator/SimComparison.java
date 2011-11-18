@@ -82,7 +82,8 @@ public class SimComparison extends IOOperator {
 		
 		while(line != null) {
 			String[] toks = line.split("\\s");
-			int pos = Integer.parseInt(toks[1]);
+			int pos = Integer.parseInt(toks[0]);
+			pos++; //Convert from 0 coords to 1-indexed coords!
 			trueVariantMap.put(pos, 1);
 			line = reader.readLine();
 		}
@@ -105,6 +106,27 @@ public class SimComparison extends IOOperator {
 			
 			int simTotalCount = simVariantMap.size();
 			int trueTotalCount = trueVariantMap.size();
+			
+			List<Integer> simList = new ArrayList<Integer>(1000);
+			for(Integer site : simVariantMap.keySet()) {
+				simList.add(site);
+			}
+			
+			List<Integer> trueList = new ArrayList<Integer>(1000);
+			for(Integer site : trueVariantMap.keySet()) {
+				trueList.add(site);
+			}
+			
+			Collections.sort(simList);
+			Collections.sort(trueList);
+			
+			for(int i=0; i<Math.max(simList.size(), trueList.size()); i++) {
+				if (i < trueList.size())
+					System.out.print(trueList.get(i));
+				if (i < simList.size())
+					System.out.print("\t" + simList.get(i));
+				System.out.println();
+			}
 			
 			report.write("# Simulation validation report : \n");
 			report.write("true.variants.file=" + trueVariants.getFile().getAbsolutePath() + "\n");

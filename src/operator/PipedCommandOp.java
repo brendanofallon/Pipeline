@@ -54,7 +54,7 @@ public abstract class PipedCommandOp extends IOOperator {
 		Date now = new Date();
 		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " Executing command : " + command );
 		if (writer != null);
-			logger.info(" Operator " + getObjectLabel() + " is writing to path : " + outputPath);
+			
 			
 			Runtime r = Runtime.getRuntime();
 			Process p;
@@ -67,10 +67,14 @@ public abstract class PipedCommandOp extends IOOperator {
 				//Furthermore, binary output and text output are handled a bit differently
 				Thread outputHandler = null; 
 				if (writer != null) {
-					if (binaryOutput)
+					if (binaryOutput) {
+						logger.info(" Pipe operator " + getObjectLabel() + " is piping binary output to path : " + outputPath);
 						outputHandler = new BinaryPipeHandler(p.getInputStream(), writer);
-					else
+					}
+					else {
+						logger.info(" Pipe operator " + getObjectLabel() + " is piping text output to path : " + outputPath);
 						outputHandler = new StringPipeHandler(p.getInputStream(), new PrintStream(getPipeDestinationBuffer().getFile()));
+					}
 					
 
 					outputHandler.start();

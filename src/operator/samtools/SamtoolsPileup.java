@@ -1,8 +1,9 @@
 package operator.samtools;
 
-import java.util.logging.Logger;
-
+import buffer.BAMFile;
+import buffer.BCFFile;
 import buffer.FileBuffer;
+import buffer.PileupFile;
 import buffer.ReferenceFile;
 import buffer.SAMFile;
 import operator.OperationFailedException;
@@ -30,18 +31,24 @@ public class SamtoolsPileup extends PipedCommandOp {
 		
 		
 		
-		String inputPath = getInputBufferForClass(SAMFile.class).getAbsolutePath();
+		String inputPath = getInputBufferForClass(BAMFile.class).getAbsolutePath();
 		FileBuffer reference = getInputBufferForClass(ReferenceFile.class);
 		String refPath = "";
 		if (reference != null){
-			refPath = " -t " + reference.getAbsolutePath() + " ";
+			refPath =  reference.getAbsolutePath();
 		}
 		else {
 			throw new OperationFailedException("No reference specified", this);
 		}
 		
+		String outputTypeStr = "";
+		FileBuffer outputBuffer = outputBuffers.get(0);
+		if (outputBuffer instanceof BCFFile) {
+			outputTypeStr = " -g ";
+		}
+		
 		//Ouput handled automagically!
-		String command = samtoolsPath + " mpileup -C50 -E -D -f " + refPath + " " + inputPath;
+		String command = samtoolsPath + " mpileup -C50 -E " + outputTypeStr + " -f " + refPath + " " + inputPath;
 		return command;
 	}
 	

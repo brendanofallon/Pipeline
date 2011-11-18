@@ -19,9 +19,10 @@ import util.StringOutputStream;
 public abstract class CommandOperator extends IOOperator {
 
 	
-	protected abstract String getCommand();
 	protected StringOutputStream errStream = new StringOutputStream();
 
+
+	protected abstract String getCommand() throws OperationFailedException;
 	
 	@Override
 	public void performOperation() throws OperationFailedException {

@@ -8,6 +8,7 @@ package pipeline;
 public class PipelineXMLConstants {
 	
 	public static final String PATH = "path";
+	public static final String BCFTOOLS_PATH = "bcftools.path";
 	public static final String ANNOVAR_PATH = "annovar.path";
 	public static final String PICARD_PATH = "picard.path";
 	public static final String SAMTOOLS_PATH = "samtools.path";
