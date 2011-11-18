@@ -4,6 +4,11 @@ import java.awt.EventQueue;
 
 import javax.swing.JFrame;
 import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+
+import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JLabel;
@@ -83,12 +88,26 @@ public class PipelineUI {
 		reads1Field.setColumns(10);
 		
 		JButton chooseReads1Button = new JButton("Choose");
+		chooseReads1Button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				readsOneFile = chooseFile();
+				if (readsOneFile != null)
+					reads1Field.setText(readsOneFile.getName());
+			}
+		});
 		
 		reads2Field = new JTextField();
 		reads2Field.setText("Enter second fastq file here");
 		reads2Field.setColumns(10);
 		
 		JButton chooseReads2Button = new JButton("Choose");
+		chooseReads2Button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				readsTwoFile = chooseFile();
+				if (readsTwoFile != null)
+					reads2Field.setText(readsTwoFile.getName());
+			}
+		});
 		
 		txtHumanrefvfasta = new JTextField();
 		txtHumanrefvfasta.setText("human_ref_v37.fasta");
@@ -150,4 +169,21 @@ public class PipelineUI {
 		);
 		centerPanel.setLayout(gl_centerPanel);
 	}
+	
+	protected File chooseFile() {
+		if (chooser == null)
+			chooser = new JFileChooser(System.getProperty("user.home"));
+		int result = chooser.showOpenDialog(frame);
+		if (result == JFileChooser.APPROVE_OPTION) {
+			File selectedFile = chooser.getSelectedFile();
+			return selectedFile;
+		}
+		else {
+			return null;
+		}
+	}
+
+	private JFileChooser chooser;
+	private File readsOneFile = null;
+	private File readsTwoFile = null;
 }

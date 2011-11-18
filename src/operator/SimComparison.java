@@ -120,13 +120,13 @@ public class SimComparison extends IOOperator {
 			Collections.sort(simList);
 			Collections.sort(trueList);
 			
-			for(int i=0; i<Math.max(simList.size(), trueList.size()); i++) {
-				if (i < trueList.size())
-					System.out.print(trueList.get(i));
-				if (i < simList.size())
-					System.out.print("\t" + simList.get(i));
-				System.out.println();
-			}
+//			for(int i=0; i<Math.max(simList.size(), trueList.size()); i++) {
+//				if (i < trueList.size())
+//					System.out.print(trueList.get(i));
+//				if (i < simList.size())
+//					System.out.print("\t" + simList.get(i));
+//				System.out.println();
+//			}
 			
 			report.write("# Simulation validation report : \n");
 			report.write("true.variants.file=" + trueVariants.getFile().getAbsolutePath() + "\n");

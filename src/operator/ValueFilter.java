@@ -136,13 +136,22 @@ public class ValueFilter extends IOOperator {
 		}
 		
 		public boolean filter(String expr) {
-			int index = expr.indexOf(target);
-
-			if (index < 0) {
-				return false;
-			}
 			
-			Double value = parseValue(expr.substring(index+target.length()+1, expr.length()));
+			//SPECIAL CASE ALERT : If target is 'QUAL', we just take the 5th token after breaking up by whitespace
+			Double value;
+			if (target.equals("QUAL")) {
+				String[] toks = expr.split("\\s");
+				value = Double.parseDouble(toks[5]);
+				System.out.println("Target is QUAL : parsed quality of : " + value);
+			}
+			else {
+				int index = expr.indexOf(target);
+				if (index < 0) {
+					return false;
+				}
+				
+				value = parseValue(expr.substring(index+target.length()+1, expr.length()));
+			}
 			
 			if (type==Comparison.LESS_THAN) {
 				return value < filterVal;

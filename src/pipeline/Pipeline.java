@@ -39,7 +39,7 @@ public class Pipeline {
 	//Right now DEBUG just emits all log messages to std out
 	public static final boolean DEBUG = true;
 	
-	//Stores some basic properties, such as paths to some commonly used executables
+	//Stores some basic properties, such as paths to commonly used executables
 	protected Properties props;
 	public static final String defaultPropertiesPath = ".pipelineprops.xml";
 	public static Pipeline pipelineInstance;
@@ -62,8 +62,7 @@ public class Pipeline {
 		
 
 		initializeLogger();
-		loadProperties();
-		
+		loadProperties();	
 	}
 	
 	/**
@@ -152,8 +151,6 @@ public class Pipeline {
 		}
 		
 		try {
-//			String timestamp = "" + System.currentTimeMillis();
-//			timestamp = timestamp.substring( timestamp.length()-6 );
 			FileHandler logHandler = new FileHandler(defaultLogFilename + ".xml", true); //Append to existing log
 			primaryLogger.addHandler( logHandler );
 	
@@ -176,7 +173,6 @@ public class Pipeline {
 	 * @throws ObjectCreationException If errors arise regarding instiation of particular objects
 	 */
 	public void execute() throws PipelineDocException, ObjectCreationException {
-		
 		Date beginTime = new Date();
 		
 		if (xmlDoc == null) {
