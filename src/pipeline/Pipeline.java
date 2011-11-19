@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.Time;
 import java.util.Date;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Properties;
@@ -29,14 +30,16 @@ public class Pipeline {
 
 	protected File source;
 	protected Document xmlDoc;
+	public static final String PROJECT_HOME="projecthome";
 	public static final String primaryLoggerName = "pipeline.primary";
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
-	protected String defaultLogFilename = "pipelinelog.xml";
+	protected String defaultLogFilename = "pipelinelog";
+	
 	
 	//Right now DEBUG just emits all log messages to std out
 	public static final boolean DEBUG = true;
 	
-	//Stores some basic properties, such as paths to some commonly used executables
+	//Stores some basic properties, such as paths to commonly used executables
 	protected Properties props;
 	public static final String defaultPropertiesPath = ".pipelineprops.xml";
 	public static Pipeline pipelineInstance;
@@ -59,8 +62,7 @@ public class Pipeline {
 		
 
 		initializeLogger();
-		loadProperties();
-		
+		loadProperties();	
 	}
 	
 	/**
@@ -149,7 +151,7 @@ public class Pipeline {
 		}
 		
 		try {
-			FileHandler logHandler = new FileHandler(defaultLogFilename);
+			FileHandler logHandler = new FileHandler(defaultLogFilename + ".xml", true); //Append to existing log
 			primaryLogger.addHandler( logHandler );
 	
 		} catch (SecurityException e) {
@@ -171,7 +173,6 @@ public class Pipeline {
 	 * @throws ObjectCreationException If errors arise regarding instiation of particular objects
 	 */
 	public void execute() throws PipelineDocException, ObjectCreationException {
-		
 		Date beginTime = new Date();
 		
 		if (xmlDoc == null) {
@@ -186,9 +187,25 @@ public class Pipeline {
 			throw new PipelineDocException("Document root name should be " + PipelineXMLConstants.DOCUMENT_ROOT + ", but found : " + docRootName);
 		}
 		
+		
+		
 		primaryLogger.info("XML Document at path " + source.getAbsolutePath() + " found and parsed, attempting to read objects");
+		
+		
+				
 		ObjectHandler handler = new ObjectHandler(xmlDoc);
-
+		
+		//Set the project home field
+		String projectHomeStr = docElement.getAttribute(PROJECT_HOME);
+		if (projectHomeStr.length() > 0) {
+			//make sure home dir ends with a /
+			if (! projectHomeStr.endsWith("/")) {
+				projectHomeStr += "/";
+			}
+			handler.setProjectHome(projectHomeStr);
+			primaryLogger.info("Setting project home to : " + projectHomeStr);
+		}
+				
 		//A quick scan for errors / validity would be a good idea
 		
 		try {

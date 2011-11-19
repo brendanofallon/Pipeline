@@ -28,7 +28,8 @@ public class ObjectHandler {
 	protected List<Operator> operatorList = null;
 	
 	protected Map<String, PipelineObject> objectMap = new HashMap<String, PipelineObject>();
-	
+	protected String projectHome = null; //Base directory for all files without absolute pathnames specified
+
 	private final boolean verbose = false;
 	
 	public ObjectHandler(Document doc) {
@@ -63,7 +64,22 @@ public class ObjectHandler {
 				}
 			}
 		}
-		
+	}
+	
+	/**
+	 * Get base directory of files 
+	 * @return
+	 */
+	public String getProjectHome() {
+		return projectHome;
+	}
+
+	/**
+	 * Set base directory for files created without an absolute path
+	 * @param projectHome
+	 */
+	public void setProjectHome(String projectHome) {
+		this.projectHome = projectHome;
 	}
 	
 	/**
@@ -117,6 +133,9 @@ public class ObjectHandler {
 				for(int i=0; i<attrs.getLength(); i++) {
 					obj.setAttribute(attrs.item(i).getNodeName(), attrs.item(i).getNodeValue());
 				}
+				
+				if (projectHome != null)
+					obj.setAttribute(Pipeline.PROJECT_HOME, projectHome);
 
 				if (verbose) {
 					System.out.println("Creating object with label : " + obj.getObjectLabel() + " and class " + obj.getClass());

@@ -1,10 +1,17 @@
 package operator;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+/**
+ * This class uses a thread to read binary data from an input stream and write it to an output stream
+ * Its used in Pipeline to read the data emitted to stdout (or stderr) by a process and write it
+ * to a file. Without this running as a separate thread, buffers used to store data from stdout will
+ * fill up and the process generating the data may hang. 
+ * @author brendan
+ *
+ */
 public class BinaryPipeHandler extends Thread {
 
 	InputStream inpStr;
@@ -20,6 +27,8 @@ public class BinaryPipeHandler extends Thread {
 			try {
 				//Attempt to read data in 1Mb chunks, this is a lot faster than
 				//doing things one byte at a time
+				//If an application writes binary data to stdout extremely quickly
+				//then we may need to increase the buffer size, but this appears to be OK for now
 				byte[] data = new byte[1024];
 				int bytesRead = inpStr.read(data);
 				while(bytesRead >= 0) {

@@ -1,5 +1,6 @@
-package operator;
+package operator.bwa;
 
+import operator.PipedCommandOp;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 

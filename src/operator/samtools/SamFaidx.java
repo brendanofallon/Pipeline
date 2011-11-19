@@ -1,5 +1,6 @@
-package operator;
+package operator.samtools;
 
+import operator.CommandOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 

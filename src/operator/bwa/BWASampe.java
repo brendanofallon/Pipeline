@@ -1,4 +1,4 @@
-package operator;
+package operator.bwa;
 
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.logging.Logger;
+
+import operator.PipedCommandOp;
 
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;

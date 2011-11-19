@@ -1,6 +1,8 @@
-package operator;
+package operator.gatk;
 
 import java.util.logging.Logger;
+
+import operator.CommandOperator;
 
 import pipeline.Pipeline;
 

@@ -1,12 +1,17 @@
-package operator;
+package operator.gatk;
 
+import operator.CommandOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
-import buffer.CSVFile;
 import buffer.ReferenceFile;
 
-public class IndelRealign extends CommandOperator {
+/**
+ * Creates indel realignment targets for use with the IndelRealigner
+ * @author brendan
+ *
+ */
+public class TargetCreator extends CommandOperator {
 
 	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
 	public static final String PATH = "path";
@@ -27,11 +32,10 @@ public class IndelRealign extends CommandOperator {
 		
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
 		String inputFile = getInputBufferForClass(BAMFile.class).getAbsolutePath();
-		String intervalsFile = getInputBufferForClass(CSVFile.class).getAbsolutePath();
 		
-		String realignedBam = outputBuffers.get(0).getAbsolutePath();
+		String indelIntervalsFile = outputBuffers.get(0).getAbsolutePath();
 		
-		String command = "java " + defaultMemOptions + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T IndelRealigner -targetIntervals " + intervalsFile + " -o " + realignedBam;
+		String command = "java " + defaultMemOptions + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T RealignerTargetCreator -o " + indelIntervalsFile;
 		return command;
 	}
 

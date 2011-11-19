@@ -11,6 +11,7 @@ import java.util.Map;
 import org.w3c.dom.NodeList;
 
 import pipeline.ObjectCreationException;
+import pipeline.Pipeline;
 import pipeline.PipelineObject;
 
 /**
@@ -65,7 +66,13 @@ public abstract class FileBuffer extends PipelineObject {
 		if (filename == null || filename.length()==0) {
 			throw new IllegalStateException("Property '" + FILENAME_ATTR + "' required to create file buffer object");
 		}
-		file = new File(filename);
+		
+		String pathMod = "";
+		String projHome = properties.get(Pipeline.PROJECT_HOME);
+		if (projHome != null) {
+			pathMod = projHome;
+		}
+		file = new File(pathMod + filename);
 	}
 	
 	/**
