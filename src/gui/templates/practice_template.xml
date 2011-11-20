@@ -1,0 +1,8 @@
+<Pipeline>
+
+<reference class="buffer.ReferenceFile" filename="$${Reference sequence}" />
+
+<readsOne class="buffer.FastQFile" filename="$${First fastq file}" />
+<readsTwo class="buffer.FastQFile" filename="$${Second fastq file}" />
+
+</Pipeline>
