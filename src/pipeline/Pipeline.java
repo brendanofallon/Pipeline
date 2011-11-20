@@ -66,6 +66,16 @@ public class Pipeline {
 	}
 	
 	/**
+	 * Create a new Pipeline object that will attempt to execute the Document provided
+	 * @param doc
+	 */
+	public Pipeline(Document doc) {
+		this.source = null;
+		pipelineInstance = this;
+		xmlDoc = doc;
+	}
+	
+	/**
 	 * Static getter for main application object
 	 * @return
 	 */

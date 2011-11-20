@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import operator.Operator;
 
@@ -51,7 +52,7 @@ public class ObjectHandler {
 		Element root = doc.getDocumentElement();
 		createElement(root); //Recursively creates all child elements
 				
-		//Build operator list. WE assume all operators are at top level for now
+		//Build operator list. We assume all operators are at top level for now
 		operatorList = new ArrayList<Operator>();
 		NodeList children = root.getChildNodes();
 		for(int i=0; i<children.getLength(); i++) {
@@ -60,7 +61,12 @@ public class ObjectHandler {
 				String label = child.getNodeName();
 				PipelineObject obj = objectMap.get(label);
 				if (obj instanceof Operator) {
-					operatorList.add( (Operator)obj);
+					Operator op = (Operator)obj;
+					if (operatorList.contains(op)) {
+						throw new ObjectCreationException("The input file appears to contain duplicate operators, named: " + op.getObjectLabel(), (Element)child);
+					}
+					Logger.getLogger(Pipeline.primaryLoggerName).info("Adding operator :" + label + " of class " + op.getClass() + " to operator list");
+					operatorList.add( op );
 				}
 			}
 		}

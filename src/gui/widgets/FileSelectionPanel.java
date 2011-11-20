@@ -1,10 +1,12 @@
-package pipeline;
+package gui.widgets;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -24,6 +26,8 @@ public class FileSelectionPanel extends JPanel {
 	private JButton browseButton;
 	private JFileChooser fileChooser;
 	private File selectedFile = null;
+	
+	private List<FileSelectionListener> listeners = new ArrayList<FileSelectionListener>();
 	
 	public FileSelectionPanel(String labelText, String fieldText, JFileChooser chooser) {
 		this.setLayout(new FlowLayout(FlowLayout.LEFT));
@@ -46,11 +50,30 @@ public class FileSelectionPanel extends JPanel {
 		add(browseButton);
 	}
 
+	/**
+	 * Add a new listener to be notified of file selection events
+	 * @param listener
+	 */
+	public void addListener(FileSelectionListener listener) {
+		if (!listeners.contains(listener))
+			listeners.add(listener);
+	}
+	
+	/**
+	 * Alert all listeners that a new file has been selected
+	 */
+	private void fireFileSelectionEvent() {
+		for(FileSelectionListener listener : listeners) {
+			listener.fileSelected(selectedFile);
+		}
+	}
+	
 	protected void chooseFile() {
 		int x = fileChooser.showOpenDialog(this);
 		if (x == JFileChooser.APPROVE_OPTION) {
 			selectedFile = fileChooser.getSelectedFile();
 			field.setText(selectedFile.getName());
+			fireFileSelectionEvent();
 		}
 	}
 	
