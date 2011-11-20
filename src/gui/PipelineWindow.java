@@ -59,6 +59,7 @@ public class PipelineWindow extends JFrame {
             System.err.println("Could not set look and feel, exception : " + e.toString());
         }	
 		
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		Container contentPane = this.getContentPane();
 		

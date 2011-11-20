@@ -30,14 +30,14 @@ public class FileSelectionPanel extends JPanel {
 	private List<FileSelectionListener> listeners = new ArrayList<FileSelectionListener>();
 	
 	public FileSelectionPanel(String labelText, String fieldText, JFileChooser chooser) {
-		this.setLayout(new FlowLayout(FlowLayout.LEFT));
+		this.setLayout(new FlowLayout(FlowLayout.RIGHT));
 		this.fileChooser = chooser;
 		label = new JLabel(labelText == null ? "" : labelText);
 		add(label);
 		field = new JTextField(fieldText);
-		field.setMinimumSize(new Dimension(100, 10));
-		field.setPreferredSize(new Dimension(100, 32));
-		field.setMaximumSize(new Dimension(100, 1000));
+		field.setMinimumSize(new Dimension(150, 10));
+		field.setPreferredSize(new Dimension(150, 32));
+		field.setMaximumSize(new Dimension(150, 1000));
 		field.setEditable(false);
 		add(field);
 		

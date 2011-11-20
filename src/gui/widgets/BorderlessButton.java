@@ -66,7 +66,7 @@ public class BorderlessButton extends JPanel {
 	}
 	
 	public BorderlessButton(String label, ImageIcon icon) {
-		this.setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+		this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		this.setOpaque(false);
 		this.text = label;
 		this.icon = icon;
@@ -79,8 +79,8 @@ public class BorderlessButton extends JPanel {
 			pHeight += icon.getIconHeight()+5;
 		}
 		if (label != null) {
-			pWidth += label.length()*10+3;
-			pHeight = Math.max(24, pHeight);
+			pWidth = Math.max(label.length()*10, pWidth+3);
+			pHeight += 15;
 		}
 		
 		
@@ -176,15 +176,15 @@ public class BorderlessButton extends JPanel {
 		
 		int dx = 1;
 		if (icon != null) {
-			g2d.drawImage(icon.getImage(), 4+xDif, Math.max(0, getHeight()/2-icon.getIconHeight()/2)+yDif , null);
-			dx += icon.getIconWidth()+iconGap;
+			g2d.drawImage(icon.getImage(), Math.max(0, getWidth()/2-icon.getIconWidth()/2), 1 , null);
 		}
 		if (text != null) {
 			g2d.setFont(getFont());
+			int strWidth = g2d.getFontMetrics().stringWidth(text);
 			g2d.setColor(new Color(0.99f, 0.99f, 0.99f, 0.5f));
-			g2d.drawString(text, dx+3+xDif, getHeight()/2+7);
+			g2d.drawString(text, Math.max(1, getWidth()/2-strWidth/2+1), getHeight()-11);
 			g2d.setColor(new Color(0.2f, 0.2f, 0.2f));
-			g2d.drawString(text, dx+2+xDif, getHeight()/2+6);
+			g2d.drawString(text, Math.max(0, getWidth()/2-strWidth/2), getHeight()-12);
 		}
 		
 		if (this.isEnabled() && drawBorder) {
