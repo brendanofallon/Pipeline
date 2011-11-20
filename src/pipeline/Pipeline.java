@@ -1,10 +1,11 @@
 package pipeline;
 
+import java.util.List;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.sql.Time;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Properties;
@@ -34,6 +35,7 @@ public class Pipeline {
 	public static final String primaryLoggerName = "pipeline.primary";
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
 	protected String defaultLogFilename = "pipelinelog";
+	protected ObjectHandler handler = null;
 	
 	
 	//Right now DEBUG just emits all log messages to std out
@@ -177,19 +179,17 @@ public class Pipeline {
 		Date beginTime = new Date();
 		primaryLogger.info("\n\n***************************************************************** \n " + beginTime + " Beginning new Pipeline run");
 	}
+	
 	/**
-	 * Attempt to run the pipeline defined in the source input file
-	 * @throws PipelineDocException If there are errors in document structure
-	 * @throws ObjectCreationException If errors arise regarding instiation of particular objects
+	 * Attempt to read, parse, and create the objects as specified in the document
+	 * @throws PipelineDocException
+	 * @throws ObjectCreationException
 	 */
-	public void execute() throws PipelineDocException, ObjectCreationException {
-		Date beginTime = new Date();
-		
+	public void initializePipeline() throws PipelineDocException, ObjectCreationException {
 		if (xmlDoc == null) {
 			primaryLogger.severe(" ERROR : XML document not found / defined, aborting run ");
 			throw new IllegalStateException("XMLDoc not defined");
 		}
-		
 		
 		Element docElement = xmlDoc.getDocumentElement();
 		String docRootName = docElement.getNodeName();
@@ -198,12 +198,9 @@ public class Pipeline {
 		}
 		
 		
-		
 		primaryLogger.info("XML Document at path " + source.getAbsolutePath() + " found and parsed, attempting to read objects");
-		
-		
 				
-		ObjectHandler handler = new ObjectHandler(xmlDoc);
+		handler = new ObjectHandler(xmlDoc);
 		
 		//Set the project home field
 		String projectHomeStr = docElement.getAttribute(PROJECT_HOME);
@@ -218,25 +215,37 @@ public class Pipeline {
 				
 		//A quick scan for errors / validity would be a good idea
 		
-		try {
-			handler.readObjects();
-		}
-		catch (ObjectCreationException ex) {
-			primaryLogger.severe("Error creating objects : " + ex.getCause() + "\n" + ex.getLocalizedMessage());
-			return;
-		}
-
-		primaryLogger.info("Document parsed and objects are read, attempting to begin pipeline");
+		fireMessage("Reading objects");
+		handler.readObjects();
+		primaryLogger.info("Successfully read objects, pipeline is now initialized");
+		fireMessage("Pipeline initialized");
+	}
+	
+	/**
+	 * Attempt to run the pipeline defined in the source input file
+	 * @throws PipelineDocException If there are errors in document structure
+	 * @throws ObjectCreationException If errors arise regarding instiation of particular objects
+	 * @throws OperationFailedException 
+	 */
+	public void execute() throws OperationFailedException {
+		Date beginTime = new Date();
+		
+		primaryLogger.info("Executing pipeline");
 		
 		for(Operator op : handler.getOperatorList()) {
 			try {
+				fireOperatorBeginning(op);
 				primaryLogger.info("Executing operator : " + op.getObjectLabel() + " class: " + op.getClass());
 				op.performOperation();
-				
+				fireOperatorCompleted(op);
 			} catch (OperationFailedException e) {
+				fireMessage("Operator failed : " + e);
 				e.printStackTrace();
 				primaryLogger.severe("ERROR : Operator : " + op.getObjectLabel() + " (class " + op.getClass() + ") failed \n Cause : " + e.getMessage());
-				return;
+				
+				//We want to throw it again so other objects will be notified of this event besides
+				//through the weak 'fireMessage' avenue
+				throw e;
 			}
 		}
 		
@@ -244,6 +253,59 @@ public class Pipeline {
 		long endTime = System.currentTimeMillis();
 		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(beginTime.getTime(), endTime ));
 	}
+	
+	
+	/**
+	 * Add a new listener to be notified of various pipeline events
+	 * @param l
+	 */
+	public void addListener(PipelineListener l) {
+		if (!listeners.contains(l))
+			listeners.add(l);
+	}
+	
+	/**
+	 * Remove the given listener from the list of listeners
+	 * @param l
+	 */
+	public void removeListener(PipelineListener l) {
+		listeners.remove(l);
+	}
+	
+	/**
+	 * Notify all listeners that the given operator has completed its job
+	 * @param op
+	 */
+	public void fireOperatorCompleted(Operator op) {
+		for(PipelineListener listener : listeners) {
+			listener.operatorCompleted(op);
+		}
+	}
+	
+	/**
+	 * Notify all listeners that the given operator has begun to work
+	 * @param op
+	 */
+	public void fireOperatorBeginning(Operator op) {
+		for(PipelineListener listener : listeners) {
+			listener.operatorBeginning(op);
+		}
+	}
+	
+	/**
+	 * Send a text message to all listeners
+	 * @param message
+	 */
+	public void fireMessage(String message) {
+		for(PipelineListener listener : listeners) {
+			listener.message(message);
+		}
+	}
+	
+	
+	
+	
+	
 	
 	public static void main(String[] args) {
 		
@@ -258,6 +320,7 @@ public class Pipeline {
 			Pipeline pipeline = new Pipeline(input);
 
 			try {
+				pipeline.initializePipeline();
 				pipeline.execute();
 			} catch (PipelineDocException e) {
 				// TODO Auto-generated catch block
@@ -265,7 +328,15 @@ public class Pipeline {
 			} catch (ObjectCreationException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			} catch (OperationFailedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 	}
+	
+	
+	
+	
+	private List<PipelineListener> listeners = new ArrayList<PipelineListener>();
 }

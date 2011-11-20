@@ -164,7 +164,7 @@ public class PipelineWindow extends JFrame {
 	public void showAnalysisConfig(FullAnalysisConfig fullAnalysisConfig) {
 		
 		centerScrollPane.setViewportView(fullAnalysisConfig);
-		revalidate();
+		validate();
 		repaint();
 	}
 	

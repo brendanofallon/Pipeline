@@ -1,6 +1,5 @@
 package gui;
 
-import gui.PipelineGenerator.InjectableItem;
 import gui.widgets.FileSelectionListener;
 import gui.widgets.FileSelectionPanel;
 
@@ -10,7 +9,6 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.util.Collection;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -21,16 +19,14 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 
 
-public class FullAnalysisConfig extends JPanel  {
+public class FullAnalysisConfig extends TemplateConfigurator  {
 
-	protected final PipelineGenerator generator;
-	protected PipelineWindow window;
 
 	private JComboBox refBox; //Different references to use
 	private String[] refTypes = new String[]{"Human build 37", "Human build 36"};
 	
 	public FullAnalysisConfig(PipelineWindow window) {
-		this.window = window;
+		super(window);
 		generator = new PipelineGenerator( PipelineWindow.getFileResource("templates/practice_template.xml"));
 
 		initComponents();
@@ -103,7 +99,6 @@ public class FullAnalysisConfig extends JPanel  {
 		});
 		bottomPanel.add(beginButton, BorderLayout.EAST);
 		centerPanel.add(bottomPanel);
-		
 	}
 	
 
