@@ -1,8 +1,85 @@
 <Pipeline>
 
-<reference class="buffer.ReferenceFile" filename="$${Reference sequence}" />
+<!--  reference class="buffer.ReferenceFile" filename="$${Reference sequence}" / -->
 
 <readsOne class="buffer.FastQFile" filename="$${First fastq file}" />
 <readsTwo class="buffer.FastQFile" filename="$${Second fastq file}" />
+
+<reference class="buffer.ReferenceFile" filename="/media/DATA/sim_test/chr10_small.fasta" />
+
+<!-- First, we simulate the reads using the simulator. The "true" variants go into sim_true_variants.txt" -->
+<Simulator class="operator.samtools.Simulator" readpairs="300000" mutation.rate="0" indel.rate="0">
+	<input>
+		<mutReference class="buffer.ReferenceFile" filename="/media/DATA/sim_test/chr10_mutated.fasta"/>
+	</input>
+	<output>
+		<varyingSites class="buffer.TextBuffer" filename="sim_true_variants.txt" />
+		<readsOne class="buffer.FastQFile" filename="simreads1.fastq" />
+		<readsTwo class="buffer.FastQFile" filename="simreads2.fastq" />
+	</output>
+</Simulator>
+
+<bwaAlign class="operator.bwa.BWAAligner" threads="12">
+	<input>
+		<reference />
+		<readsOne />
+	</input>
+	<output >
+		<readsOneSAI class="buffer.SAIFile" filename="readsOne.sai" />
+	</output>
+</bwaAlign>
+
+<bwaAlignTwo class="operator.bwa.BWAAligner" threads="12">
+	<input>
+		<reference />
+		<readsTwo />
+	</input>
+	<output >
+		<readsTwoSAI class="buffer.SAIFile" filename="readsTwo.sai" />
+	</output>
+</bwaAlignTwo>
+
+<bwaSampe class="operator.bwa.BWASampe" >
+	<input>
+		<reference />
+		<readsOneSAI />
+		<readsTwoSAI />
+		<readsOne />
+		<readsTwo />
+	</input>
+	<output>
+		<readsSAM class="buffer.SAMFile" filename="simreads.sam" />	
+	</output>
+</bwaSampe>
+
+<convertBam class="operator.samtools.ConvertSamBam">
+	<input>
+		<readsSAM  class="buffer.SAMFile" filename="simreads.sam"/>
+	</input>
+	<output>
+		<readsBAM class="buffer.BAMFile" filename="simreads.bam" />
+	</output>
+</convertBam>
+
+<CoordSort class="operator.picard.CoordinateSort" createindex="true">
+	<input>
+		<readsBAM />
+	</input>
+	<output>
+		<readsSorted class="buffer.BAMFile" filename="simreads.sorted.bam" />
+	</output>
+</CoordSort>
+
+<Genotyper class="operator.gatk.Genotyper" threads="8">
+	<input>
+		<reference />
+		<readsSorted class="buffer.BAMFile" filename="simreads.sorted.bam" />
+	</input>
+	<output>
+		<variants class="buffer.VCFFile" filename="variants.gatk.vcf" />
+	</output>
+</Genotyper>
+
+ 
 
 </Pipeline>

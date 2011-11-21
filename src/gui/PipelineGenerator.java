@@ -44,6 +44,8 @@ public class PipelineGenerator {
 	
 	Map<String, InjectableItem> injectableElements = new HashMap<String, InjectableItem>();
 	
+	protected String description = null;
+	
 	public PipelineGenerator(File xmlTemplate) {
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder;
@@ -51,6 +53,7 @@ public class PipelineGenerator {
 			builder = factory.newDocumentBuilder();
 			xmlDoc = builder.parse(xmlTemplate);
 			findInjectableElements();
+			findDescription();
 		} catch (ParserConfigurationException e) {
 			e.printStackTrace();
 		} catch (SAXException e) {
@@ -60,6 +63,35 @@ public class PipelineGenerator {
 		}
 	}
 
+	public String getDescription() {
+		return description;
+	}
+	
+	/**
+	 * Scan input looking for a description element
+	 */
+	private void findDescription() {
+		Element root = xmlDoc.getDocumentElement();
+		NodeList childNodes = root.getChildNodes();
+		for(int i=0; i<childNodes.getLength(); i++) {
+			Node childNode = childNodes.item(i);
+			if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+				if (childNode.getNodeName().equalsIgnoreCase("Description")) {
+					//Find text child
+					NodeList gKids = childNode.getChildNodes();
+					for(int j=0; j<gKids.getLength(); j++) {
+						Node kid = gKids.item(j);
+						if (kid.getNodeType() == Node.TEXT_NODE) {
+							description = kid.getNodeValue();
+							return;
+						}
+					}
+				}
+			}
+		
+		}
+	}
+	
 	/**
 	 * Find elements with injectable attributes. Currently we just search the top level - 
 	 * meaning only immediate descendants of the root document
@@ -84,6 +116,7 @@ public class PipelineGenerator {
 		
 		}
 	}
+	
 	
 	/**
 	 * A Collection of all the items which can be injected into this document

@@ -1,9 +1,11 @@
 package gui;
 
+import gui.templates.AlignDedupRealignCall;
 import gui.widgets.BorderlessButton;
 
 import java.awt.Color;
 import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -18,14 +20,14 @@ public class AnalysisBox extends JPanel {
 	public AnalysisBox(PipelineWindow window) {
 		this.window = window;
 		setBackground(backgroundColor);
-		setLayout(new FlowLayout(FlowLayout.CENTER));
+		setLayout(new GridLayout(0, 2));
 		
 		addAnalysisTypes();
 		
 	}
 
 	private void addAnalysisTypes() {
-		BorderlessButton firstType = new BorderlessButton("Analysis type 1", PipelineWindow.getIcon("icons/pipe_icon2.png"));
+		BorderlessButton firstType = new BorderlessButton("Test analysis", PipelineWindow.getIcon("icons/pipe_icon2.png"));
 		firstType.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				window.showAnalysisConfig( new FullAnalysisConfig(window) );
@@ -33,11 +35,21 @@ public class AnalysisBox extends JPanel {
 		});
 		add(firstType);
 		
-		BorderlessButton secondType = new BorderlessButton("Analysis type 2", PipelineWindow.getIcon("icons/pipe_icon2.png"));
-		add(secondType);
+		BorderlessButton alignDedup = new BorderlessButton("Align & remove duplicates", PipelineWindow.getIcon("icons/pipe_fastq_bam.png"));
+		alignDedup.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				window.showAnalysisConfig( new AlignReadsDedup(window) );
+			}
+		});
+		add(alignDedup);
 		
-		BorderlessButton thirdType = new BorderlessButton("Some other analysis", PipelineWindow.getIcon("icons/pipe_icon2.png"));
-		add(thirdType);
+		BorderlessButton alignDedupRealignCall = new BorderlessButton("Align, remove duplicates,\n local realign, call variants", PipelineWindow.getIcon("icons/pipe_fastq_vcf.png"));
+		alignDedupRealignCall.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				window.showAnalysisConfig( new AlignDedupRealignCall(window) );
+			}
+		});
+		add(alignDedupRealignCall);
 	}
 
 }

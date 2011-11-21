@@ -5,6 +5,7 @@ import gui.widgets.FileSelectionPanel;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -64,22 +65,20 @@ public class PipelineWindow extends JFrame {
 		Container contentPane = this.getContentPane();
 		
 		contentPane.setLayout(new BorderLayout());
-		
-		JPanel centerPanel = new JPanel();
-		centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		contentPane.add(centerPanel, BorderLayout.CENTER);
-		
+				
 		AnalysisBox analyses = new AnalysisBox(this);
 		centerScrollPane = new JScrollPane(analyses);
 		centerScrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
-		centerPanel.add(centerScrollPane, BorderLayout.CENTER);
+		centerScrollPane.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+		contentPane.add(centerScrollPane, BorderLayout.CENTER);
 		
 		JPanel bottomPanel = new JPanel();
 		bottomPanel.setLayout(new BorderLayout());
 		bottomPanel.add(new JSeparator(JSeparator.HORIZONTAL));
 
 		contentPane.add(bottomPanel, BorderLayout.SOUTH);
-		
+		this.setSize(500, 500);
+		this.setPreferredSize(new Dimension(500,400));
 		pack();
 		setLocationRelativeTo(null);
 	}
@@ -122,7 +121,7 @@ public class PipelineWindow extends JFrame {
 	 * Initiate a new Pipeline run that executes the given document
 	 * @param doc
 	 */
-	protected void beginRun(Document doc) {
+	public void beginRun(Document doc) {
 		Transformer t;
 		try {
 			t = TransformerFactory.newInstance().newTransformer();
@@ -149,19 +148,20 @@ public class PipelineWindow extends JFrame {
 			e.printStackTrace();
 		}
 		
-//		Pipeline pipeline = new Pipeline(doc);
-//		try {
-//			pipeline.execute();
-//		} catch (PipelineDocException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (ObjectCreationException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+
+		this.getContentPane().remove(centerScrollPane);
+		Pipeline pipe = new Pipeline(doc);
+		ProgressPanel progPanel = new ProgressPanel(pipe);
+		centerScrollPane = new JScrollPane(progPanel);
+		centerScrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
+		centerScrollPane.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+		this.getContentPane().add(centerScrollPane, BorderLayout.CENTER);
+		validate();
+		repaint();
+		progPanel.executePipeline();
 	}
 
-	public void showAnalysisConfig(FullAnalysisConfig fullAnalysisConfig) {
+	public void showAnalysisConfig(TemplateConfigurator fullAnalysisConfig) {
 		
 		centerScrollPane.setViewportView(fullAnalysisConfig);
 		validate();

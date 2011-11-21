@@ -75,6 +75,8 @@ public class Pipeline {
 		this.source = null;
 		pipelineInstance = this;
 		xmlDoc = doc;
+		initializeLogger();
+		loadProperties();	
 	}
 	
 	/**
@@ -198,7 +200,7 @@ public class Pipeline {
 		}
 		
 		
-		primaryLogger.info("XML Document at path " + source.getAbsolutePath() + " found and parsed, attempting to read objects");
+		primaryLogger.info("XML Document found and parsed, attempting to read objects");
 				
 		handler = new ObjectHandler(xmlDoc);
 		
@@ -303,7 +305,14 @@ public class Pipeline {
 	}
 	
 	
-	
+	public List<Operator> getOperatorList() {
+		if (handler == null) {
+			return new ArrayList<Operator>();
+		}
+		else {
+			return handler.operatorList;
+		}
+	}
 	
 	
 	
@@ -339,4 +348,6 @@ public class Pipeline {
 	
 	
 	private List<PipelineListener> listeners = new ArrayList<PipelineListener>();
+
+
 }
