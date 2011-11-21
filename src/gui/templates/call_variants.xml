@@ -1,0 +1,73 @@
+<Pipeline>
+
+<description>
+	Remove duplicates, locally realign around indels, and call variants from a BAM file
+</description>
+
+<reference class="buffer.ReferenceFile" filename="$${Reference sequence}" />
+
+<inputBAM class="buffer.BAMFile" filename="$${BAM input file}" />
+
+
+<RemoveDuplicates class="operator.samtools.SamtoolsRemoveDuplicates" >
+	<input>
+		<inputBAM/>
+	</input>
+	<output>
+		<readsDeDupBAM class="buffer.BAMFile" filename="deduped.bam" />
+	</output>
+</RemoveDuplicates>
+
+
+<SortAndIndex class="operator.picard.CoordinateSort" createindex="true">
+	<input>
+		<readsDeDupBAM />
+	</input>
+	<output>
+		<readsSorted class="buffer.BAMFile" filename="deduped.sort.bam" />
+	</output>
+</SortAndIndex>
+ 
+ <TargetCreator class="operator.gatk.TargetCreator" >
+	<input>
+		<reference />
+		<readsSorted />
+	</input>
+	<output>
+		<targetIntervals class="buffer.CSVFile" filename="realign_targets.intervals"/>
+	</output>
+</TargetCreator>
+
+<LocalIndelRealign class="operator.gatk.IndelRealign" >
+	<input>
+		<reference />
+		<readsSorted />
+		<targetIntervals />
+	</input>
+	<output>
+		<realignedBAM class="buffer.BAMFile" filename="realigned.bam" />	
+	</output>
+</LocalIndelRealign>
+
+<SortAgain class="operator.picard.CoordinateSort" createindex="true">
+	<input>
+		<realignedBAM />
+	</input>
+	<output>
+		<realignedResorted class="buffer.BAMFile" filename="realigned.resorted.bam" />
+	</output>
+</SortAgain>
+
+
+<CallVariants class="operator.gatk.Genotyper" >
+	<input>
+		<reference />
+		<realignedResorted />
+	</input>
+	<output>
+		<variants class="buffer.VCFFile" filename="bamvariants.vcf" />
+	</output>
+</CallVariants>
+ 
+
+</Pipeline>
