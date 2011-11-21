@@ -12,7 +12,10 @@ import buffer.FileBuffer;
 
 /**
  * An Input/Output operator. These are a type of operator that works on one or more input files
- * and writes to one or more output files. 
+ * and writes to one or more output files. Almost all non-trivial operators are subclasses of this class.
+ * Input and Output are specified by FileBuffers, which are basically just wrappers for files. 
+ * 
+ * 
  * @author brendan
  *
  */

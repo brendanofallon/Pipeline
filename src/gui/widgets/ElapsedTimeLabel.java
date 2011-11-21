@@ -25,7 +25,7 @@ public class ElapsedTimeLabel extends JLabel implements ActionListener {
 	
 	public ElapsedTimeLabel() {
 		setText(prefix + " 0");
-		timer = new Timer(50, this);
+		timer = new Timer(63, this);
 		timer.setInitialDelay(0);
 	}
 	

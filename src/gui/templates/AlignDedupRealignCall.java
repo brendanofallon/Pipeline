@@ -2,7 +2,6 @@ package gui.templates;
 
 import gui.PipelineGenerator;
 import gui.PipelineWindow;
-import gui.TemplateConfigurator;
 
 public class AlignDedupRealignCall extends TemplateConfigurator {
 

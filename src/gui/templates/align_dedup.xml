@@ -45,26 +45,26 @@
 
 <ConvertSamToBam class="operator.samtools.ConvertSamBam">
 	<input>
-		<readsSAM  class="buffer.SAMFile" filename="simreads.sam"/>
+		<readsSAM  class="buffer.SAMFile" filename="reads.sam"/>
 	</input>
 	<output>
-		<readsBAM class="buffer.BAMFile" filename="simreads.bam" />
+		<readsBAM class="buffer.BAMFile" filename="reads.bam" />
 	</output>
 </ConvertSamToBam>
 
 <RemoveDuplicates class="operator.samtools.SamtoolsRemoveDuplicates" >
 	<input>
-		<readsBAM class="buffer.BAMFile" filename="hapmapexome.sort.bam"/>
+		<readsBAM lass="buffer.BAMFile" filename="reads.bam"/>
 	</input>
 	<output>
-		<readsDeDupBAM class="buffer.BAMFile" filename="hapmapexome.dedup.bam" />
+		<readsDeDupBAM class="buffer.BAMFile" filename="reads.dedup.bam" />
 	</output>
 </RemoveDuplicates>
 
 
 <SortAndIndex class="operator.picard.CoordinateSort" createindex="true">
 	<input>
-		<readsBAM />
+		<readsDeDupBAM />
 	</input>
 	<output>
 		<readsSorted class="buffer.BAMFile" filename="reads.dedup.sort.bam" />

@@ -57,14 +57,17 @@ public class ProgressPanel extends JPanel implements PipelineListener {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			haltOpPanel();
+			ErrorWindow.showErrorWindow(e);
 		} catch (ObjectCreationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			haltOpPanel();
+			ErrorWindow.showErrorWindow(e);
 		}
 		catch (Exception ex) {
 			ex.printStackTrace();
 			haltOpPanel();
+			ErrorWindow.showErrorWindow(ex);
 		}
 	}
 	
@@ -142,7 +145,16 @@ public class ProgressPanel extends JPanel implements PipelineListener {
 		
 		@Override
 		protected Object doInBackground() throws Exception {
-			pipeline.execute();
+			
+			try {
+				pipeline.execute();
+			} 
+			catch (Exception ex) {
+				ex.printStackTrace();
+				haltOpPanel();
+				ErrorWindow.showErrorWindow(ex);
+			}
+			
 			return null;
 		}
 		

@@ -10,9 +10,12 @@ import util.ElapsedTimeFormatter;
 import util.StringOutputStream;
 
 /**
- * Base class for operators that invoke a system call, but do not emit their output to standard out. Hence
- * these operators do not need to capture the outpu stream, and just simply invoke a system call and wait for
+ * Base class for operators that invoke a system call, but do not emit their output to standard out. Unlike
+ * PipedCommandOp, these operators don't need any fancy tricks to capture the output - it's just written to
+ * a file by the command that we call (for instance, in GaTK the result is always written to a file). Hence
+ * these operators do not need to capture the output stream, and just simply invoke a system call and wait for
  * it to complete. 
+ * 
  * @author brendan
  *
  */

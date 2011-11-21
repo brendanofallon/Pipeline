@@ -1,6 +1,10 @@
 package gui;
 
 import gui.templates.AlignDedupRealignCall;
+import gui.templates.AlignReadsDedup;
+import gui.templates.AnnotateVariants;
+import gui.templates.CallVariants;
+import gui.templates.FullAnalysisConfig;
 import gui.widgets.BorderlessButton;
 
 import java.awt.Color;
@@ -50,6 +54,22 @@ public class AnalysisBox extends JPanel {
 			}
 		});
 		add(alignDedupRealignCall);
+		
+		BorderlessButton callVariants = new BorderlessButton("Remove duplicates,\n realign & call variants", PipelineWindow.getIcon("icons/pipe_bam_vcf.png"));
+		callVariants.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				window.showAnalysisConfig( new CallVariants(window) );
+			}
+		});
+		add(callVariants);
+		
+		BorderlessButton annotateVariants = new BorderlessButton("Annotate variants", PipelineWindow.getIcon("icons/pipe_bam_vcf.png"));
+		annotateVariants.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				window.showAnalysisConfig( new AnnotateVariants(window) );
+			}
+		});
+		add(annotateVariants);
 	}
 
 }

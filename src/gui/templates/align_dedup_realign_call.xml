@@ -38,32 +38,32 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<readsTwo />
 	</input>
 	<output>
-		<readsSAM class="buffer.SAMFile" filename="simreads.sam" />	
+		<readsSAM class="buffer.SAMFile" filename="reads.sam" />	
 	</output>
 </CreateSAMFile>
 
 <ConvertSamToBam class="operator.samtools.ConvertSamBam">
 	<input>
-		<readsSAM  class="buffer.SAMFile" filename="simreads.sam"/>
+		<readsSAM />
 	</input>
 	<output>
-		<readsBAM class="buffer.BAMFile" filename="simreads.bam" />
+		<readsBAM class="buffer.BAMFile" filename="reads.bam" />
 	</output>
 </ConvertSamToBam>
 
 <RemoveDuplicates class="operator.samtools.SamtoolsRemoveDuplicates" >
 	<input>
-		<readsBAM class="buffer.BAMFile" filename="hapmapexome.sort.bam"/>
+		<readsBAM />
 	</input>
 	<output>
-		<readsDeDupBAM class="buffer.BAMFile" filename="hapmapexome.dedup.bam" />
+		<readsDeDupBAM class="buffer.BAMFile" filename="reads.dedup.bam" />
 	</output>
 </RemoveDuplicates>
 
 
 <SortAndIndex class="operator.picard.CoordinateSort" createindex="true">
 	<input>
-		<readsBAM />
+		<readsDeDupBAM />
 	</input>
 	<output>
 		<readsSorted class="buffer.BAMFile" filename="reads.dedup.sort.bam" />
@@ -73,7 +73,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
  <TargetCreator class="operator.gatk.TargetCreator" >
 	<input>
 		<reference />
-		<readsSorted class="buffer.BAMFile" filename="hapmapexome.dedup.sort.bam"/>
+		<readsSorted />
 	</input>
 	<output>
 		<targetIntervals class="buffer.CSVFile" filename="realign_targets.intervals"/>
@@ -96,7 +96,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<realignedBAM />
 	</input>
 	<output>
-		<realignedResorted class="buffer.BAMFile" filename="hapmapexome.dedup.realign.bam" />
+		<realignedResorted class="buffer.BAMFile" filename="reads.dedup.realign.bam" />
 	</output>
 </SortAgain>
 
@@ -104,7 +104,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 <CallVariants class="operator.gatk.Genotyper" >
 	<input>
 		<reference />
-		<readsSorted class="buffer.BAMFile" filename="hapmapexome.sort.bam" />
+		<realignedResorted />
 	</input>
 	<output>
 		<variants class="buffer.VCFFile" filename="variants.vcf" />

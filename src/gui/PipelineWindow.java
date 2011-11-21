@@ -1,5 +1,6 @@
 package gui;
 
+import gui.templates.TemplateConfigurator;
 import gui.widgets.FileSelectionPanel;
 
 import java.awt.BorderLayout;
