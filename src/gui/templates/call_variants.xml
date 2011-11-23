@@ -14,7 +14,7 @@
 		<inputBAM/>
 	</input>
 	<output>
-		<readsDeDupBAM class="buffer.BAMFile" filename="deduped.bam" />
+		<readsDeDupBAM class="buffer.BAMFile" filename="$${prefix}.deduped.bam" />
 	</output>
 </RemoveDuplicates>
 
@@ -24,7 +24,7 @@
 		<readsDeDupBAM />
 	</input>
 	<output>
-		<readsSorted class="buffer.BAMFile" filename="deduped.sort.bam" />
+		<readsSorted class="buffer.BAMFile" filename="$${prefix}.deduped.sort.bam" />
 	</output>
 </SortAndIndex>
  
@@ -45,7 +45,7 @@
 		<targetIntervals />
 	</input>
 	<output>
-		<realignedBAM class="buffer.BAMFile" filename="realigned.bam" />	
+		<realignedBAM class="buffer.BAMFile" filename="$${prefix}.realigned.bam" />	
 	</output>
 </LocalIndelRealign>
 
@@ -54,7 +54,7 @@
 		<realignedBAM />
 	</input>
 	<output>
-		<realignedResorted class="buffer.BAMFile" filename="realigned.resorted.bam" />
+		<realignedResorted class="buffer.BAMFile" filename="$${prefix}.realigned.sorted.bam" />
 	</output>
 </SortAgain>
 
@@ -65,9 +65,17 @@
 		<realignedResorted />
 	</input>
 	<output>
-		<variants class="buffer.VCFFile" filename="bamvariants.vcf" />
+		<variants class="buffer.VCFFile" filename="$${prefix}.variants.all.vcf" />
 	</output>
 </CallVariants>
  
+<PassFilter class="operator.RowFilter" filter="PASS">
+   <input>
+     <variants />
+   </input>
+   <output>
+     <variantsFiltered class="buffer.VCFFile" filename="$${prefix}.highquality.variants.vcf" />
+   </output>
+ </PassFilter>
 
 </Pipeline>

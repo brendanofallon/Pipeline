@@ -19,6 +19,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import gui.PipelineGenerator;
 import gui.PipelineWindow;
@@ -52,13 +53,17 @@ public class CallVariants extends TemplateConfigurator {
 		
 		add(Box.createVerticalStrut(20));
 		add(Box.createVerticalGlue());
-		refBox = new JComboBox(refTypes);
-		JPanel refPanel = new JPanel();
-		refPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-		refPanel.add(new JLabel("<html><b>Reference:</b></html>"));
-		refPanel.add(refBox);
-		refPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		add(refPanel);
+		
+		JPanel prefixPanel = new JPanel();
+		prefixPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+		prefixPanel.add(new JLabel("Result file prefix:"));
+		prefixField = new JTextField("new_project");
+		prefixField.setPreferredSize(new Dimension(200, 32));
+		prefixField.setToolTipText("Prefix to use for result files");
+		prefixPanel.add(prefixField);
+		prefixPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		add(prefixPanel);
+		
 		
 		chooser = new JFileChooser( System.getProperty("user.home"));
 		readsOnePanel = new FileSelectionPanel("Input BAM file:", "Choose file", chooser);
@@ -66,6 +71,8 @@ public class CallVariants extends TemplateConfigurator {
 			public void fileSelected(File file) {
 				if (file != null) {
 					generator.inject("inputBAM", file.getAbsolutePath());
+					beginButton.setEnabled(true);
+					beginButton.repaint();
 				}
 			}
 		});
@@ -76,18 +83,27 @@ public class CallVariants extends TemplateConfigurator {
 		add(readsOnePanel);
 		add(Box.createVerticalGlue());
 		
+		refBox = new JComboBox(refTypes);
+		JPanel refPanel = new JPanel();
+		refPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+		refPanel.add(new JLabel("<html><b>Reference:</b></html>"));
+		refPanel.add(refBox);
+		refPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		add(refPanel);
+		
 		
 		JPanel bottomPanel = new JPanel();
 		bottomPanel.setLayout(new BorderLayout());
 		add(new JSeparator(JSeparator.HORIZONTAL));
 		
-		JButton beginButton = new JButton("Begin");
+		beginButton = new JButton("Begin");
 		beginButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				updateReference();
 				window.beginRun(generator.getDocument());
 			}
 		});
+		beginButton.setEnabled(false);
 		beginButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
 		add(beginButton);
 	}

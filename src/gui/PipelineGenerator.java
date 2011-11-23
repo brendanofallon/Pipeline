@@ -31,7 +31,7 @@ import pipeline.PipelineXMLConstants;
 
 /**
  * A class which examines an XML document to find certain key attributes into which data can injected, 
- * and then handles those injections and can return the modified DOM document with the newly written data
+ * and then handles those injections and can return the modified DOM document with the newly written data.
  * Useful if we want to insert filenames, for instance, into an XML template, and then run the modified
  * Document in a Pipeline
  * @author brendan
@@ -40,6 +40,7 @@ import pipeline.PipelineXMLConstants;
 public class PipelineGenerator {
 	
 	public static final String INJECTION_START_TAG = "$${";
+	public static final String PREFIX_TAG = "prefix";
 	protected Document xmlDoc;
 	
 	Map<String, InjectableItem> injectableElements = new HashMap<String, InjectableItem>();
@@ -52,7 +53,7 @@ public class PipelineGenerator {
 		try {
 			builder = factory.newDocumentBuilder();
 			xmlDoc = builder.parse(xmlTemplate);
-			findInjectableElements();
+			findInjectableElements(xmlDoc.getDocumentElement());
 			findDescription();
 		} catch (ParserConfigurationException e) {
 			e.printStackTrace();
@@ -92,23 +93,26 @@ public class PipelineGenerator {
 		}
 	}
 	
+	
+	
 	/**
-	 * Find elements with injectable attributes. Currently we just search the top level - 
-	 * meaning only immediate descendants of the root document
+	 * Recursively find elements with injectable attributes and add them to the injectableElements map
 	 */
-	protected void findInjectableElements() {
-		Element root = xmlDoc.getDocumentElement();
+	protected void findInjectableElements(Element root) {
 		NodeList childNodes = root.getChildNodes();
 		for(int i=0; i<childNodes.getLength(); i++) {
 			Node childNode = childNodes.item(i);
 			if (childNode.getNodeType() == Node.ELEMENT_NODE) {
 				Element child = (Element)childNode;
+				
+				findInjectableElements(child);
+				
 				NamedNodeMap attrs = child.getAttributes();
 				for(int j=0; j<attrs.getLength(); j++) {
 					Node attr = attrs.item(j);
 					if (attr.getNodeValue().startsWith(INJECTION_START_TAG)) {
-						String attrKey = attr.getNodeName();
-						System.out.println("Found element : " + child.getNodeName() + " with attribute key: " + attrKey + " and value: " + attr.getNodeValue());
+						//String attrKey = attr.getNodeName();
+						//System.out.println("Found element : " + child.getNodeName() + " with attribute key: " + attrKey + " and value: " + attr.getNodeValue());
 						injectableElements.put(child.getNodeName(), new InjectableItem(child, attr));
 					}
 				}
@@ -116,7 +120,6 @@ public class PipelineGenerator {
 		
 		}
 	}
-	
 	
 	/**
 	 * A Collection of all the items which can be injected into this document
@@ -137,7 +140,33 @@ public class PipelineGenerator {
 			throw new IllegalArgumentException("No element with name : " + elementName + " can be found");
 		
 		Element el = injectable.element;
-		el.setAttribute(injectable.injectableKey, item);
+		String currentVal = el.getAttribute(injectable.injectableKey);
+		int start = currentVal.indexOf(INJECTION_START_TAG);
+		int end = currentVal.indexOf('}', start);
+		if (start < 0)
+			throw new IllegalArgumentException("No injection tag found for element " + elementName);
+		StringBuffer itemRemoved = new StringBuffer(currentVal.substring(0, start) + (end < currentVal.length() ? currentVal.substring(end+1) : ""));
+		System.out.println("After removing tag : " + itemRemoved);
+		String newValue = itemRemoved.insert(start, item).toString();
+		System.out.println("After inseting new bit: " + newValue);
+		el.setAttribute(injectable.injectableKey, newValue);
+	}
+	
+	/**
+	 * Reaplces all injection tags with key (content) matching 'tagKey' with the given new value
+	 * For instance, all tags that look like $${prefix} will be replaced with newValue
+	 * 
+	 * @param tagKey
+	 * @param newValue
+	 */
+	public void injectMatchingTags(String tagKey, String newValue) {
+		for(String label : injectableElements.keySet()) {
+			InjectableItem item = injectableElements.get(label);
+			if (item.injectableDesc.contains(INJECTION_START_TAG + tagKey)) {
+				System.out.println("Injecting into element with label: " + label);
+				inject(label, newValue);
+			}
+		}
 	}
 	
 	public Document getDocument() {
@@ -165,9 +194,10 @@ public class PipelineGenerator {
 		Collection<InjectableItem> items = gen.getInjectables();
 		Iterator<InjectableItem> it = items.iterator();
 
-		InjectableItem item = it.next();
-		gen.inject(item.element.getNodeName(), "Hello!");
+//		InjectableItem item = it.next();
+//		gen.inject(item.element.getNodeName(), "Hello!");
 
+		gen.injectMatchingTags("prefix", "newPrefix");
 		Transformer t;
 		try {
 			t = TransformerFactory.newInstance().newTransformer();

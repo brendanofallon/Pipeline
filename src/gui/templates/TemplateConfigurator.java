@@ -24,10 +24,12 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 /**
- * User interface allowing configuration of pipeline template. This is the base
- * class and contains a few useful methods for all such template-configurators 
+ * User interface allowing configuration of pipeline template using a pipeline-generator. 
+ * This is the base class and contains a few useful methods for all such template-configurators
+ *  
  * @author brendan
  *
  */
@@ -57,6 +59,15 @@ public class TemplateConfigurator extends JPanel {
 		}
 	}
 	
+	/**
+	 * Inject the prefix information into all prefix tags in the xml file
+	 */
+	protected void updatePrefix() {
+		String prefix = prefixField.getText();
+		prefix = prefix.replaceAll(" ", "_");
+		generator.injectMatchingTags(PipelineGenerator.PREFIX_TAG, prefix);
+	}
+	
 	protected void initComponents() {
 		//JPanel centerPanel = new JPanel();
 		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -75,13 +86,17 @@ public class TemplateConfigurator extends JPanel {
 		
 		add(Box.createVerticalStrut(20));
 		add(Box.createVerticalGlue());
-		refBox = new JComboBox(refTypes);
-		JPanel refPanel = new JPanel();
-		refPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-		refPanel.add(new JLabel("<html><b>Reference:</b></html>"));
-		refPanel.add(refBox);
-		refPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		add(refPanel);
+		
+		
+		JPanel prefixPanel = new JPanel();
+		prefixPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+		prefixPanel.add(new JLabel("Result file prefix:"));
+		prefixField = new JTextField("new_project");
+		prefixField.setPreferredSize(new Dimension(200, 32));
+		prefixField.setToolTipText("Prefix to use for result files");
+		prefixPanel.add(prefixField);
+		prefixPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		add(prefixPanel);
 		
 		chooser = new JFileChooser( System.getProperty("user.home"));
 		readsOnePanel = new FileSelectionPanel("First read set:", "Choose file", chooser);
@@ -89,6 +104,7 @@ public class TemplateConfigurator extends JPanel {
 			public void fileSelected(File file) {
 				if (file != null) {
 					generator.inject("readsOne", file.getAbsolutePath());
+					updateBeginButton();
 				}
 			}
 		});
@@ -98,7 +114,7 @@ public class TemplateConfigurator extends JPanel {
 			public void fileSelected(File file) {
 				if (file != null) {
 					generator.inject("readsTwo", file.getAbsolutePath());
-					
+					updateBeginButton();
 				}
 			}
 		});
@@ -107,6 +123,15 @@ public class TemplateConfigurator extends JPanel {
 		readsTwoPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
 		add(readsOnePanel);
 		add(readsTwoPanel);
+		
+		refBox = new JComboBox(refTypes);
+		JPanel refPanel = new JPanel();
+		refPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+		refPanel.add(new JLabel("Reference:"));
+		refPanel.add(refBox);
+		refPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		add(refPanel);
+		
 		add(Box.createVerticalGlue());
 		
 		
@@ -114,19 +139,39 @@ public class TemplateConfigurator extends JPanel {
 		bottomPanel.setLayout(new BorderLayout());
 		add(new JSeparator(JSeparator.HORIZONTAL));
 		
-		JButton beginButton = new JButton("Begin");
+		beginButton = new JButton("Begin");
 		beginButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				updatePrefix();
 				updateReference();
 				window.beginRun(generator.getDocument());
 			}
 		});
+		beginButton.setEnabled(false);
 		beginButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
 		add(beginButton);
 	}
 	
+
+	/**
+	 * Update enabled status of the 'begin' button. It should only be enabled if 
+	 * both input files have been selected
+	 */
+	protected void updateBeginButton() {
+		if (readsOnePanel.hasSelectedFile() && readsTwoPanel.hasSelectedFile()) {
+			beginButton.setEnabled(true);
+		}
+		else {
+			beginButton.setEnabled(false);
+		}
+		beginButton.repaint();
+	}
+
+
+	protected JButton beginButton;
 	protected FileSelectionPanel readsTwoPanel;
 	protected FileSelectionPanel readsOnePanel;
 	protected JFileChooser chooser;
+	protected JTextField prefixField;
 	
 }

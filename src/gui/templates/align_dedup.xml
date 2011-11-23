@@ -1,7 +1,7 @@
 <Pipeline>
 
 <description>
-	Align paired-end reads from two fastq files, and remove duplicates from the BAM file. 
+	Align paired-end reads from two fastq files and remove duplicates from the resulting BAM file. 
 </description>
 
 
@@ -16,7 +16,7 @@
 		<readsOne />
 	</input>
 	<output >
-		<readsOneSAI class="buffer.SAIFile" filename="readsOne.sai" />
+		<readsOneSAI class="buffer.SAIFile" filename="$${prefix}.readsOne.sai" />
 	</output>
 </AlignReadsOne>
 
@@ -26,7 +26,7 @@
 		<readsTwo />
 	</input>
 	<output >
-		<readsTwoSAI class="buffer.SAIFile" filename="readsTwo.sai" />
+		<readsTwoSAI class="buffer.SAIFile" filename="$${prefix}.readsTwo.sai" />
 	</output>
 </AlignReadsTwo>
 
@@ -39,25 +39,25 @@
 		<readsTwo />
 	</input>
 	<output>
-		<readsSAM class="buffer.SAMFile" filename="simreads.sam" />	
+		<readsSAM class="buffer.SAMFile" filename="$${prefix}.sam" />	
 	</output>
 </CreateSAMFile>
 
 <ConvertSamToBam class="operator.samtools.ConvertSamBam">
 	<input>
-		<readsSAM  class="buffer.SAMFile" filename="reads.sam"/>
+		<readsSAM />
 	</input>
 	<output>
-		<readsBAM class="buffer.BAMFile" filename="reads.bam" />
+		<readsBAM class="buffer.BAMFile" filename="$${prefix}.raw.bam" />
 	</output>
 </ConvertSamToBam>
 
 <RemoveDuplicates class="operator.samtools.SamtoolsRemoveDuplicates" >
 	<input>
-		<readsBAM lass="buffer.BAMFile" filename="reads.bam"/>
+		<readsBAM />
 	</input>
 	<output>
-		<readsDeDupBAM class="buffer.BAMFile" filename="reads.dedup.bam" />
+		<readsDeDupBAM class="buffer.BAMFile" filename="$${prefix}.dedup.bam" />
 	</output>
 </RemoveDuplicates>
 
@@ -67,7 +67,7 @@
 		<readsDeDupBAM />
 	</input>
 	<output>
-		<readsSorted class="buffer.BAMFile" filename="reads.dedup.sort.bam" />
+		<readsSorted class="buffer.BAMFile" filename="$${prefix}.dedup.sort.bam" />
 	</output>
 </SortAndIndex>
  

@@ -15,7 +15,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<readsOne />
 	</input>
 	<output >
-		<readsOneSAI class="buffer.SAIFile" filename="readsOne.sai" />
+		<readsOneSAI class="buffer.SAIFile" filename="$${prefix}.readsOne.sai" />
 	</output>
 </AlignReadsOne>
 
@@ -25,7 +25,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<readsTwo />
 	</input>
 	<output >
-		<readsTwoSAI class="buffer.SAIFile" filename="readsTwo.sai" />
+		<readsTwoSAI class="buffer.SAIFile" filename="$${prefix}.readsTwo.sai" />
 	</output>
 </AlignReadsTwo>
 
@@ -38,7 +38,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<readsTwo />
 	</input>
 	<output>
-		<readsSAM class="buffer.SAMFile" filename="reads.sam" />	
+		<readsSAM class="buffer.SAMFile" filename="$${prefix}.sam" />	
 	</output>
 </CreateSAMFile>
 
@@ -47,7 +47,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<readsSAM />
 	</input>
 	<output>
-		<readsBAM class="buffer.BAMFile" filename="reads.bam" />
+		<readsBAM class="buffer.BAMFile" filename="$${prefix}.raw.bam" />
 	</output>
 </ConvertSamToBam>
 
@@ -56,7 +56,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<readsBAM />
 	</input>
 	<output>
-		<readsDeDupBAM class="buffer.BAMFile" filename="reads.dedup.bam" />
+		<readsDeDupBAM class="buffer.BAMFile" filename="$${prefix}.dedup.bam" />
 	</output>
 </RemoveDuplicates>
 
@@ -66,7 +66,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<readsDeDupBAM />
 	</input>
 	<output>
-		<readsSorted class="buffer.BAMFile" filename="reads.dedup.sort.bam" />
+		<readsSorted class="buffer.BAMFile" filename="$${prefix}.dedup.sort.bam" />
 	</output>
 </SortAndIndex>
  
@@ -87,7 +87,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<targetIntervals />
 	</input>
 	<output>
-		<realignedBAM class="buffer.BAMFile" filename="reads.realigned.bam" />	
+		<realignedBAM class="buffer.BAMFile" filename="$${prefix}.dedup.realigned.bam" />	
 	</output>
 </LocalIndelRealign>
 
@@ -96,7 +96,7 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<realignedBAM />
 	</input>
 	<output>
-		<realignedResorted class="buffer.BAMFile" filename="reads.dedup.realign.bam" />
+		<realignedResorted class="buffer.BAMFile" filename="$${prefix}.dedup.realign.bam" />
 	</output>
 </SortAgain>
 
@@ -107,9 +107,17 @@ Align paired-end reads from two fastq files, remove all duplicates, perform loca
 		<realignedResorted />
 	</input>
 	<output>
-		<variants class="buffer.VCFFile" filename="variants.vcf" />
+		<variants class="buffer.VCFFile" filename="$${prefix}.all.variants.vcf" />
 	</output>
 </CallVariants>
- 
 
+<PassFilter class="operator.RowFilter" filter="PASS">
+   <input>
+     <variants />
+   </input>
+   <output>
+     <variantsFiltered class="buffer.VCFFile" filename="$${prefix}.highquality.variants.vcf" />
+   </output>
+ </PassFilter>
+ 
 </Pipeline>

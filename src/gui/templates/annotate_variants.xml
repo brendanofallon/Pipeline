@@ -3,8 +3,9 @@
 <description>
 	Annotate a variant file using annovar
 </description>
- <reference class="buffer.ReferenceFile" filename="$${Reference file}" />
- <inputVCF class="buffer.VCFFile" filename="$${Input VCF file}" />
+
+<reference class="buffer.ReferenceFile" filename="$${Reference file}" />
+<inputVCF class="buffer.VCFFile" filename="$${Input VCF}" />
 
 <ConvertInputToAnnovar class="operator.annovar.ConvertVCFAnnovar">
   <input>
@@ -20,7 +21,7 @@
      <annovarOutput />
    </input>
    <output>
-     <annotations class="buffer.CSVFile" filename="annovar.output" />
+     <annotations class="buffer.CSVFile" filename="$${prefix}.annovar.output" />
    </output>
  </Annotate>
 
@@ -29,7 +30,7 @@
      <annovarOutput />
    </input>
    <output>
-     <annotations class="buffer.CSVFile" filename="annovar.sift" />
+     <annotationsSift class="buffer.CSVFile" filename="$${prefix}.annovar.sift" />
    </output>
  </AnnotateSIFT>
 

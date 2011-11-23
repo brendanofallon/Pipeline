@@ -24,6 +24,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 public class AnnotateVariants extends TemplateConfigurator {
 
@@ -35,7 +36,6 @@ public class AnnotateVariants extends TemplateConfigurator {
 	}
 
 	protected void initComponents() {
-		//JPanel centerPanel = new JPanel();
 		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		
@@ -52,6 +52,33 @@ public class AnnotateVariants extends TemplateConfigurator {
 		
 		add(Box.createVerticalStrut(20));
 		add(Box.createVerticalGlue());
+
+		JPanel prefixPanel = new JPanel();
+		prefixPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+		prefixPanel.add(new JLabel("Result file prefix:"));
+		prefixField = new JTextField("new_project");
+		prefixField.setPreferredSize(new Dimension(200, 32));
+		prefixField.setToolTipText("Prefix to use for result files");
+		prefixPanel.add(prefixField);
+		prefixPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		add(prefixPanel);
+		
+		chooser = new JFileChooser( System.getProperty("user.home"));
+		readsOnePanel = new FileSelectionPanel("Input variants (vcf) file:", "Choose file", chooser);
+		readsOnePanel.addListener(new FileSelectionListener() {
+			public void fileSelected(File file) {
+				if (file != null) {
+					generator.inject("inputVCF", file.getAbsolutePath());
+					beginButton.setEnabled(true);
+					beginButton.repaint();
+				}
+			}
+		});
+		
+		readsOnePanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+		add(readsOnePanel);
+		add(Box.createVerticalGlue());
+		
 		refBox = new JComboBox(refTypes);
 		JPanel refPanel = new JPanel();
 		refPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
@@ -60,34 +87,19 @@ public class AnnotateVariants extends TemplateConfigurator {
 		refPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
 		add(refPanel);
 		
-		chooser = new JFileChooser( System.getProperty("user.home"));
-		readsOnePanel = new FileSelectionPanel("Input variants (vcf) file:", "Choose file", chooser);
-		readsOnePanel.addListener(new FileSelectionListener() {
-			public void fileSelected(File file) {
-				if (file != null) {
-					generator.inject("inputVCF", file.getAbsolutePath());
-				}
-			}
-		});
-		
-		
-		
-		readsOnePanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
-		add(readsOnePanel);
-		add(Box.createVerticalGlue());
-		
-		
 		JPanel bottomPanel = new JPanel();
 		bottomPanel.setLayout(new BorderLayout());
 		add(new JSeparator(JSeparator.HORIZONTAL));
 		
-		JButton beginButton = new JButton("Begin");
+		beginButton = new JButton("Begin");
 		beginButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				updatePrefix();
 				updateReference();
 				window.beginRun(generator.getDocument());
 			}
 		});
+		beginButton.setEnabled(false);
 		beginButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
 		add(beginButton);
 	}
