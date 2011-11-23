@@ -31,7 +31,7 @@ public class AnnotateVariants extends TemplateConfigurator {
 	public AnnotateVariants(PipelineWindow window) {
 		super(window);
 
-		generator = new PipelineGenerator( PipelineWindow.getFileResource("templates/annotate_variants.xml"));
+		generator = new PipelineGenerator( PipelineWindow.getResourceInputStream("templates/annotate_variants.xml"));
 		initComponents();
 	}
 

@@ -8,7 +8,7 @@ public class AlignDedupRealignCall extends TemplateConfigurator {
 
 	public AlignDedupRealignCall(PipelineWindow window) {
 		super(window);
-		generator = new PipelineGenerator( PipelineWindow.getFileResource("templates/align_dedup_realign_call.xml"));
+		generator = new PipelineGenerator( PipelineWindow.getResourceInputStream("templates/align_dedup_realign_call.xml"));
 
 		initComponents();
 	}	

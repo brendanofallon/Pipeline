@@ -31,7 +31,7 @@ public class CallVariants extends TemplateConfigurator {
 	public CallVariants(PipelineWindow window) {
 		super(window);
 
-		generator = new PipelineGenerator( PipelineWindow.getFileResource("templates/call_variants.xml"));
+		generator = new PipelineGenerator( PipelineWindow.getResourceInputStream("templates/call_variants.xml"));
 		initComponents();
 	}
 

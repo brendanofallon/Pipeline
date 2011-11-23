@@ -65,6 +65,14 @@ public class TemplateConfigurator extends JPanel {
 	protected void updatePrefix() {
 		String prefix = prefixField.getText();
 		prefix = prefix.replaceAll(" ", "_");
+		
+		//If prefix does not start with a /, then assume we're talking about paths
+		//relative to the execution directory, which is in this case user.dir
+		if (! prefix.startsWith("/")) {
+			String userDir  = System.getProperty("user.dir");
+			prefix = userDir + "/" + prefix;
+			System.out.println("Injecting prefix: " + prefix);
+		}
 		generator.injectMatchingTags(PipelineGenerator.PREFIX_TAG, prefix);
 	}
 	

@@ -10,6 +10,9 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.net.URL;
 
 import javax.swing.BorderFactory;
@@ -23,6 +26,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.UIManager;
 import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Result;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -89,16 +93,17 @@ public class PipelineWindow extends JFrame {
 	 * @param url
 	 * @return
 	 */
-	public static File getFileResource(String url) {
-		File file = null;
+	public static InputStream getResourceInputStream(String url) {
+		InputStream resource = null;
 		try {
-			URL fileLocation = PipelineWindow.class.getResource(url);
-			file = new File(fileLocation.getFile());
+			URL resourceURL = PipelineWindow.class.getResource(url);
+			resource = resourceURL.openStream();
+			
 		}
 		catch (Exception ex) {
-			System.out.println("Error loading icon from resouce : " + ex);
+			System.out.println("Error loading file from resource " + url + "\n" + ex);
 		}
-		return file;
+		return resource;
 	}
 	
 	/**
@@ -113,7 +118,7 @@ public class PipelineWindow extends JFrame {
 			icon = new ImageIcon(imageURL);
 		}
 		catch (Exception ex) {
-			System.out.println("Error loading icon from resouce : " + ex);
+			System.out.println("Error loading icon from resource : " + ex);
 		}
 		return icon;
 	}
@@ -128,16 +133,18 @@ public class PipelineWindow extends JFrame {
 			t = TransformerFactory.newInstance().newTransformer();
 
 			t.setOutputProperty(OutputKeys.METHOD, "xml");
+			t.setOutputProperty(OutputKeys.STANDALONE, "yes");
+			//t.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd");
 
-			t.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC,
-					"-//W3C//DTD XHTML 1.0 Transitional//EN");
-
-			t.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM,
-					"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd");
-
-			t.setOutputProperty(OutputKeys.METHOD, "html");
 			t.transform(new DOMSource( doc), new StreamResult(System.out));
-
+			PrintStream outStream;
+			try {
+				outStream = new PrintStream(new File("pipeline.input.xml"));
+				t.transform(new DOMSource(doc), new StreamResult(outStream));
+			} catch (FileNotFoundException e) {
+				System.err.println("Could not write input to a file, oh well.");
+				e.printStackTrace();
+			}
 		} catch (TransformerConfigurationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

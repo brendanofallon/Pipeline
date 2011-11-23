@@ -2,6 +2,7 @@ package gui;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -53,6 +54,23 @@ public class PipelineGenerator {
 		try {
 			builder = factory.newDocumentBuilder();
 			xmlDoc = builder.parse(xmlTemplate);
+			findInjectableElements(xmlDoc.getDocumentElement());
+			findDescription();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public PipelineGenerator(InputStream xmlStream) {
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder builder;
+		try {
+			builder = factory.newDocumentBuilder();
+			xmlDoc = builder.parse(xmlStream);
 			findInjectableElements(xmlDoc.getDocumentElement());
 			findDescription();
 		} catch (ParserConfigurationException e) {

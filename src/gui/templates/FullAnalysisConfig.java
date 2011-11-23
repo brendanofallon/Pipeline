@@ -8,7 +8,7 @@ public class FullAnalysisConfig extends TemplateConfigurator  {
 	
 	public FullAnalysisConfig(PipelineWindow window) {
 		super(window);
-		generator = new PipelineGenerator( PipelineWindow.getFileResource("templates/practice_template.xml"));
+		generator = new PipelineGenerator( PipelineWindow.getResourceInputStream("templates/practice_template.xml"));
 
 		initComponents();
 	}
