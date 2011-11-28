@@ -4,6 +4,7 @@ import operator.CommandOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
+import buffer.BEDFile;
 import buffer.CSVFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
@@ -49,6 +50,11 @@ public class Genotyper extends CommandOperator {
 		String inputFile = getInputBufferForClass(BAMFile.class).getAbsolutePath();
 		FileBuffer dbsnpFile = getInputBufferForClass(VCFFile.class);
 			
+		FileBuffer bedFile = getInputBufferForClass(BEDFile.class);
+		String bedFilePath = "";
+		if (bedFile != null) {
+			bedFilePath = bedFile.getAbsolutePath();
+		}
 		
 		String outputVCF = outputBuffers.get(0).getAbsolutePath();
 				
@@ -61,6 +67,8 @@ public class Genotyper extends CommandOperator {
 		command = command + " -stand_call_conf 30.0";
 		command = command + " -stand_emit_conf 10.0";
 		command = command + " -nt " + threads;
+		if (bedFile != null)
+			command = command + " -L:intervals,BED " + bedFilePath;
 		return command;
 	}
 

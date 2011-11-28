@@ -4,6 +4,8 @@ import operator.CommandOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
+import buffer.BEDFile;
+import buffer.FileBuffer;
 import buffer.ReferenceFile;
 
 /**
@@ -34,6 +36,12 @@ public class TargetCreator extends CommandOperator {
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
 		String inputFile = getInputBufferForClass(BAMFile.class).getAbsolutePath();
 		
+		FileBuffer bedFile = getInputBufferForClass(BEDFile.class);
+		String bedFilePath = "";
+		if (bedFile != null) {
+			bedFilePath = bedFile.getAbsolutePath();
+		}
+		
 		String indelIntervalsFile = outputBuffers.get(0).getAbsolutePath();
 		
 		//Additional args for jvm
@@ -46,7 +54,12 @@ public class TargetCreator extends CommandOperator {
 			jvmARGStr = "";
 		}
 		
-		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T RealignerTargetCreator -o " + indelIntervalsFile;
+		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + 
+				" -R " + reference + 
+				" -I " + inputFile + 
+				" -T RealignerTargetCreator -o " + indelIntervalsFile;
+		if (bedFile != null)
+			command = command + " -L:intervals,BED " + bedFilePath;
 		return command;
 	}
 

@@ -159,5 +159,11 @@ public class ProgressPanel extends JPanel implements PipelineListener {
 		}
 		
 	}
+
+	@Override
+	public void pipelineFinished() {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }

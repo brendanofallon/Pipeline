@@ -28,6 +28,7 @@ import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
 import util.ElapsedTimeFormatter;
+import util.OperatorTimeSummary;
 
 public class Pipeline {
 
@@ -204,6 +205,8 @@ public class Pipeline {
 		primaryLogger.info("\n\n***************************************************************** \n " + beginTime + " Beginning new Pipeline run");
 	}
 	
+	
+	
 	/**
 	 * Attempt to read, parse, and create the objects as specified in the document
 	 * @throws PipelineDocException
@@ -222,24 +225,36 @@ public class Pipeline {
 		}
 		
 		
+		//Add in a little gizmo to track how long we spend on each operation
+		OperatorTimeSummary profiler = new OperatorTimeSummary();
+		this.addListener(profiler);
+		
+		
 		primaryLogger.info("XML Document found and parsed, attempting to read objects");
 				
 		handler = new ObjectHandler(xmlDoc);
 		
 		//Set the project home field
 		String projHome = props.getProperty(PROJECT_HOME);
-		if (projHome != null & projHome.length()>0)
+		if (projHome != null && projHome.length()>0 && (!projHome.equals(System.getProperty("user.dir")))) {
 			handler.setProjectHome(projHome);
-//		String projectHomeStr = docElement.getAttribute(PROJECT_HOME);
-//		if (projectHomeStr.length() > 0) {
-//			//make sure home dir ends with a /
-//			if (! projectHomeStr.endsWith("/")) {
-//				projectHomeStr += "/";
-//			}
-//			handler.setProjectHome(projectHomeStr);
-//			primaryLogger.info("Setting project home to : " + projectHomeStr);
-//		}
-				
+			try {
+				if (!projHome.endsWith("/"))
+					projHome = projHome + "/";
+				FileHandler fileHandler = new FileHandler(projHome + "pipeinstancelog.xml");
+				primaryLogger.addHandler(fileHandler);
+			} catch (SecurityException e) {
+				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());
+			} catch (IOException e) {
+				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());
+			}
+			
+			
+		}
+
+	
+		
+		
 		//A quick scan for errors / validity would be a good idea
 		
 		fireMessage("Reading objects");
@@ -279,6 +294,7 @@ public class Pipeline {
 		
 		
 		long endTime = System.currentTimeMillis();
+		
 		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(beginTime.getTime(), endTime ));
 	}
 	
@@ -356,7 +372,7 @@ public class Pipeline {
 		argParser.parse(args);
 		
 		String projHome = argParser.getStringOp("home");
-		if (!projHome.endsWith("/")) {
+		if (projHome != null && (!projHome.endsWith("/"))) {
 			projHome = projHome + "/";
 		}
 		
