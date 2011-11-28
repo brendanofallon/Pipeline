@@ -33,7 +33,7 @@ public class Pipeline {
 
 	protected File source;
 	protected Document xmlDoc;
-	public static final String PROJECT_HOME="projecthome";
+	public static final String PROJECT_HOME="home";
 	public static final String primaryLoggerName = "pipeline.primary";
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
 	protected String defaultLogFilename = "pipelinelog";
@@ -100,11 +100,25 @@ public class Pipeline {
 		return pipelineInstance.getProperty(key);
 	}
 	
+	/**
+	 * Obtain a property from this pipeline object, or null if the property has not been set
+	 * @param key
+	 * @return
+	 */
 	public Object getProperty(String key) {
 		if (props != null)
 			return props.get(key);
 		else
 			return null;
+	}
+	
+	/**
+	 * Add a property to this pipeline object
+	 * @param key
+	 * @param value
+	 */
+	public void setProperty(String key, String value) {
+		props.setProperty(key, value);
 	}
 	
 	/**
@@ -144,6 +158,12 @@ public class Pipeline {
 			primaryLogger.warning("Could not read from default properties file: \n" + e.getCause() + "\n" + e.getLocalizedMessage());
 		}
 		
+		
+		//Set the PROJECT_HOME property to user.dir, unless it was already specified
+		if (props.getProperty(PROJECT_HOME) == null) {
+			primaryLogger.info("Setting PROJECT_HOME to " + System.getProperty("user.dir"));
+			props.setProperty(PROJECT_HOME, System.getProperty("user.dir"));
+		}
 	}
 
 	/**
@@ -207,15 +227,18 @@ public class Pipeline {
 		handler = new ObjectHandler(xmlDoc);
 		
 		//Set the project home field
-		String projectHomeStr = docElement.getAttribute(PROJECT_HOME);
-		if (projectHomeStr.length() > 0) {
-			//make sure home dir ends with a /
-			if (! projectHomeStr.endsWith("/")) {
-				projectHomeStr += "/";
-			}
-			handler.setProjectHome(projectHomeStr);
-			primaryLogger.info("Setting project home to : " + projectHomeStr);
-		}
+		String projHome = props.getProperty(PROJECT_HOME);
+		if (projHome != null & projHome.length()>0)
+			handler.setProjectHome(projHome);
+//		String projectHomeStr = docElement.getAttribute(PROJECT_HOME);
+//		if (projectHomeStr.length() > 0) {
+//			//make sure home dir ends with a /
+//			if (! projectHomeStr.endsWith("/")) {
+//				projectHomeStr += "/";
+//			}
+//			handler.setProjectHome(projectHomeStr);
+//			primaryLogger.info("Setting project home to : " + projectHomeStr);
+//		}
 				
 		//A quick scan for errors / validity would be a good idea
 		
@@ -321,7 +344,7 @@ public class Pipeline {
 	
 	public static void main(String[] args) {
 		
-		args = new String[]{"/media/DATA/sim_test/pipeline.input.xml"};
+		//args = new String[]{"/home/brendan/workspace/Pipeline/echo.xml"};
 		
 		//If no args, show the GUI window
 		if (args.length == 0) {
@@ -329,23 +352,34 @@ public class Pipeline {
 			return;
 		}
 		
-		//Otherwise, assume all args are input files and execute them in order
+		ArgumentParser argParser = new ArgumentParser();
+		argParser.parse(args);
+		
+		String projHome = argParser.getStringOp("home");
+		if (!projHome.endsWith("/")) {
+			projHome = projHome + "/";
+		}
+		
+		//Assume all args that end in .xml are input files and execute them in order
 		for(int i=0; i<args.length; i++) {
-			File input = new File(args[i]);
-			Pipeline pipeline = new Pipeline(input);
-
-			try {
-				pipeline.initializePipeline();
-				pipeline.execute();
-			} catch (PipelineDocException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (ObjectCreationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (OperationFailedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if (args[i].endsWith(".xml")) {
+				File input = new File(args[i]);
+				Pipeline pipeline = new Pipeline(input);
+				if (projHome != null && projHome.length()>0)
+					pipeline.setProperty("home", projHome);
+				try {
+					pipeline.initializePipeline();
+					pipeline.execute();
+				} catch (PipelineDocException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ObjectCreationException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (OperationFailedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 	}

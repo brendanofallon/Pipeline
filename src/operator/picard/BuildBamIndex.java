@@ -9,6 +9,7 @@ public class BuildBamIndex extends CommandOperator {
 	public static final String PATH = "path";
 	public static final String CREATE_INDEX = "createindex";
 	protected String defaultPicardDir = "~/picard-tools-1.55/";
+	public static final String JVM_ARGS="jvmargs";
 	protected String picardDir = defaultPicardDir;
 	protected boolean defaultCreateIndex = true;
 	protected boolean createIndex = defaultCreateIndex;
@@ -32,9 +33,17 @@ public class BuildBamIndex extends CommandOperator {
 		
 		
 		String inputPath = inputBuffers.get(0).getAbsolutePath();
-		//String outputPath = outputBuffers.get(0).getAbsolutePath();
+		//Additional args for jvm
+		String jvmARGStr = properties.get(JVM_ARGS);
+		if (jvmARGStr == null || jvmARGStr.length()==0) {
+			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+		}
+		//If it's still null then be sure to make it the empty string
+		if (jvmARGStr == null || jvmARGStr.length()==0) {
+			jvmARGStr = "";
+		}
 		
-		String command = "java -Xms2g -Xmx16g -jar " + picardDir + "/BuildBamIndex.jar" + " INPUT=" + inputPath + " VALIDATION_STRINGENCY=LENIENT";
+		String command = "java -Xms2g -Xmx16g " + jvmARGStr + " -jar " + picardDir + "/BuildBamIndex.jar" + " INPUT=" + inputPath + " VALIDATION_STRINGENCY=LENIENT";
 		return command;
 	}
 

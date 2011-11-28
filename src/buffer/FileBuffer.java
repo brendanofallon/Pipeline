@@ -67,11 +67,16 @@ public abstract class FileBuffer extends PipelineObject {
 			throw new IllegalStateException("Property '" + FILENAME_ATTR + "' required to create file buffer object");
 		}
 		
+		//If the input file path does not start with '/' and the PROJECT_HOME property has been set,
+		//then we append PROJECT_HOME to the file path
 		String pathMod = "";
-		String projHome = properties.get(Pipeline.PROJECT_HOME);
-		if (projHome != null) {
-			pathMod = projHome;
+		if (! filename.startsWith("/")) {
+			String projHome = properties.get(Pipeline.PROJECT_HOME);
+			if (projHome != null) {
+				pathMod = projHome;
+			}
 		}
+		
 		file = new File(pathMod + filename);
 	}
 	

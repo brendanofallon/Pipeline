@@ -20,7 +20,7 @@ public class CoordinateSort extends CommandOperator {
 	protected String picardDir = defaultPicardDir;
 	protected boolean defaultCreateIndex = true;
 	protected boolean createIndex = defaultCreateIndex;
-	protected int defaultMaxRecords = 500000; //This is the default for picard anyway
+	protected int defaultMaxRecords = 2500000; //5x picard default
 	
 	
 	@Override
@@ -54,8 +54,13 @@ public class CoordinateSort extends CommandOperator {
 		
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
-		if (jvmARGStr == null)
+		if (jvmARGStr == null || jvmARGStr.length()==0) {
+			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+		}
+		//If it's still null then be sure to make it the empty string
+		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
+		}
 				
 		String inputPath = inputBuffers.get(0).getAbsolutePath();
 		String outputPath = outputBuffers.get(0).getAbsolutePath();

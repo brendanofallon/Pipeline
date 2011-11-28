@@ -14,6 +14,7 @@ import buffer.ReferenceFile;
 public class TargetCreator extends CommandOperator {
 
 	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
+	public static final String JVM_ARGS="jvmargs";
 	public static final String PATH = "path";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
@@ -35,7 +36,17 @@ public class TargetCreator extends CommandOperator {
 		
 		String indelIntervalsFile = outputBuffers.get(0).getAbsolutePath();
 		
-		String command = "java " + defaultMemOptions + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T RealignerTargetCreator -o " + indelIntervalsFile;
+		//Additional args for jvm
+		String jvmARGStr = properties.get(JVM_ARGS);
+		if (jvmARGStr == null || jvmARGStr.length()==0) {
+			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+		}
+		//If it's still null then be sure to make it the empty string
+		if (jvmARGStr == null || jvmARGStr.length()==0) {
+			jvmARGStr = "";
+		}
+		
+		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T RealignerTargetCreator -o " + indelIntervalsFile;
 		return command;
 	}
 

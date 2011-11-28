@@ -31,7 +31,7 @@ public class ObjectHandler {
 	protected Map<String, PipelineObject> objectMap = new HashMap<String, PipelineObject>();
 	protected String projectHome = null; //Base directory for all files without absolute pathnames specified
 
-	private final boolean verbose = true;
+	private final boolean verbose = false;
 	
 	public ObjectHandler(Document doc) {
 		this.doc = doc;
@@ -50,6 +50,9 @@ public class ObjectHandler {
 		
 		//Instantiate top-level buffers
 		Element root = doc.getDocumentElement();
+		if (verbose) {
+			System.out.println("Reading objects... root element is : " + root);
+		}
 		createElement(root); //Recursively creates all child elements
 				
 		//Build operator list. We assume all operators are at top level for now
@@ -99,6 +102,10 @@ public class ObjectHandler {
 	
 	private PipelineObject createElement(Element el) throws ObjectCreationException {
 		
+		if (verbose) {
+			System.out.println("Examining element : " + el.getNodeName());
+		}
+		
 		//Recursively create children first
 		NodeList children = el.getChildNodes();
 		for(int i=0; i<children.getLength(); i++) {
@@ -113,7 +120,10 @@ public class ObjectHandler {
 		String classStr = getElementClass(el);
 		if (classStr != null && classStr.length()>0) {
 			try {
-
+				if (verbose) {
+					System.out.println("Class element is : " + classStr + " ... attempting creation");
+				}
+				
 				//We're here because a class string has been listed as an argument to this element, meaning that it maps
 				//to an object we should create. If there's already an object with the same label but a different
 				//class in the objectMap, we should throw an error
@@ -125,33 +135,35 @@ public class ObjectHandler {
 					}
 				}
 
-				Class<Object> clz = loadClass(classStr);
-				if (PipelineObject.class.isAssignableFrom(clz)) {
-					PipelineObject obj = (PipelineObject) clz.newInstance();
-					obj.setObjectLabel(el.getNodeName());
-					obj.setObjectHandler(this);
-
-					//Set all attributes found in XML
-					NamedNodeMap attrs = el.getAttributes();
-					for(int i=0; i<attrs.getLength(); i++) {
-						obj.setAttribute(attrs.item(i).getNodeName(), attrs.item(i).getNodeValue());
-					}
-
-					if (projectHome != null)
-						obj.setAttribute(Pipeline.PROJECT_HOME, projectHome);
-
-					if (verbose) {
-						System.out.println("Creating object with label : " + obj.getObjectLabel() + " and class " + obj.getClass());
-					}
-
-					obj.initialize(children);
-
-					objectMap.put(obj.getObjectLabel(), obj);
-
-
-					return obj;
-
+				Class<?> clz = loadClass(classStr);
+				if (verbose) {
+					System.out.println("Class " + clz + " loaded successfully!");
 				}
+				
+				Object instance = clz.newInstance();
+
+				PipelineObject obj = (PipelineObject) instance;
+				obj.setObjectLabel(el.getNodeName());
+				obj.setObjectHandler(this);
+
+				//Set all attributes found in XML
+				NamedNodeMap attrs = el.getAttributes();
+				for(int i=0; i<attrs.getLength(); i++) {
+					obj.setAttribute(attrs.item(i).getNodeName(), attrs.item(i).getNodeValue());
+				}
+
+				if (projectHome != null)
+					obj.setAttribute(Pipeline.PROJECT_HOME, projectHome);
+
+				if (verbose) {
+					System.out.println("Creating object with label : " + obj.getObjectLabel() + " and class " + obj.getClass());
+				}
+
+				obj.initialize(children);
+
+				objectMap.put(obj.getObjectLabel(), obj);
+
+				return obj;
 
 			} catch (ClassNotFoundException e) {
 				throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
@@ -166,10 +178,10 @@ public class ObjectHandler {
 		return null; //We'll make it here if there's no object to create, so just return null
 	}
 
-	private Class loadClass(String classStr) throws ClassNotFoundException {
+	private Class<?> loadClass(String classStr) throws ClassNotFoundException {
 		//TODO We'd like to be able to search other paths, not just already loaded classes
 		ClassLoader systemLoader = ClassLoader.getSystemClassLoader();
-		Class clazz = systemLoader.loadClass(classStr);
+		Class<?> clazz = systemLoader.loadClass(classStr);
 		return clazz;
 	}
 
