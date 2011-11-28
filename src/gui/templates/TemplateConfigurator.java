@@ -85,7 +85,7 @@ public class TemplateConfigurator extends JPanel {
 		descArea.setWrapStyleWord(true);
 		descArea.setEditable(false);
 		descArea.setOpaque(false);
-		descArea.setBorder(BorderFactory.createLineBorder(Color.gray, 1, true));
+		descArea.setBorder(BorderFactory.createLineBorder(Color.gray, 1));
 		descArea.setAlignmentX(Component.RIGHT_ALIGNMENT);
 		descArea.setLineWrap(true);
 		descArea.setMaximumSize(new Dimension(1000, 100));
