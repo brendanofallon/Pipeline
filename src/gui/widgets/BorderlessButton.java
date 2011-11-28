@@ -46,7 +46,7 @@ import javax.swing.event.MouseInputAdapter;
 public class BorderlessButton extends JPanel {
 
 	ImageIcon icon = null;
-	String text = null;
+	String[] text = null;
 	private boolean drawBorder = false;
 	private boolean clicking = false;
 	
@@ -56,7 +56,7 @@ public class BorderlessButton extends JPanel {
 	
 	//Pixels between icon and text
 	private int iconGap = 5;
-	
+	private int yStart = 1; //y-position to start drawing text
 	
 
 	List<ActionListener> actionListeners = new ArrayList<ActionListener>();
@@ -68,7 +68,7 @@ public class BorderlessButton extends JPanel {
 	public BorderlessButton(String label, ImageIcon icon) {
 		this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		this.setOpaque(false);
-		this.text = label;
+		this.text = label.split("\\n");
 		this.icon = icon;
 		
 		setBorder(BorderFactory.createEmptyBorder(4, 2, 4, 2));
@@ -77,9 +77,10 @@ public class BorderlessButton extends JPanel {
 		if (icon != null) {
 			pWidth += icon.getIconWidth()+3;
 			pHeight += icon.getIconHeight()+5;
+			yStart = pHeight+4;
 		}
 		if (label != null) {
-			pWidth = Math.max(label.length()*10, pWidth+3);
+			pWidth = Math.max(text[0].length()*10, pWidth+3);
 			pHeight += 15;
 		}
 		
@@ -176,15 +177,18 @@ public class BorderlessButton extends JPanel {
 		
 		int dx = 1;
 		if (icon != null) {
-			g2d.drawImage(icon.getImage(), Math.max(0, getWidth()/2-icon.getIconWidth()/2), 1 , null);
+			g2d.drawImage(icon.getImage(), Math.max(0, getWidth()/2-icon.getIconWidth()/2), 4 , null);
 		}
 		if (text != null) {
 			g2d.setFont(getFont());
-			int strWidth = g2d.getFontMetrics().stringWidth(text);
-			g2d.setColor(new Color(0.99f, 0.99f, 0.99f, 0.5f));
-			g2d.drawString(text, Math.max(1, getWidth()/2-strWidth/2+1), getHeight()-11);
-			g2d.setColor(new Color(0.2f, 0.2f, 0.2f));
-			g2d.drawString(text, Math.max(0, getWidth()/2-strWidth/2), getHeight()-12);
+			for(int i=0; i<text.length; i++) {
+				int strWidth = g2d.getFontMetrics().stringWidth(text[i]);
+				g2d.setColor(new Color(0.99f, 0.99f, 0.99f, 0.4f));
+				g2d.drawString(text[i], Math.max(1, getWidth()/2-strWidth/2+1), yStart + (i+1)*14+1 /*getHeight()-(i+1)*13 */);
+				g2d.setColor(new Color(0.2f, 0.2f, 0.2f));
+				g2d.drawString(text[i], Math.max(0, getWidth()/2-strWidth/2), yStart + (i+1)*14 /*getHeight()-(i+1)*14 */);	
+			}
+
 		}
 		
 		if (this.isEnabled() && drawBorder) {

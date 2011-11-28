@@ -1,14 +1,8 @@
 package operator;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.util.Date;
 import java.util.logging.Logger;
@@ -18,6 +12,14 @@ import buffer.FileBuffer;
 import pipeline.Pipeline;
 import util.StringOutputStream;
 
+/**
+ * An IOOperator that invokes a system call (to call an external application), and captures the data written 
+ * to standard out from that application and stores it as a file. This happens slightly differently
+ * for binary vs. text data, and is accomplished by using a BinaryPipeHandler or a StringPipeHandler class
+ * to capture and write the output. 
+ * @author brendan
+ *
+ */
 public abstract class PipedCommandOp extends IOOperator {
 	
 	protected StringOutputStream errStream = new StringOutputStream();

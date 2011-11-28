@@ -1,5 +1,7 @@
 package pipeline;
 
+import gui.PipelineApp;
+
 import java.util.List;
 import java.io.File;
 import java.io.FileInputStream;
@@ -75,6 +77,8 @@ public class Pipeline {
 		this.source = null;
 		pipelineInstance = this;
 		xmlDoc = doc;
+		initializeLogger();
+		loadProperties();	
 	}
 	
 	/**
@@ -198,7 +202,7 @@ public class Pipeline {
 		}
 		
 		
-		primaryLogger.info("XML Document at path " + source.getAbsolutePath() + " found and parsed, attempting to read objects");
+		primaryLogger.info("XML Document found and parsed, attempting to read objects");
 				
 		handler = new ObjectHandler(xmlDoc);
 		
@@ -217,14 +221,15 @@ public class Pipeline {
 		
 		fireMessage("Reading objects");
 		handler.readObjects();
-		primaryLogger.info("Successfully read objects, pipeline is now initialized");
+		int opCount = handler.getOperatorList().size();
+		primaryLogger.info("Successfully read objects, found " + opCount + " operators ... pipeline is now initialized");
 		fireMessage("Pipeline initialized");
 	}
 	
 	/**
 	 * Attempt to run the pipeline defined in the source input file
 	 * @throws PipelineDocException If there are errors in document structure
-	 * @throws ObjectCreationException If errors arise regarding instiation of particular objects
+	 * @throws ObjectCreationException If errors arise regarding instantiation of particular objects
 	 * @throws OperationFailedException 
 	 */
 	public void execute() throws OperationFailedException {
@@ -303,15 +308,25 @@ public class Pipeline {
 	}
 	
 	
-	
+	public List<Operator> getOperatorList() {
+		if (handler == null) {
+			return new ArrayList<Operator>();
+		}
+		else {
+			return handler.operatorList;
+		}
+	}
 	
 	
 	
 	public static void main(String[] args) {
 		
-		//If no args, assume this is a test run and attempt to execute testInput.xml
+		args = new String[]{"/media/DATA/sim_test/pipeline.input.xml"};
+		
+		//If no args, show the GUI window
 		if (args.length == 0) {
-			args = new String[]{"src/test/testInput.xml"};
+			PipelineApp.showMainWindow();
+			return;
 		}
 		
 		//Otherwise, assume all args are input files and execute them in order
@@ -339,4 +354,6 @@ public class Pipeline {
 	
 	
 	private List<PipelineListener> listeners = new ArrayList<PipelineListener>();
+
+
 }

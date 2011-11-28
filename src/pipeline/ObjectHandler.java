@@ -31,7 +31,7 @@ public class ObjectHandler {
 	protected Map<String, PipelineObject> objectMap = new HashMap<String, PipelineObject>();
 	protected String projectHome = null; //Base directory for all files without absolute pathnames specified
 
-	private final boolean verbose = false;
+	private final boolean verbose = true;
 	
 	public ObjectHandler(Document doc) {
 		this.doc = doc;
@@ -106,66 +106,64 @@ public class ObjectHandler {
 			if (childNode.getNodeType() == Node.ELEMENT_NODE) {
 				Element child = (Element)childNode;
 				PipelineObject childObj = createElement(child);
-				//We don't actually do anything with the element now
+				//We don't actually do anything with the element now. It might be null if the element has no class="blah" info
 			}	
 		}
 		
 		String classStr = getElementClass(el);
-		if (classStr == null || classStr.length()==0) {
-			return null;
-		}
-		
-		try {
-			
-			//We're here because a class string has been listed as an argument to this element, meaning that it maps
-			//to an object we should create. If there's already an object with the same label but a different
-			//class in the objectMap, we should throw an error
-			String label = el.getNodeName();
-			PipelineObject preObj = objectMap.get(label);
-			if (preObj != null) {
-				if (! preObj.getClass().getCanonicalName().equals(classStr)) {
-					throw new ObjectCreationException("Found two objects with label " + label + " but conflicting classes", el);
+		if (classStr != null && classStr.length()>0) {
+			try {
+
+				//We're here because a class string has been listed as an argument to this element, meaning that it maps
+				//to an object we should create. If there's already an object with the same label but a different
+				//class in the objectMap, we should throw an error
+				String label = el.getNodeName();
+				PipelineObject preObj = objectMap.get(label);
+				if (preObj != null) {
+					if (! preObj.getClass().getCanonicalName().equals(classStr)) {
+						throw new ObjectCreationException("Found two objects with label " + label + " but conflicting classes", el);
+					}
 				}
+
+				Class<Object> clz = loadClass(classStr);
+				if (PipelineObject.class.isAssignableFrom(clz)) {
+					PipelineObject obj = (PipelineObject) clz.newInstance();
+					obj.setObjectLabel(el.getNodeName());
+					obj.setObjectHandler(this);
+
+					//Set all attributes found in XML
+					NamedNodeMap attrs = el.getAttributes();
+					for(int i=0; i<attrs.getLength(); i++) {
+						obj.setAttribute(attrs.item(i).getNodeName(), attrs.item(i).getNodeValue());
+					}
+
+					if (projectHome != null)
+						obj.setAttribute(Pipeline.PROJECT_HOME, projectHome);
+
+					if (verbose) {
+						System.out.println("Creating object with label : " + obj.getObjectLabel() + " and class " + obj.getClass());
+					}
+
+					obj.initialize(children);
+
+					objectMap.put(obj.getObjectLabel(), obj);
+
+
+					return obj;
+
+				}
+
+			} catch (ClassNotFoundException e) {
+				throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
+			} catch (InstantiationException e) {
+				throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
+			} catch (IllegalAccessException e) {
+				throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
+			} catch (Exception e) {
+				throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
 			}
-			
-			Class<Object> clz = loadClass(classStr);
-			if (PipelineObject.class.isAssignableFrom(clz)) {
-				PipelineObject obj = (PipelineObject) clz.newInstance();
-				obj.setObjectLabel(el.getNodeName());
-				obj.setObjectHandler(this);
-
-				//Set all attributes found in XML
-				NamedNodeMap attrs = el.getAttributes();
-				for(int i=0; i<attrs.getLength(); i++) {
-					obj.setAttribute(attrs.item(i).getNodeName(), attrs.item(i).getNodeValue());
-				}
-				
-				if (projectHome != null)
-					obj.setAttribute(Pipeline.PROJECT_HOME, projectHome);
-
-				if (verbose) {
-					System.out.println("Creating object with label : " + obj.getObjectLabel() + " and class " + obj.getClass());
-				}
-				
-				obj.initialize(children);
-				
-				objectMap.put(obj.getObjectLabel(), obj);
-
-				
-				return obj;
-			}
-			
-		} catch (ClassNotFoundException e) {
-			throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
-		} catch (InstantiationException e) {
-			throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
-		} catch (IllegalAccessException e) {
-			throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
-		} catch (Exception e) {
-			throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
 		}
-	
-		return null;
+		return null; //We'll make it here if there's no object to create, so just return null
 	}
 
 	private Class loadClass(String classStr) throws ClassNotFoundException {

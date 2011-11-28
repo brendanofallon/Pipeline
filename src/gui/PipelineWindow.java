@@ -1,13 +1,18 @@
 package gui;
 
+import gui.templates.TemplateConfigurator;
 import gui.widgets.FileSelectionPanel;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.net.URL;
 
 import javax.swing.BorderFactory;
@@ -21,6 +26,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.UIManager;
 import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Result;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -64,22 +70,20 @@ public class PipelineWindow extends JFrame {
 		Container contentPane = this.getContentPane();
 		
 		contentPane.setLayout(new BorderLayout());
-		
-		JPanel centerPanel = new JPanel();
-		centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		contentPane.add(centerPanel, BorderLayout.CENTER);
-		
+				
 		AnalysisBox analyses = new AnalysisBox(this);
 		centerScrollPane = new JScrollPane(analyses);
 		centerScrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
-		centerPanel.add(centerScrollPane, BorderLayout.CENTER);
+		centerScrollPane.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+		contentPane.add(centerScrollPane, BorderLayout.CENTER);
 		
 		JPanel bottomPanel = new JPanel();
 		bottomPanel.setLayout(new BorderLayout());
 		bottomPanel.add(new JSeparator(JSeparator.HORIZONTAL));
 
 		contentPane.add(bottomPanel, BorderLayout.SOUTH);
-		
+		this.setSize(500, 500);
+		this.setPreferredSize(new Dimension(500,400));
 		pack();
 		setLocationRelativeTo(null);
 	}
@@ -89,16 +93,17 @@ public class PipelineWindow extends JFrame {
 	 * @param url
 	 * @return
 	 */
-	public static File getFileResource(String url) {
-		File file = null;
+	public static InputStream getResourceInputStream(String url) {
+		InputStream resource = null;
 		try {
-			URL fileLocation = PipelineWindow.class.getResource(url);
-			file = new File(fileLocation.getFile());
+			URL resourceURL = PipelineWindow.class.getResource(url);
+			resource = resourceURL.openStream();
+			
 		}
 		catch (Exception ex) {
-			System.out.println("Error loading icon from resouce : " + ex);
+			System.out.println("Error loading file from resource " + url + "\n" + ex);
 		}
-		return file;
+		return resource;
 	}
 	
 	/**
@@ -113,7 +118,7 @@ public class PipelineWindow extends JFrame {
 			icon = new ImageIcon(imageURL);
 		}
 		catch (Exception ex) {
-			System.out.println("Error loading icon from resouce : " + ex);
+			System.out.println("Error loading icon from resource : " + ex);
 		}
 		return icon;
 	}
@@ -122,22 +127,24 @@ public class PipelineWindow extends JFrame {
 	 * Initiate a new Pipeline run that executes the given document
 	 * @param doc
 	 */
-	protected void beginRun(Document doc) {
+	public void beginRun(Document doc) {
 		Transformer t;
 		try {
 			t = TransformerFactory.newInstance().newTransformer();
 
 			t.setOutputProperty(OutputKeys.METHOD, "xml");
+			t.setOutputProperty(OutputKeys.STANDALONE, "yes");
+			//t.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd");
 
-			t.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC,
-					"-//W3C//DTD XHTML 1.0 Transitional//EN");
-
-			t.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM,
-					"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd");
-
-			t.setOutputProperty(OutputKeys.METHOD, "html");
 			t.transform(new DOMSource( doc), new StreamResult(System.out));
-
+			PrintStream outStream;
+			try {
+				outStream = new PrintStream(new File("pipeline.input.xml"));
+				t.transform(new DOMSource(doc), new StreamResult(outStream));
+			} catch (FileNotFoundException e) {
+				System.err.println("Could not write input to a file, oh well.");
+				e.printStackTrace();
+			}
 		} catch (TransformerConfigurationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -149,19 +156,20 @@ public class PipelineWindow extends JFrame {
 			e.printStackTrace();
 		}
 		
-//		Pipeline pipeline = new Pipeline(doc);
-//		try {
-//			pipeline.execute();
-//		} catch (PipelineDocException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (ObjectCreationException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+
+		this.getContentPane().remove(centerScrollPane);
+		Pipeline pipe = new Pipeline(doc);
+		ProgressPanel progPanel = new ProgressPanel(pipe);
+		centerScrollPane = new JScrollPane(progPanel);
+		centerScrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
+		centerScrollPane.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+		this.getContentPane().add(centerScrollPane, BorderLayout.CENTER);
+		validate();
+		repaint();
+		progPanel.executePipeline();
 	}
 
-	public void showAnalysisConfig(FullAnalysisConfig fullAnalysisConfig) {
+	public void showAnalysisConfig(TemplateConfigurator fullAnalysisConfig) {
 		
 		centerScrollPane.setViewportView(fullAnalysisConfig);
 		validate();

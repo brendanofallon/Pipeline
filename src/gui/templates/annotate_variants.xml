@@ -1,0 +1,37 @@
+<Pipeline>
+
+<description>
+	Annotate a variant file using annovar
+</description>
+
+<reference class="buffer.ReferenceFile" filename="$${Reference file}" />
+<inputVCF class="buffer.VCFFile" filename="$${Input VCF}" />
+
+<ConvertInputToAnnovar class="operator.annovar.ConvertVCFAnnovar">
+  <input>
+    <inputVCF />
+  </input>
+  <output>
+    <annovarOutput class="buffer.AnnovarInputFile" filename="annovar.annovar" />
+  </output>
+</ConvertInputToAnnovar>
+
+ <Annotate class="operator.annovar.AnnovarAnnotate">
+   <input>
+     <annovarOutput />
+   </input>
+   <output>
+     <annotations class="buffer.CSVFile" filename="$${prefix}.annovar.output" />
+   </output>
+ </Annotate>
+
+ <AnnotateSIFT class="operator.annovar.AnnovarSIFT">
+   <input>
+     <annovarOutput />
+   </input>
+   <output>
+     <annotationsSift class="buffer.CSVFile" filename="$${prefix}.annovar.sift" />
+   </output>
+ </AnnotateSIFT>
+
+</Pipeline>
