@@ -337,6 +337,16 @@ public class Pipeline {
 	}
 	
 	/**
+	 * Notify all listeners that all operators have completed and the pipeline has finished
+	 * @param op
+	 */
+	public void firePipelineFinished() {
+		for(PipelineListener listener : listeners) {
+			listener.pipelineFinished();
+		}
+	}
+	
+	/**
 	 * Send a text message to all listeners
 	 * @param message
 	 */
