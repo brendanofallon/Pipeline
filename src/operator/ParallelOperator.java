@@ -14,11 +14,10 @@ import org.w3c.dom.NodeList;
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
 import util.ElapsedTimeFormatter;
-import buffer.FileBuffer;
 
 /**
- * This operator wraps a bunch of other operators and runs them in parallel on separate threads. All bets are off
- * if the operators write to the same file 
+ * This operator wraps a bunch of other operators and runs them in parallel on separate threads. It
+ * returns only when all the operators have completed. All bets are off if the operators write to the same file. 
  * @author brendan
  *
  */
@@ -49,7 +48,7 @@ public class ParallelOperator extends Operator {
 			} catch (InterruptedException e) {
 				throw new OperationFailedException("Operator " + opw.op.getObjectLabel() + " was interrupted during parallel execution", opw.op);
 			} catch (ExecutionException e) {
-				throw new OperationFailedException("Operator " + opw.op.getObjectLabel() + " was interrupted during parallel execution", opw.op);
+				throw new OperationFailedException("Operator " + opw.op.getObjectLabel() + " failed due to execution exception during parallel execution, cause:" + e.getMessage(), opw.op);
 			}
 		}
 		

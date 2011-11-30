@@ -31,7 +31,7 @@ public class ObjectHandler {
 	protected Map<String, PipelineObject> objectMap = new HashMap<String, PipelineObject>();
 	protected String projectHome = null; //Base directory for all files without absolute pathnames specified
 
-	private final boolean verbose = false;
+	private final boolean verbose = true;
 	
 	public ObjectHandler(Document doc) {
 		this.doc = doc;
@@ -166,11 +166,11 @@ public class ObjectHandler {
 				return obj;
 
 			} catch (ClassNotFoundException e) {
-				throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
+				throw new ObjectCreationException("Object creation error: Class " + classStr + " not found \n" + e.getCause() + " : " + e.getLocalizedMessage(), el);
 			} catch (InstantiationException e) {
-				throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
+				throw new ObjectCreationException("Instantiation exception, \n " + e.getCause() + " : " + e.getLocalizedMessage(), el);
 			} catch (IllegalAccessException e) {
-				throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
+				throw new ObjectCreationException("Illegal access exception, \n " + e.getCause() + " : " + e.getLocalizedMessage(), el);
 			} catch (Exception e) {
 				throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
 			}

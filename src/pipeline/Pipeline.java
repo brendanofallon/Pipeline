@@ -42,7 +42,7 @@ public class Pipeline {
 	
 	
 	//Right now DEBUG just emits all log messages to std out
-	public static final boolean DEBUG = true;
+	public static final boolean DEBUG = false;
 	
 	//Stores some basic properties, such as paths to commonly used executables
 	protected Properties props;
