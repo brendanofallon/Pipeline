@@ -27,11 +27,10 @@ public abstract class MultiOperator extends IOOperator {
 	protected MultiFileBuffer inputFiles;
 	protected MultiFileBuffer outputFiles;
 	protected ReferenceFile reference;
-	protected int numThreads = 8;
 	protected ThreadPoolExecutor threadPool = null;
 	
 	public MultiOperator() {
-		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads);
+		
 	}
 	
 	/**
@@ -46,6 +45,9 @@ public abstract class MultiOperator extends IOOperator {
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
+		
+		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( Pipeline.getPipelineInstance().getThreadCount() );
+		
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		logger.info("Beginning parallel multi-operation " + getObjectLabel() + " with " + inputFiles.getFileCount() + " input files");
 		
@@ -84,8 +86,13 @@ public abstract class MultiOperator extends IOOperator {
 					if (obj instanceof MultiFileBuffer) {
 						inputFiles = (MultiFileBuffer)obj;
 					}
-					if (obj instanceof ReferenceFile) {
-						reference = (ReferenceFile) obj;
+					else {
+						if (obj instanceof ReferenceFile) {
+							reference = (ReferenceFile) obj;
+						}
+						if (obj instanceof FileBuffer) {
+							addInputBuffer( (FileBuffer)obj);
+						}
 					}
 				}
 			}

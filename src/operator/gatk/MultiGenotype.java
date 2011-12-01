@@ -1,5 +1,7 @@
 package operator.gatk;
 
+import java.io.File;
+
 import operator.MultiOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
@@ -22,7 +24,6 @@ public class MultiGenotype extends MultiOperator {
 	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
-	protected int threads = 1;
 	
 	@Override
 	protected String getCommand(FileBuffer inputBuffer) {
@@ -36,10 +37,6 @@ public class MultiGenotype extends MultiOperator {
 			gatkPath = path;
 		}
 		
-		String threadsStr = properties.get(THREADS);
-		if (threadsStr != null) {
-			threads = Integer.parseInt(threadsStr);
-		}
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
@@ -64,12 +61,11 @@ public class MultiGenotype extends MultiOperator {
 		if (index>0)
 			prefix = inputPath.substring(0, index);
 		String outputVCFPath = prefix + ".vcf";
-		FileBuffer vcfBuffer = new VCFFile();
-		vcfBuffer.setAttribute(FileBuffer.FILENAME_ATTR, outputVCFPath);
+		FileBuffer vcfBuffer = new VCFFile(new File(outputVCFPath));
 		addOutputFile( vcfBuffer );
 		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
-		command = command + " -R " + reference + 
+		command = command + " -R " + reference.getAbsolutePath() + 
 				" -I " + inputPath + 
 				" -T UnifiedGenotyper";
 		command = command + " -o " + outputVCFPath;

@@ -1,5 +1,6 @@
 package operator;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -28,7 +29,7 @@ import buffer.ReferenceFile;
 public class ParallelRealign extends IOOperator {
 
 	protected BAMFile inputBam;
-	protected int numThreads = 8;
+	protected int numThreads = 12;
 	protected ThreadPoolExecutor threadPool = null;
 	public static final String JVM_ARGS="jvmargs";
 	public static final String PATH = "path";
@@ -39,11 +40,13 @@ public class ParallelRealign extends IOOperator {
 	protected MultiFileBuffer multiBAM;
 	
 	public ParallelRealign() {
-		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads);
+		
 	}
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
+		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(Pipeline.getPipelineInstance().getThreadCount());
+		
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		logger.info("Beginning ParallelRealignment for operator " + getObjectLabel());
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
@@ -57,8 +60,8 @@ public class ParallelRealign extends IOOperator {
 		
 		referencePath = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
 		inputBam = (BAMFile) getInputBufferForClass(BAMFile.class);
+		MultiFileBuffer multiFile = (MultiFileBuffer) getInputBufferForClass(MultiFileBuffer.class);
 		multiBAM = (MultiFileBuffer) getOutputBufferForClass(MultiFileBuffer.class);
-		
 		
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
@@ -70,18 +73,37 @@ public class ParallelRealign extends IOOperator {
 			jvmARGStr = "";
 		}
 	
-		//Submit all jobs to the thread pool
-		for(int i=1; i<8; i++) {
-			String contig = "" + i;
-			if (i == 22)
-				contig = "X";
-			if (i==23)
-				contig = "Y";
-			
-			TargetAndRealign job = new TargetAndRealign(contig, logger);
-			System.out.println("Submitting contig " + contig);
-			threadPool.submit(job);
-			
+
+		//If there is an input BAM file, break up by normal human chromosomes and
+		//submit all jobs to the thread pool
+		if (inputBam != null) {
+			for(int i=1; i<24; i++) {
+				String contig = "" + i;
+				if (i == 22)
+					contig = "X";
+				if (i==23)
+					contig = "Y";
+
+				TargetAndRealign job = new TargetAndRealign(contig, inputBam.getAbsolutePath(), logger, contig);
+				threadPool.submit(job);
+
+			}
+		}
+		
+		
+		//If we have an input MultiFile, then assume it's already broken up and submit each file individually
+		if (multiFile != null) {
+			System.out.println("Found multifile, processing " + multiFile.getFileCount() + " files");
+			for(int i=1; i<multiFile.getFileCount(); i++) {
+				String filePath = multiFile.getFile(i).getAbsolutePath(); 
+				int a = filePath.lastIndexOf("/");
+				int b = filePath.lastIndexOf(".");
+				String contig = filePath.substring(a+1, b);
+				System.out.println("Contig name / file prefix is : " + contig);
+				TargetAndRealign job = new TargetAndRealign(null, multiFile.getFile(i).getAbsolutePath(), logger, contig);
+				threadPool.submit(job);
+
+			}
 		}
 		
 		try {
@@ -93,13 +115,12 @@ public class ParallelRealign extends IOOperator {
 		}
 		
 		
-
+		
 		logger.info("All contigs have completed realignment for ParallelRealign operator " + getObjectLabel() + ", done.");
 	}
 	
 	protected void addOutputFile(String pathToFile) {
-		FileBuffer buffer = new BAMFile();
-		buffer.setAttribute(FileBuffer.FILENAME_ATTR, pathToFile);
+		FileBuffer buffer = new BAMFile(new File(pathToFile));
 		multiBAM.addFile(buffer);
 	}
 
@@ -139,41 +160,55 @@ public class ParallelRealign extends IOOperator {
 		private Exception errorException = null;
 		final String contig;
 		private Logger logger;
+		private final String inputPath;
+		private String filePrefix;
 		
-		public TargetAndRealign(String contig, Logger logger) {
+		public TargetAndRealign(String contig, String inputPath, Logger logger, String filePrefix) {
 			this.contig = contig;
 			this.logger = logger;
+			this.inputPath = inputPath;
+			this.filePrefix = filePrefix;
 		}
 		
 		@Override
 		public void run() {
 			finished = false;
-			logger.info("Beginnig contig realignment for contig " + contig);
-			String rand = "" + (int)Math.round( 10000*Math.random() );
-			String targetsPath = "targets_" + contig + "_" + rand + ".intervals";
-			String realignedContigPath = "contig_" + contig + ".realigned.bam";
+			logger.info("Beginning contig realignment for contig " + filePrefix);
+			String rand = "" + (int)Math.round( 100000*Math.random() );
+			String targetsPath;
+			String realignedContigPath;
+			if (contig != null) {
+				targetsPath = "targets_" + contig + "_" + rand + ".intervals";
+				realignedContigPath = "contig_" + contig + ".realigned.bam";
+			}
+			else {
+				targetsPath = "targets_" + rand + ".intervals";
+				realignedContigPath = filePrefix + ".realigned.bam";
+			}
+			
 			
 			String command = "java -Xmx8g " + jvmARGStr + " -jar " + gatkPath + 
 					" -R " + referencePath + 
-					" -I " + inputBam.getAbsolutePath() + 
-					" -T RealignerTargetCreator -o " + targetsPath +
-					" -L " + contig;
-			
+					" -I " + inputPath + 
+					" -T RealignerTargetCreator -o " + targetsPath;
+			if (contig != null)
+				command = command +	" -L " + contig;
 			
 			String command2 = "java -Xmx8g " + jvmARGStr + " -jar " + gatkPath + 
 					" -R " + referencePath + 
-					" -I " + inputBam.getAbsolutePath() + 
+					" -I " + inputPath + 
 					" -T IndelRealigner " + 
-					" -L " + contig + " " +
 					" -targetIntervals " + targetsPath + " -o " + realignedContigPath;
+			if (contig != null)
+					command = command +	" -L " + contig;
+
 
 			try {
-				System.out.println("Executing command " + command);
+				System.out.println("Executing command : " + command);
 				executeCommand(command);
-				System.out.println("Executing command " + command2);
+				System.out.println("Executing command : " + command2);
 				executeCommand(command2);
 				addOutputFile(realignedContigPath);
-				System.out.println("Contig realigner " + contig + " is done!");
 			}
 			catch (OperationFailedException e) {
 				error = true;
@@ -181,7 +216,7 @@ public class ParallelRealign extends IOOperator {
 			}
 			
 
-			logger.info("Completed realignment for contig " + contig);
+			logger.info("Completed realignment for contig " + filePrefix);
 			finished = true;
 		}
 		

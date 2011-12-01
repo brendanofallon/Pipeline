@@ -1,5 +1,7 @@
 package operator.picard;
 
+import java.io.File;
+
 import buffer.BAMFile;
 import buffer.FileBuffer;
 import operator.MultiOperator;
@@ -65,8 +67,7 @@ public class MultiCoordSort extends MultiOperator {
 			prefix = inputPath.substring(0, index);
 		String outputPath = prefix + ".sorted.bam";
 		
-		BAMFile outputBAM = new BAMFile();
-		outputBAM.setAttribute(FileBuffer.FILENAME_ATTR, outputPath);
+		BAMFile outputBAM = new BAMFile(new File(outputPath));
 		addOutputFile(outputBAM);
 		
 		String command = "java -Xms1g -Xmx8g " + jvmARGStr + " -jar " + picardDir + "/SortSam.jar" + " INPUT=" + inputPath + " OUTPUT=" + outputPath + " SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=" + createIndex + " MAX_RECORDS_IN_RAM=" + maxRecords + " ";

@@ -40,6 +40,9 @@ public class Pipeline {
 	protected String defaultLogFilename = "pipelinelog";
 	protected ObjectHandler handler = null;
 	
+	//Default number of threads to use
+	protected int threadCount = 12;
+	
 	
 	//Right now DEBUG just emits all log messages to std out
 	public static final boolean DEBUG = false;
@@ -88,6 +91,14 @@ public class Pipeline {
 	 */
 	public static Pipeline getPipelineInstance() {
 		return pipelineInstance;
+	}
+	
+	/**
+	 * Get preferred size of thread pools
+	 * @return
+	 */
+	public int getThreadCount() {
+		return threadCount;
 	}
 	
 	/**
@@ -159,6 +170,13 @@ public class Pipeline {
 			primaryLogger.warning("Could not read from default properties file: \n" + e.getCause() + "\n" + e.getLocalizedMessage());
 		}
 		
+		//Parse thread pool size from properties
+		String threadAttr = props.getProperty(PipelineXMLConstants.THREADS_ATTR);
+		if (threadAttr != null) {
+			int threads = Integer.parseInt( threadAttr );
+			this.threadCount = threads;
+			primaryLogger.info("Setting default thread count to : " + threadCount);
+		}
 		
 		//Set the PROJECT_HOME property to user.dir, unless it was already specified
 		if (props.getProperty(PROJECT_HOME) == null) {
