@@ -321,7 +321,7 @@ public class Pipeline {
 	
 	public static void main(String[] args) {
 		
-		args = new String[]{"/media/DATA/sim_test/pipeline.input.xml"};
+		//args = new String[]{"/media/DATA/sim_test/pipeline.input.xml"};
 		
 		//If no args, show the GUI window
 		if (args.length == 0) {
