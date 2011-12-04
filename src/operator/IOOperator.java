@@ -41,7 +41,7 @@ public abstract class IOOperator extends Operator {
 	 */
 	public FileBuffer getInputBufferForClass(Class clz) {
 		for(FileBuffer buff :  inputBuffers) {
-			if (buff.getClass().equals( clz ))
+			if (clz.isAssignableFrom(buff.getClass()))
 				return buff;
 		}
 		return null;
@@ -55,7 +55,7 @@ public abstract class IOOperator extends Operator {
 	public List<FileBuffer> getAllInputBuffersForClass(Class clz) {
 		List<FileBuffer> buffers = new ArrayList<FileBuffer>();
 		for(FileBuffer buff :  inputBuffers) {
-			if (buff.getClass().equals( clz ))
+			if (clz.isAssignableFrom(buff.getClass()))
 				buffers.add(buff);
 		}
 		return buffers;
@@ -68,7 +68,7 @@ public abstract class IOOperator extends Operator {
 	 */
 	public FileBuffer getOutputBufferForClass(Class clz) {
 		for(FileBuffer buff :  outputBuffers) {
-			if (buff.getClass().equals( clz ))
+			if (clz.isAssignableFrom(buff.getClass()))
 				return buff;
 		}
 		return null;

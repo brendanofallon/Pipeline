@@ -295,9 +295,12 @@ public class Pipeline {
 		
 		for(Operator op : handler.getOperatorList()) {
 			try {
+				Date start = new Date();
 				fireOperatorBeginning(op);
 				primaryLogger.info("Executing operator : " + op.getObjectLabel() + " class: " + op.getClass());
 				op.performOperation();
+				Date end = new Date();
+				primaryLogger.info("Operator : " + op.getObjectLabel() + " class: " + op.getClass() + " has completed, total elapsed time: " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()));
 				fireOperatorCompleted(op);
 			} catch (OperationFailedException e) {
 				fireMessage("Operator failed : " + e);
@@ -310,7 +313,7 @@ public class Pipeline {
 			}
 		}
 		
-		
+		firePipelineFinished();
 		long endTime = System.currentTimeMillis();
 		
 		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(beginTime.getTime(), endTime ));
@@ -387,6 +390,8 @@ public class Pipeline {
 	
 	
 	public static void main(String[] args) {
+		
+		//args = new String[]{"/home/brendan/HHT3_downsample/globtest.xml"};
 		
 		//If no args, show the GUI window
 		if (args.length == 0) {

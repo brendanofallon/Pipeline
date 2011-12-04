@@ -27,7 +27,6 @@ import pipeline.PipelineXMLConstants;
 public class SplitByChromosome extends IOOperator {
 
 	protected BAMFile inputBam;
-	protected int numThreads = 8;
 	protected ThreadPoolExecutor threadPool = null;
 	public static final String JVM_ARGS="jvmargs";
 	public static final String PATH = "path";
@@ -157,7 +156,7 @@ public class SplitByChromosome extends IOOperator {
 			
 			try {
 				executeCommand(command);
-				addOutputFile(new BAMFile(new File(outputPath)));
+				addOutputFile(new BAMFile(new File(outputPath), contig));
 			} catch (OperationFailedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

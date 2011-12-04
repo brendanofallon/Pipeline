@@ -53,7 +53,12 @@ public class TableRecalibrator extends CommandOperator {
 		
 		String recalBamFile = outputBuffers.get(0).getAbsolutePath();
 				
-		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T TableRecalibration -o " + recalBamFile + " -recalFile " + recalDataFile;
+		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + 
+				" -R " + reference + 
+				" -I " + inputFile + 
+				" -T TableRecalibration " + 
+				" -o " + recalBamFile + 
+				" -recalFile " + recalDataFile;
 		return command;
 	}
 

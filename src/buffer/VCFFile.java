@@ -11,6 +11,11 @@ public class VCFFile extends FileBuffer {
 	public VCFFile(File file) {
 		super(file);
 	}
+
+	public VCFFile(File file, String contig) {
+		super(file);
+		setContig(contig);
+	}
 	
 	@Override
 	public String getTypeStr() {

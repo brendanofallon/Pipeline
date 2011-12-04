@@ -1,23 +1,22 @@
 package operator.gatk;
 
+import java.io.File;
 import java.util.List;
-
-import operator.CommandOperator;
-
-import pipeline.Pipeline;
-import pipeline.PipelineXMLConstants;
 
 import buffer.BAMFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
 import buffer.VCFFile;
+import operator.MultiOperator;
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
 
 /**
- * Uses the GATK to count the covariates
+ * Recalibrates base quality scores and applies the recalibration to a list of files
  * @author brendan
  *
  */
-public class CountCovariates extends CommandOperator {
+public class MultiCountCovariates extends MultiOperator {
 
 	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
 	public static final String PATH = "path";
@@ -28,8 +27,7 @@ public class CountCovariates extends CommandOperator {
 	protected int threads = 4;
 	
 	@Override
-	protected String getCommand() {
-		
+	protected String[] getCommand(FileBuffer inputBuffer) {
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
@@ -50,7 +48,7 @@ public class CountCovariates extends CommandOperator {
 		}
 		
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
-		String inputFile = getInputBufferForClass(BAMFile.class).getAbsolutePath();
+		String inputFile = inputBuffer.getAbsolutePath();
 		List<FileBuffer> knownSitesFiles = getAllInputBuffersForClass(VCFFile.class);
 		
 		StringBuffer knownSitesStr = new StringBuffer();
@@ -59,7 +57,7 @@ public class CountCovariates extends CommandOperator {
 		}
 		
 		
-		String csvOutput = outputBuffers.get(0).getAbsolutePath();
+		String csvOutput = inputBuffer.getAbsolutePath() + ".recal.csv";
 		
 		String covariateList = "-cov QualityScoreCovariate -cov CycleCovariate -cov DinucCovariate -cov MappingQualityCovariate ";
 		
@@ -70,7 +68,26 @@ public class CountCovariates extends CommandOperator {
 				covariateList + " "	+ 
 				knownSitesStr.toString() +
 				" -recalFile " + csvOutput;
-		return command;
+		
+		//We also want to APPLY the recalibration after calculating it
+		String inputPath = inputBuffer.getAbsolutePath();
+		int index = inputPath.lastIndexOf(".");
+		String prefix = inputPath;
+		if (index>0)
+			prefix = inputPath.substring(0, index);
+		String outputPath = prefix + ".recal.bam";
+		
+		String command2 = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + 
+				" -R " + reference + 
+				" -I " + inputFile + 
+				" -T TableRecalibration " + 
+				" -o " + outputPath + 
+				" -recalFile " + csvOutput;
+		
+		BAMFile outputFile = new BAMFile(new File(outputPath), inputBuffer.getContig());
+		addOutputFile(outputFile);
+		
+		return new String[]{command, command2};
 	}
 
 }

@@ -1,14 +1,16 @@
 package operator.samtools;
 
-import java.io.File;
-
-import buffer.BAMFile;
 import buffer.FileBuffer;
 import operator.MultiOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 
-public class MultiRemoveDuplicates extends MultiOperator {
+/**
+ * Uses samtools to index all files
+ * @author brendan
+ *
+ */
+public class MultiIndex extends MultiOperator {
 
 	public static final String PATH = "path";
 	protected String defaultSamtoolsPath = "samtools";
@@ -25,21 +27,7 @@ public class MultiRemoveDuplicates extends MultiOperator {
 			samtoolsPath = samPath;
 		}
 		
-		String inputPath = inputBuffer.getAbsolutePath();
-		int index = inputPath.lastIndexOf(".");
-		String prefix = inputPath;
-		if (index>0)
-			prefix = inputPath.substring(0, index);
-		String outputPath = prefix + ".dedup.bam";
-		
-		BAMFile outputBAM = new BAMFile(new File(outputPath), inputBuffer.getContig());
-		addOutputFile(outputBAM);
-		
-		String fileIsSam = "";
-		if (inputPath.endsWith("sam"))
-			fileIsSam = " -S ";
-		
-		String command = samtoolsPath + " rmdup " + fileIsSam + inputPath + " " + outputPath;
+		String command = samtoolsPath + " index " + inputBuffer.getAbsolutePath();
 		return new String[]{command};
 	}
 

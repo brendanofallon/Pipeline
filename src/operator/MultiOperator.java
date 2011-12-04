@@ -41,7 +41,7 @@ public abstract class MultiOperator extends IOOperator {
 		outputFiles.addFile(outputFile);
 	}
 	
-	protected abstract String getCommand(FileBuffer inputBuffer);
+	protected abstract String[] getCommand(FileBuffer inputBuffer);
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -54,7 +54,7 @@ public abstract class MultiOperator extends IOOperator {
 		for(int i=0; i<inputFiles.getFileCount(); i++) {
 			
 			FileBuffer inputBuffer = inputFiles.getFile(i);
-			String command = getCommand(inputBuffer);
+			String command[] = getCommand(inputBuffer);
 			TaskOperator task = new TaskOperator(command, logger);
 			threadPool.submit(task);
 		}
@@ -114,6 +114,12 @@ public abstract class MultiOperator extends IOOperator {
 			}
 		}
 		
+		if (inputFiles == null) {
+			Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+			logger.warning("No MultiFile found for input to MultiOperator");
+			if (inputBuffers.size()==0)
+				logger.warning("Also, no file buffers as input either. This is probably an error but proceeding anyway.");				
+		}
 	}
 	
 	/**
@@ -152,10 +158,10 @@ public abstract class MultiOperator extends IOOperator {
 	 */
 	class TaskOperator implements Runnable {
 
-		final String command;
+		final String[] command;
 		Logger logger;
 		
-		public TaskOperator(String command, Logger logger) {
+		public TaskOperator(String[] command, Logger logger) {
 			this.command = command;
 			this.logger = logger;
 		}
@@ -163,9 +169,11 @@ public abstract class MultiOperator extends IOOperator {
 		@Override
 		public void run() {
 			try {
-				logger.info("Beginning task with command : " + command);
-				executeCommand(command);
-				logger.info("Task with command : " + command + " has completed");
+				for (int i=0; i<command.length; i++) {
+					logger.info("Beginning task with command : " + command[i]);
+					executeCommand(command[i]);
+					logger.info("Task with command : " + command[i] + " has completed");
+				}
 			} catch (OperationFailedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

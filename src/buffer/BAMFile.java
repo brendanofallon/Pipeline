@@ -12,6 +12,11 @@ public class BAMFile extends FileBuffer {
 		super(file);
 	}
 	
+	public BAMFile(File file, String contig) {
+		super(file);
+		setContig(contig);
+	}
+	
 	public boolean isBinary() {
 		return true;
 	}
