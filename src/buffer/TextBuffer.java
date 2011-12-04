@@ -1,5 +1,7 @@
 package buffer;
 
+import java.io.File;
+
 import org.w3c.dom.NodeList;
 
 /**
@@ -8,6 +10,10 @@ import org.w3c.dom.NodeList;
  *
  */
 public class TextBuffer extends FileBuffer {
+
+	public TextBuffer(File file) {
+		super(file);
+	}
 
 	@Override
 	public String getTypeStr() {

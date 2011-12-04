@@ -17,6 +17,7 @@ import buffer.BEDFile;
 import buffer.FileBuffer;
 import buffer.MultiFileBuffer;
 import buffer.ReferenceFile;
+import buffer.VCFFile;
 
 /**
  * This operator performs the indel realignment target creation and actual realignment step
@@ -36,6 +37,7 @@ public class ParallelRealign extends IOOperator {
 	protected String gatkPath = defaultGATKPath;
 	protected String jvmARGStr = "";
 	protected String referencePath = null;
+	protected String knownIndelsPath = null;
 	protected MultiFileBuffer multiBAM;
 	
 	public ParallelRealign() {
@@ -57,10 +59,18 @@ public class ParallelRealign extends IOOperator {
 			gatkPath = path;
 		}
 		
+		
+		
 		referencePath = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
-		inputBam = (BAMFile) getInputBufferForClass(BAMFile.class);
+		inputBam = (BAMFile) getInputBufferForClass(BAMFile.class);	
+		
 		MultiFileBuffer multiFile = (MultiFileBuffer) getInputBufferForClass(MultiFileBuffer.class);
 		multiBAM = (MultiFileBuffer) getOutputBufferForClass(MultiFileBuffer.class);
+		
+		FileBuffer knownIndels = getInputBufferForClass(VCFFile.class);
+		if (knownIndels != null) {
+			knownIndelsPath = knownIndels.getAbsolutePath();
+		}
 		
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
@@ -203,6 +213,9 @@ public class ParallelRealign extends IOOperator {
 					" -T RealignerTargetCreator -o " + targetsPath;
 			if (contig != null)
 				command = command +	" -L " + contig;
+			if (knownIndelsPath != null) {
+				command = command + " --known " + knownIndelsPath;
+			}
 			
 			String command2 = "java -Xmx8g " + jvmARGStr + " -jar " + gatkPath + 
 					" -R " + referencePath + 
@@ -211,7 +224,9 @@ public class ParallelRealign extends IOOperator {
 					" -targetIntervals " + targetsPath + " -o " + realignedContigPath;
 			if (contig != null)
 					command = command +	" -L " + contig;
-
+			if (knownIndelsPath != null) {
+				command = command + " --known " + knownIndelsPath;
+			}
 
 			try {
 				System.out.println("Executing command : " + command);

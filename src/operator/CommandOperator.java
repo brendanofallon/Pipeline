@@ -56,10 +56,10 @@ public abstract class CommandOperator extends IOOperator {
 			throw new OperationFailedException("Operator: " + getObjectLabel() + " was encountered an IO exception : " + errStream.toString() + "\n" + e1.getLocalizedMessage(), this);
 		}
 		
-		now = new Date();
-		long endMillis = System.currentTimeMillis();
-		long elapsedMillis = endMillis - beginMillis;
-		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed. Time taken = " + elapsedMillis + " ms ( " + ElapsedTimeFormatter.getElapsedTime(beginMillis, endMillis) + " )");		
+//		now = new Date();
+//		long endMillis = System.currentTimeMillis();
+//		long elapsedMillis = endMillis - beginMillis;
+//		//logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed. Time taken = " + elapsedMillis + " ms ( " + ElapsedTimeFormatter.getElapsedTime(beginMillis, endMillis) + " )");		
 	}
 
 }
