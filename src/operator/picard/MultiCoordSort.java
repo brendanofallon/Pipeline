@@ -22,7 +22,7 @@ public class MultiCoordSort extends MultiOperator {
 	
 	
 	@Override
-	protected String getCommand(FileBuffer inputBuffer) {
+	protected String[] getCommand(FileBuffer inputBuffer) {
 	
 		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.PICARD_PATH);
 		if (path != null)
@@ -67,10 +67,10 @@ public class MultiCoordSort extends MultiOperator {
 			prefix = inputPath.substring(0, index);
 		String outputPath = prefix + ".sorted.bam";
 		
-		BAMFile outputBAM = new BAMFile(new File(outputPath));
+		BAMFile outputBAM = new BAMFile(new File(outputPath), inputBuffer.getContig());
 		addOutputFile(outputBAM);
 		
 		String command = "java -Xms1g -Xmx8g " + jvmARGStr + " -jar " + picardDir + "/SortSam.jar" + " INPUT=" + inputPath + " OUTPUT=" + outputPath + " SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=" + createIndex + " MAX_RECORDS_IN_RAM=" + maxRecords + " ";
-		return command;
+		return new String[]{command};
 	}
 }

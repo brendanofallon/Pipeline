@@ -23,6 +23,7 @@ public abstract class FileBuffer extends PipelineObject {
 
 	public static final String FILENAME_ATTR = "filename";
 	public static final String BINARY_ATTR = "binary";
+	public static final String CONTIG_ATTR = "contig";
 	
 	protected File file;
 	protected Map<String, String> properties = new HashMap<String, String>();
@@ -38,6 +39,22 @@ public abstract class FileBuffer extends PipelineObject {
 	
 	public void setAttribute(String key, String value) {
 		properties.put(key, value);
+	}
+	
+	/**
+	 * Sets the contig attribute for this file buffer
+	 * @param contig
+	 */
+	public void setContig(String contig) {
+		setAttribute(CONTIG_ATTR, contig);
+	}
+	
+	/**
+	 * Get the contig associated with this file, may be null if no contig has been set
+	 * @return
+	 */
+	public String getContig() {
+		return properties.get(CONTIG_ATTR);
 	}
 	
 	/**
@@ -88,6 +105,18 @@ public abstract class FileBuffer extends PipelineObject {
 		
 		file = new File(pathMod + filename);
 	}
+	
+	
+	/**
+	 * Set the file associated with this buffer. This also sets the FILENAME property to the absolute path
+	 * of the given file
+	 * @param file
+	 */
+	public void setFile(File file) {
+		properties.put(FILENAME_ATTR, file.getAbsolutePath());
+		this.file = file;
+	}
+	
 	
 	/**
 	 * Obtain the file object associated with this buffer

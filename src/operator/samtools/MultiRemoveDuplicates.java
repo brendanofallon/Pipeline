@@ -15,7 +15,7 @@ public class MultiRemoveDuplicates extends MultiOperator {
 	protected String samtoolsPath = defaultSamtoolsPath;
 	
 	@Override
-	protected String getCommand(FileBuffer inputBuffer) {
+	protected String[] getCommand(FileBuffer inputBuffer) {
 		Object samPropsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samPropsPath != null)
 			samtoolsPath = samPropsPath.toString();
@@ -32,16 +32,15 @@ public class MultiRemoveDuplicates extends MultiOperator {
 			prefix = inputPath.substring(0, index);
 		String outputPath = prefix + ".dedup.bam";
 		
-		BAMFile outputBAM = new BAMFile(new File(outputPath));
+		BAMFile outputBAM = new BAMFile(new File(outputPath), inputBuffer.getContig());
 		addOutputFile(outputBAM);
-		
 		
 		String fileIsSam = "";
 		if (inputPath.endsWith("sam"))
 			fileIsSam = " -S ";
 		
 		String command = samtoolsPath + " rmdup " + fileIsSam + inputPath + " " + outputPath;
-		return command;
+		return new String[]{command};
 	}
 
 }

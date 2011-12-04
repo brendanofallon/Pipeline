@@ -30,7 +30,6 @@ public class CountCovariates extends CommandOperator {
 	@Override
 	protected String getCommand() {
 		
-		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
@@ -64,7 +63,13 @@ public class CountCovariates extends CommandOperator {
 		
 		String covariateList = "-cov QualityScoreCovariate -cov CycleCovariate -cov DinucCovariate -cov MappingQualityCovariate ";
 		
-		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T CountCovariates -nt " + threads + " " + covariateList + " " + knownSitesStr.toString() + " -recalFile " + csvOutput;
+		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + 
+				" -R " + reference + 
+				" -I " + inputFile + 
+				" -T CountCovariates " + 
+				covariateList + " "	+ 
+				knownSitesStr.toString() +
+				" -recalFile " + csvOutput;
 		return command;
 	}
 

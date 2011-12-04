@@ -310,7 +310,7 @@ public class Pipeline {
 			}
 		}
 		
-		
+		firePipelineFinished();
 		long endTime = System.currentTimeMillis();
 		
 		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(beginTime.getTime(), endTime ));

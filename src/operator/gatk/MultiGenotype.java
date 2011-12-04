@@ -26,7 +26,7 @@ public class MultiGenotype extends MultiOperator {
 	protected String gatkPath = defaultGATKPath;
 	
 	@Override
-	protected String getCommand(FileBuffer inputBuffer) {
+	protected String[] getCommand(FileBuffer inputBuffer) {
 		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
@@ -61,7 +61,7 @@ public class MultiGenotype extends MultiOperator {
 		if (index>0)
 			prefix = inputPath.substring(0, index);
 		String outputVCFPath = prefix + ".vcf";
-		FileBuffer vcfBuffer = new VCFFile(new File(outputVCFPath));
+		FileBuffer vcfBuffer = new VCFFile(new File(outputVCFPath), inputBuffer.getContig());
 		addOutputFile( vcfBuffer );
 		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
@@ -74,9 +74,12 @@ public class MultiGenotype extends MultiOperator {
 		command = command + " -glm BOTH";
 		command = command + " -stand_call_conf 30.0";
 		command = command + " -stand_emit_conf 10.0";
-		if (bedFile != null)
+		if (inputBuffer.getContig() != null) {
+			command = command + " -L " + inputBuffer.getContig() + " ";
+		}
+		if (inputBuffer.getContig() == null && bedFile != null)
 			command = command + " -L:intervals,BED " + bedFilePath;
-		return command;
+		return new String[]{command};
 	}
 
 	
