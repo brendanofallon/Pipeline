@@ -15,6 +15,11 @@ public interface PipelineListener {
 	
 	public void operatorBeginning(Operator op);
 	
+	/**
+	 * Called when the pipeline has finishing all operators
+	 */
+	public void pipelineFinished();
+	
 	public void message(String messageText);
 	
 	

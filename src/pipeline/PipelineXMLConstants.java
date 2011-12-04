@@ -16,5 +16,6 @@ public class PipelineXMLConstants {
 	public static final String GATK_PATH = "gatk.path";
 	public static final String DOCUMENT_ROOT = "Pipeline";
 	public static final String CLASS_ATTR = "class";
+	public static final String THREADS_ATTR = "threads";
 	
 }

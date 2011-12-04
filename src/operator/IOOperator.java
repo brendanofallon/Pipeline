@@ -76,7 +76,6 @@ public abstract class IOOperator extends Operator {
 	
 	@Override
 	public void initialize(NodeList children) {
-		System.out.println("Initializing operator ");
 		
 		Element inputList = getChildForLabel("input", children);
 		Element outputList = getChildForLabel("output", children);

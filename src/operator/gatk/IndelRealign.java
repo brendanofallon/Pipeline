@@ -11,6 +11,7 @@ public class IndelRealign extends CommandOperator {
 
 	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
 	public static final String PATH = "path";
+	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
 	
@@ -32,7 +33,17 @@ public class IndelRealign extends CommandOperator {
 		
 		String realignedBam = outputBuffers.get(0).getAbsolutePath();
 		
-		String command = "java " + defaultMemOptions + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T IndelRealigner -targetIntervals " + intervalsFile + " -o " + realignedBam;
+		//Additional args for jvm
+		String jvmARGStr = properties.get(JVM_ARGS);
+		if (jvmARGStr == null || jvmARGStr.length()==0) {
+			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+		}
+		//If it's still null then be sure to make it the empty string
+		if (jvmARGStr == null || jvmARGStr.length()==0) {
+			jvmARGStr = "";
+		}
+		
+		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T IndelRealigner -targetIntervals " + intervalsFile + " -o " + realignedBam;
 		return command;
 	}
 

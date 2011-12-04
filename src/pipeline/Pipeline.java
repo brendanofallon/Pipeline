@@ -28,20 +28,24 @@ import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
 import util.ElapsedTimeFormatter;
+import util.OperatorTimeSummary;
 
 public class Pipeline {
 
 	protected File source;
 	protected Document xmlDoc;
-	public static final String PROJECT_HOME="projecthome";
+	public static final String PROJECT_HOME="home";
 	public static final String primaryLoggerName = "pipeline.primary";
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
 	protected String defaultLogFilename = "pipelinelog";
 	protected ObjectHandler handler = null;
 	
+	//Default number of threads to use
+	protected int threadCount = 12;
+	
 	
 	//Right now DEBUG just emits all log messages to std out
-	public static final boolean DEBUG = true;
+	public static final boolean DEBUG = false;
 	
 	//Stores some basic properties, such as paths to commonly used executables
 	protected Properties props;
@@ -90,6 +94,14 @@ public class Pipeline {
 	}
 	
 	/**
+	 * Get preferred size of thread pools
+	 * @return
+	 */
+	public int getThreadCount() {
+		return threadCount;
+	}
+	
+	/**
 	 * Obtain the value of the property associated with the given key, or null
 	 * if no such property exists or if the properties were not successfully loaded
 	 * (for instance, if no properties file was found)
@@ -100,11 +112,25 @@ public class Pipeline {
 		return pipelineInstance.getProperty(key);
 	}
 	
+	/**
+	 * Obtain a property from this pipeline object, or null if the property has not been set
+	 * @param key
+	 * @return
+	 */
 	public Object getProperty(String key) {
 		if (props != null)
 			return props.get(key);
 		else
 			return null;
+	}
+	
+	/**
+	 * Add a property to this pipeline object
+	 * @param key
+	 * @param value
+	 */
+	public void setProperty(String key, String value) {
+		props.setProperty(key, value);
 	}
 	
 	/**
@@ -144,6 +170,19 @@ public class Pipeline {
 			primaryLogger.warning("Could not read from default properties file: \n" + e.getCause() + "\n" + e.getLocalizedMessage());
 		}
 		
+		//Parse thread pool size from properties
+		String threadAttr = props.getProperty(PipelineXMLConstants.THREADS_ATTR);
+		if (threadAttr != null) {
+			int threads = Integer.parseInt( threadAttr );
+			this.threadCount = threads;
+			primaryLogger.info("Setting default thread count to : " + threadCount);
+		}
+		
+		//Set the PROJECT_HOME property to user.dir, unless it was already specified
+		if (props.getProperty(PROJECT_HOME) == null) {
+			primaryLogger.info("Setting PROJECT_HOME to " + System.getProperty("user.dir"));
+			props.setProperty(PROJECT_HOME, System.getProperty("user.dir"));
+		}
 	}
 
 	/**
@@ -184,6 +223,8 @@ public class Pipeline {
 		primaryLogger.info("\n\n***************************************************************** \n " + beginTime + " Beginning new Pipeline run");
 	}
 	
+	
+	
 	/**
 	 * Attempt to read, parse, and create the objects as specified in the document
 	 * @throws PipelineDocException
@@ -202,21 +243,36 @@ public class Pipeline {
 		}
 		
 		
+		//Add in a little gizmo to track how long we spend on each operation
+		OperatorTimeSummary profiler = new OperatorTimeSummary();
+		this.addListener(profiler);
+		
+		
 		primaryLogger.info("XML Document found and parsed, attempting to read objects");
 				
 		handler = new ObjectHandler(xmlDoc);
 		
 		//Set the project home field
-		String projectHomeStr = docElement.getAttribute(PROJECT_HOME);
-		if (projectHomeStr.length() > 0) {
-			//make sure home dir ends with a /
-			if (! projectHomeStr.endsWith("/")) {
-				projectHomeStr += "/";
+		String projHome = props.getProperty(PROJECT_HOME);
+		if (projHome != null && projHome.length()>0 && (!projHome.equals(System.getProperty("user.dir")))) {
+			handler.setProjectHome(projHome);
+			try {
+				if (!projHome.endsWith("/"))
+					projHome = projHome + "/";
+				FileHandler fileHandler = new FileHandler(projHome + "pipeinstancelog.xml");
+				primaryLogger.addHandler(fileHandler);
+			} catch (SecurityException e) {
+				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());
+			} catch (IOException e) {
+				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());
 			}
-			handler.setProjectHome(projectHomeStr);
-			primaryLogger.info("Setting project home to : " + projectHomeStr);
+			
+			
 		}
-				
+
+	
+		
+		
 		//A quick scan for errors / validity would be a good idea
 		
 		fireMessage("Reading objects");
@@ -256,6 +312,7 @@ public class Pipeline {
 		
 		
 		long endTime = System.currentTimeMillis();
+		
 		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(beginTime.getTime(), endTime ));
 	}
 	
@@ -298,6 +355,16 @@ public class Pipeline {
 	}
 	
 	/**
+	 * Notify all listeners that all operators have completed and the pipeline has finished
+	 * @param op
+	 */
+	public void firePipelineFinished() {
+		for(PipelineListener listener : listeners) {
+			listener.pipelineFinished();
+		}
+	}
+	
+	/**
 	 * Send a text message to all listeners
 	 * @param message
 	 */
@@ -321,31 +388,40 @@ public class Pipeline {
 	
 	public static void main(String[] args) {
 		
-		//args = new String[]{"/media/DATA/sim_test/pipeline.input.xml"};
-		
 		//If no args, show the GUI window
 		if (args.length == 0) {
 			PipelineApp.showMainWindow();
 			return;
 		}
 		
-		//Otherwise, assume all args are input files and execute them in order
+		ArgumentParser argParser = new ArgumentParser();
+		argParser.parse(args);
+		
+		String projHome = argParser.getStringOp("home");
+		if (projHome != null && (!projHome.endsWith("/"))) {
+			projHome = projHome + "/";
+		}
+		
+		//Assume all args that end in .xml are input files and execute them in order
 		for(int i=0; i<args.length; i++) {
-			File input = new File(args[i]);
-			Pipeline pipeline = new Pipeline(input);
-
-			try {
-				pipeline.initializePipeline();
-				pipeline.execute();
-			} catch (PipelineDocException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (ObjectCreationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (OperationFailedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if (args[i].endsWith(".xml")) {
+				File input = new File(args[i]);
+				Pipeline pipeline = new Pipeline(input);
+				if (projHome != null && projHome.length()>0)
+					pipeline.setProperty("home", projHome);
+				try {
+					pipeline.initializePipeline();
+					pipeline.execute();
+				} catch (PipelineDocException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ObjectCreationException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (OperationFailedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 	}

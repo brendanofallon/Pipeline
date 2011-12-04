@@ -27,6 +27,15 @@ public abstract class FileBuffer extends PipelineObject {
 	protected File file;
 	protected Map<String, String> properties = new HashMap<String, String>();
 	
+	public FileBuffer() {
+		//Blank on purpose, we just need to make sure there's a no-arg constructor
+	}
+	
+	public FileBuffer(File file) {
+		this.file = file;
+		setAttribute(FILENAME_ATTR, file.getName());
+	}
+	
 	public void setAttribute(String key, String value) {
 		properties.put(key, value);
 	}
@@ -67,11 +76,16 @@ public abstract class FileBuffer extends PipelineObject {
 			throw new IllegalStateException("Property '" + FILENAME_ATTR + "' required to create file buffer object");
 		}
 		
+		//If the input file path does not start with '/' and the PROJECT_HOME property has been set,
+		//then we append PROJECT_HOME to the file path
 		String pathMod = "";
-		String projHome = properties.get(Pipeline.PROJECT_HOME);
-		if (projHome != null) {
-			pathMod = projHome;
+		if (! filename.startsWith("/")) {
+			String projHome = properties.get(Pipeline.PROJECT_HOME);
+			if (projHome != null) {
+				pathMod = projHome;
+			}
 		}
+		
 		file = new File(pathMod + filename);
 	}
 	

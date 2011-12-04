@@ -15,6 +15,14 @@ public class ElapsedTimeFormatter {
 		seconds = seconds % 60;
 		minutes  = minutes % 60;
 		
-		return hours + ":" + minutes + ":" + seconds;
+		String secStr = "" + seconds;
+		if (seconds < 10)
+			secStr = "0" + secStr;
+		
+		String minStr = "" + minutes;
+		if (minutes < 10)
+			minStr = "0" + minStr;
+		
+		return hours + ":" + minStr + ":" + secStr;
 	}
 }

@@ -20,10 +20,8 @@ import util.StringOutputStream;
  *
  */
 public abstract class CommandOperator extends IOOperator {
-
 	
 	protected StringOutputStream errStream = new StringOutputStream();
-
 
 	protected abstract String getCommand() throws OperationFailedException;
 	
@@ -33,16 +31,12 @@ public abstract class CommandOperator extends IOOperator {
 		
 		String command = getCommand();
 		
-		
 		Date now = new Date();
-		
 		long beginMillis = System.currentTimeMillis();
 		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " Executing command : " + command );
 		Runtime r = Runtime.getRuntime();
 		Process p;
 
-		
-		
 		try {
 			p = r.exec(command);
 			Thread errorHandler = new StringPipeHandler(p.getErrorStream(), errStream);
@@ -62,12 +56,10 @@ public abstract class CommandOperator extends IOOperator {
 			throw new OperationFailedException("Operator: " + getObjectLabel() + " was encountered an IO exception : " + errStream.toString() + "\n" + e1.getLocalizedMessage(), this);
 		}
 		
-
+		now = new Date();
 		long endMillis = System.currentTimeMillis();
 		long elapsedMillis = endMillis - beginMillis;
-		//Time elapsedDate = new Time(elapsedMillis);
 		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed. Time taken = " + elapsedMillis + " ms ( " + ElapsedTimeFormatter.getElapsedTime(beginMillis, endMillis) + " )");		
 	}
-
 
 }

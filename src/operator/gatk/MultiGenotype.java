@@ -1,16 +1,22 @@
 package operator.gatk;
 
-import operator.CommandOperator;
+import java.io.File;
+
+import operator.MultiOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.BEDFile;
-import buffer.CSVFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
 import buffer.VCFFile;
 
-public class Genotyper extends CommandOperator {
+/**
+ * Parallel version of genotyper
+ * @author brendan
+ *
+ */
+public class MultiGenotype extends MultiOperator {
 
 	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
 	public static final String PATH = "path";
@@ -18,10 +24,9 @@ public class Genotyper extends CommandOperator {
 	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
-	protected int threads = 1;
 	
 	@Override
-	protected String getCommand() {
+	protected String getCommand(FileBuffer inputBuffer) {
 		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
@@ -32,10 +37,6 @@ public class Genotyper extends CommandOperator {
 			gatkPath = path;
 		}
 		
-		String threadsStr = properties.get(THREADS);
-		if (threadsStr != null) {
-			threads = Integer.parseInt(threadsStr);
-		}
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
@@ -46,8 +47,7 @@ public class Genotyper extends CommandOperator {
 			jvmARGStr = "";
 		}
 		
-		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
-		String inputFile = getInputBufferForClass(BAMFile.class).getAbsolutePath();
+		String inputPath = inputBuffer.getAbsolutePath();
 		FileBuffer dbsnpFile = getInputBufferForClass(VCFFile.class);
 			
 		FileBuffer bedFile = getInputBufferForClass(BEDFile.class);
@@ -56,20 +56,28 @@ public class Genotyper extends CommandOperator {
 			bedFilePath = bedFile.getAbsolutePath();
 		}
 		
-		String outputVCF = outputBuffers.get(0).getAbsolutePath();
-				
+		int index = inputPath.lastIndexOf(".");
+		String prefix = inputPath;
+		if (index>0)
+			prefix = inputPath.substring(0, index);
+		String outputVCFPath = prefix + ".vcf";
+		FileBuffer vcfBuffer = new VCFFile(new File(outputVCFPath));
+		addOutputFile( vcfBuffer );
+		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
-		command = command + " -R " + reference + " -I " + inputFile + " -T UnifiedGenotyper";
-		command = command + " -o " + outputVCF;
+		command = command + " -R " + reference.getAbsolutePath() + 
+				" -I " + inputPath + 
+				" -T UnifiedGenotyper";
+		command = command + " -o " + outputVCFPath;
 		if (dbsnpFile != null)
 			command = command + " --dbsnp " + dbsnpFile.getAbsolutePath();
 		command = command + " -glm BOTH";
 		command = command + " -stand_call_conf 30.0";
 		command = command + " -stand_emit_conf 10.0";
-		command = command + " -nt " + threads;
 		if (bedFile != null)
 			command = command + " -L:intervals,BED " + bedFilePath;
 		return command;
 	}
 
+	
 }

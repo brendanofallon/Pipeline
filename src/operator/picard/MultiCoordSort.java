@@ -1,17 +1,15 @@
 package operator.picard;
 
-import operator.CommandOperator;
+import java.io.File;
+
+import buffer.BAMFile;
+import buffer.FileBuffer;
+import operator.MultiOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 
-/**
- * Uses Picard to coorindate sort a BAM file
- * @author brendan
- *
- */
-public class CoordinateSort extends CommandOperator {
+public class MultiCoordSort extends MultiOperator {
 
-	
 	public static final String PATH = "path";
 	public static final String CREATE_INDEX = "createindex";
 	public static final String JVM_ARGS="jvmargs";
@@ -24,7 +22,7 @@ public class CoordinateSort extends CommandOperator {
 	
 	
 	@Override
-	protected String getCommand() {
+	protected String getCommand(FileBuffer inputBuffer) {
 	
 		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.PICARD_PATH);
 		if (path != null)
@@ -62,11 +60,17 @@ public class CoordinateSort extends CommandOperator {
 			jvmARGStr = "";
 		}
 				
-		String inputPath = inputBuffers.get(0).getAbsolutePath();
-		String outputPath = outputBuffers.get(0).getAbsolutePath();
+		String inputPath = inputBuffer.getAbsolutePath();
+		int index = inputPath.lastIndexOf(".");
+		String prefix = inputPath;
+		if (index>0)
+			prefix = inputPath.substring(0, index);
+		String outputPath = prefix + ".sorted.bam";
 		
-		String command = "java -Xms2g -Xmx8g " + jvmARGStr + " -jar " + picardDir + "/SortSam.jar" + " INPUT=" + inputPath + " OUTPUT=" + outputPath + " SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=" + createIndex + " MAX_RECORDS_IN_RAM=" + maxRecords + " ";
+		BAMFile outputBAM = new BAMFile(new File(outputPath));
+		addOutputFile(outputBAM);
+		
+		String command = "java -Xms1g -Xmx8g " + jvmARGStr + " -jar " + picardDir + "/SortSam.jar" + " INPUT=" + inputPath + " OUTPUT=" + outputPath + " SORT_ORDER=coordinate VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=" + createIndex + " MAX_RECORDS_IN_RAM=" + maxRecords + " ";
 		return command;
 	}
-
 }
