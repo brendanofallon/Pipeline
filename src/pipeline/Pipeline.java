@@ -113,6 +113,14 @@ public class Pipeline {
 	}
 	
 	/**
+	 * Returns the value of the PROJECT_HOME property
+	 * @return
+	 */
+	public String getProjectHome() {
+		return (String)this.getProperty(PROJECT_HOME);
+	}
+	
+	/**
 	 * Obtain a property from this pipeline object, or null if the property has not been set
 	 * @param key
 	 * @return

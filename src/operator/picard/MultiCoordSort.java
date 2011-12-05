@@ -1,6 +1,7 @@
 package operator.picard;
 
 import java.io.File;
+import java.util.logging.Logger;
 
 import buffer.BAMFile;
 import buffer.FileBuffer;
@@ -18,12 +19,12 @@ public class MultiCoordSort extends MultiOperator {
 	protected String picardDir = defaultPicardDir;
 	protected boolean defaultCreateIndex = true;
 	protected boolean createIndex = defaultCreateIndex;
-	protected int defaultMaxRecords = 2500000; //5x picard default
+	protected int defaultMaxRecords = 1000000; //5x picard default
 	
 	
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
-	
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.PICARD_PATH);
 		if (path != null)
 			picardDir = path.toString();
@@ -51,10 +52,29 @@ public class MultiCoordSort extends MultiOperator {
 		}
 		
 		//Additional args for jvm
-		String jvmARGStr = properties.get(JVM_ARGS);
-		if (jvmARGStr == null || jvmARGStr.length()==0) {
-			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+//		String jvmARGStr = properties.get(JVM_ARGS);
+//		if (jvmARGStr == null || jvmARGStr.length()==0) {
+//			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+//		}
+		
+		//Make a temporary directory with a unique name in proj-home for java temp io
+		String projHome = Pipeline.getPipelineInstance().getProjectHome();
+		String tmpDirName = projHome + ".io.tmp." + (int)Math.round( (1e9)*Math.random());
+		File tmpDir = new File(tmpDirName);
+		while (tmpDir.exists()) {
+			tmpDirName = ".io.tmp." + (int)Math.round( (1e9)*Math.random());
+			tmpDir = new File(tmpDirName);
 		}
+		boolean ok = tmpDir.mkdir();
+		if (!ok) {
+			logger.warning("Could not create tmp directory " + tmpDir.getAbsolutePath() + " resorting to default java.io.tmpdir");
+			tmpDir = new File(projHome);
+			tmpDir.mkdir();
+		}
+		
+		String jvmARGStr = " -Djava.io.tmpdir=" + tmpDir.getAbsolutePath(); 
+		System.out.println("MultiCoordSort setting jvm args to : " + jvmARGStr);
+		logger.info("MultiCoordSort setting jvm args to : " + jvmARGStr);
 		//If it's still null then be sure to make it the empty string
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";

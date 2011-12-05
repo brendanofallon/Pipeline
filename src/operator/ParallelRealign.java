@@ -123,6 +123,9 @@ public class ParallelRealign extends IOOperator {
 		try {
 			threadPool.shutdown(); //No new tasks will be submitted,
 			threadPool.awaitTermination(96, TimeUnit.HOURS);
+			
+			//See if any jobs encountered errors
+			
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
