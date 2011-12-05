@@ -7,12 +7,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Properties;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
@@ -28,6 +30,7 @@ import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
 import util.ElapsedTimeFormatter;
+import util.LoggingOutputStream;
 import util.OperatorTimeSummary;
 
 public class Pipeline {
@@ -39,6 +42,7 @@ public class Pipeline {
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
 	protected String defaultLogFilename = "pipelinelog";
 	protected ObjectHandler handler = null;
+	
 	
 	//Default number of threads to use
 	protected int threadCount = 12;
@@ -61,10 +65,13 @@ public class Pipeline {
 			builder = factory.newDocumentBuilder();
 			xmlDoc = builder.parse(source);
 		} catch (ParserConfigurationException e) {
+			System.out.println("ParserConfigException : " + e.getMessage());
 			e.printStackTrace();
 		} catch (SAXException e) {
+			System.out.println("SAXException : " + e.getMessage());
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.out.println("IOException : " + e.getMessage());
 			e.printStackTrace();
 		}
 		
@@ -191,6 +198,32 @@ public class Pipeline {
 			primaryLogger.info("Setting PROJECT_HOME to " + System.getProperty("user.dir"));
 			props.setProperty(PROJECT_HOME, System.getProperty("user.dir"));
 		}
+		
+		
+		//See if we should capture stderr and redirect it to the log file
+		if (props.getProperty(PipelineXMLConstants.CAPTURE_ERR) != null) {
+			Boolean capture = Boolean.parseBoolean( props.getProperty(PipelineXMLConstants.CAPTURE_ERR));
+			if (capture) {
+				Logger stdErrLog = Logger.getLogger("StdErr");
+				try {
+					FileHandler stdErrHandler = new FileHandler("error_log.xml", false);
+					 stdErrHandler.setFormatter(new java.util.logging.SimpleFormatter());
+					stdErrLog.addHandler(stdErrHandler);
+					final LoggingOutputStream logStream = new LoggingOutputStream(stdErrLog, Level.WARNING);
+					final PrintStream errStream = new PrintStream(logStream, true);
+					
+					System.setErr(errStream);
+					primaryLogger.info("Directing all output from standard error to std. error logger");
+				} catch (SecurityException e) {
+					primaryLogger.warning("Could not open file error_log.xml: " + e.getMessage());
+					e.printStackTrace();
+				} catch (IOException e) {
+					primaryLogger.warning("Could not open file error_log.xml: " + e.getMessage());
+					e.printStackTrace();
+				} 
+
+			}
+		}
 	}
 
 	/**
@@ -285,6 +318,7 @@ public class Pipeline {
 		
 		fireMessage("Reading objects");
 		handler.readObjects();
+		System.err.flush(); //Make sure info is written to logger if necessary
 		int opCount = handler.getOperatorList().size();
 		primaryLogger.info("Successfully read objects, found " + opCount + " operators ... pipeline is now initialized");
 		fireMessage("Pipeline initialized");
@@ -307,6 +341,7 @@ public class Pipeline {
 				fireOperatorBeginning(op);
 				primaryLogger.info("Executing operator : " + op.getObjectLabel() + " class: " + op.getClass());
 				op.performOperation();
+				System.err.flush(); //Make sure info is written to logger if necessary
 				Date end = new Date();
 				primaryLogger.info("Operator : " + op.getObjectLabel() + " class: " + op.getClass() + " has completed, total elapsed time: " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()));
 				fireOperatorCompleted(op);

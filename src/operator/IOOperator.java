@@ -1,5 +1,6 @@
 package operator;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -112,6 +113,36 @@ public abstract class IOOperator extends Operator {
 			}
 		}
 		
+	}
+	
+	
+	/**
+	 * Execute the given system command in its own process
+	 * @param command
+	 * @throws OperationFailedException
+	 */
+	protected void executeCommand(String command) throws OperationFailedException {
+		Runtime r = Runtime.getRuntime();
+		Process p;
+
+		try {
+			p = r.exec(command);
+			Thread errorHandler = new StringPipeHandler(p.getErrorStream(), System.err);
+			errorHandler.start();
+
+			try {
+				if (p.waitFor() != 0) {
+					throw new OperationFailedException("Task terminated with nonzero exit value : " + System.err.toString() + " command was: " + command, this);
+				}
+			} catch (InterruptedException e) {
+				throw new OperationFailedException("Task was interrupted : " + System.err.toString() + "\n" + e.getLocalizedMessage(), this);
+			}
+
+
+		}
+		catch (IOException e1) {
+			throw new OperationFailedException("Task encountered an IO exception : " + System.err.toString() + "\n" + e1.getLocalizedMessage(), this);
+		}
 	}
 	
 }
