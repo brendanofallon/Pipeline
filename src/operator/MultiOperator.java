@@ -1,6 +1,9 @@
 package operator;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +15,7 @@ import org.w3c.dom.NodeList;
 
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
+import util.ElapsedTimeFormatter;
 import buffer.FileBuffer;
 import buffer.MultiFileBuffer;
 import buffer.ReferenceFile;
@@ -48,26 +52,46 @@ public abstract class MultiOperator extends IOOperator {
 		
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( Pipeline.getPipelineInstance().getThreadCount() );
 		
+		Date start = new Date();
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+		if (inputFiles == null) {
+			throw new OperationFailedException("InputFiles buffer has not been initialized for MultiOperator " + getObjectLabel(), this);
+		}
 		logger.info("Beginning parallel multi-operation " + getObjectLabel() + " with " + inputFiles.getFileCount() + " input files");
 		
+		List<TaskOperator> jobs = new ArrayList<TaskOperator>();
+		
 		for(int i=0; i<inputFiles.getFileCount(); i++) {
-			
 			FileBuffer inputBuffer = inputFiles.getFile(i);
 			String command[] = getCommand(inputBuffer);
 			TaskOperator task = new TaskOperator(command, logger);
+			jobs.add(task);
 			threadPool.submit(task);
 		}
 		
 		try {
+			logger.info("All tasks have been submitted to multioperator " + getObjectLabel() + ", now awaiting termination...");
 			threadPool.shutdown(); //No new tasks will be submitted,
 			threadPool.awaitTermination(7, TimeUnit.DAYS); //Wait until all tasks have completed
+			
+			//Check for errors
+			boolean allOK = true;
+			for(TaskOperator job : jobs) {
+				if (job.isError()) {
+					allOK = false;
+					logger.severe("Parallel task in operator " + getObjectLabel() + " encountered error: " + job.getException());
+				}
+			}
+			if (!allOK) {
+				throw new OperationFailedException("One or more tasks in parallel operator " + getObjectLabel() + " encountered an error.", this);
+			}
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	
-		logger.info("Parallel multi-operation " + getObjectLabel() + " has completed");
+		Date end = new Date();
+		logger.info("Parallel multi-operation " + getObjectLabel() + " has completed (Total time " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()) + " )");
 
 	}
 
@@ -83,6 +107,8 @@ public abstract class MultiOperator extends IOOperator {
 				Node iChild = inputChildren.item(i);
 				if (iChild.getNodeType() == Node.ELEMENT_NODE) {
 					PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
+					if (obj == null)
+						throw new IllegalArgumentException("Unknown object reference to MultiOperator " + getObjectLabel());
 					if (obj instanceof MultiFileBuffer) {
 						inputFiles = (MultiFileBuffer)obj;
 					}
@@ -104,6 +130,8 @@ public abstract class MultiOperator extends IOOperator {
 				Node iChild = outputChilden.item(i);
 				if (iChild.getNodeType() == Node.ELEMENT_NODE) {
 					PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
+					if (obj == null)
+						throw new IllegalArgumentException("Unknown object reference to MultiOperator " + getObjectLabel());
 					if (obj instanceof MultiFileBuffer) {
 						outputFiles = (MultiFileBuffer)obj;
 					}
@@ -116,40 +144,15 @@ public abstract class MultiOperator extends IOOperator {
 		
 		if (inputFiles == null) {
 			Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-			logger.warning("No MultiFile found for input to MultiOperator");
-			if (inputBuffers.size()==0)
-				logger.warning("Also, no file buffers as input either. This is probably an error but proceeding anyway.");				
+			logger.warning("No MultiFile found for input to MultiOperator " + getObjectLabel());
+			if (inputBuffers.size()==0 || (inputBuffers.size()==1 && reference != null)) {
+				logger.severe("Also, no file buffers as input either. This is probably an error.");
+				throw new IllegalArgumentException("No input buffers found for multi-operator " + getObjectLabel());
+			}
 		}
 	}
 	
-	/**
-	 * Execute the given system command in it's own process
-	 * @param command
-	 * @throws OperationFailedException
-	 */
-	protected void executeCommand(String command) throws OperationFailedException {
-		Runtime r = Runtime.getRuntime();
-		Process p;
 
-		try {
-			p = r.exec(command);
-			Thread errorHandler = new StringPipeHandler(p.getErrorStream(), System.err);
-			errorHandler.start();
-
-			try {
-				if (p.waitFor() != 0) {
-					throw new OperationFailedException("Task terminated with nonzero exit value : " + System.err.toString() + " command was: " + command, this);
-				}
-			} catch (InterruptedException e) {
-				throw new OperationFailedException("Task was interrupted : " + System.err.toString() + "\n" + e.getLocalizedMessage(), this);
-			}
-
-
-		}
-		catch (IOException e1) {
-			throw new OperationFailedException("Task encountered an IO exception : " + System.err.toString() + "\n" + e1.getLocalizedMessage(), this);
-		}
-	}
 	
 	/**
 	 * Little wrapper for commands so they can be executed in a thread pool
@@ -160,6 +163,8 @@ public abstract class MultiOperator extends IOOperator {
 
 		final String[] command;
 		Logger logger;
+		boolean isError = false;
+		Exception exception = null;
 		
 		public TaskOperator(String[] command, Logger logger) {
 			this.command = command;
@@ -170,15 +175,36 @@ public abstract class MultiOperator extends IOOperator {
 		public void run() {
 			try {
 				for (int i=0; i<command.length; i++) {
+					Date begin = new Date();
 					logger.info("Beginning task with command : " + command[i]);
 					executeCommand(command[i]);
-					logger.info("Task with command : " + command[i] + " has completed");
+					Date end = new Date();
+					
+					logger.info("Task with command : " + command[i] + " has completed (elapsed time " + ElapsedTimeFormatter.getElapsedTime(begin.getTime(), end.getTime()) + ")");
 				}
+				
 			} catch (OperationFailedException e) {
 				// TODO Auto-generated catch block
+				isError = true;
+				exception = e;
 				e.printStackTrace();
 			}
 		}
 		
+		/**
+		 * Returns true if an operation failed exception was thrown while executing the command
+		 * @return
+		 */
+		public boolean isError() {
+			return isError;
+		}
+		
+		/**
+		 * If an exception was thrown during execution, this is it
+		 * @return
+		 */
+		public Exception getException() {
+			return exception;
+		}
 	}
 }

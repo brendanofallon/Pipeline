@@ -30,36 +30,10 @@ public abstract class CommandOperator extends IOOperator {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
 		String command = getCommand();
+		logger.info("[ " + (new Date()) + "] Operator: " + getObjectLabel() + " Executing command : " + command );
 		
-		Date now = new Date();
-		long beginMillis = System.currentTimeMillis();
-		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " Executing command : " + command );
-		Runtime r = Runtime.getRuntime();
-		Process p;
+		executeCommand(command);
 
-		try {
-			p = r.exec(command);
-			Thread errorHandler = new StringPipeHandler(p.getErrorStream(), errStream);
-			errorHandler.start();
-
-			try {
-				if (p.waitFor() != 0) {
-					throw new OperationFailedException("Operator: " + getObjectLabel() + " terminated with nonzero exit value : " + errStream.toString(), this);
-				}
-			} catch (InterruptedException e) {
-				throw new OperationFailedException("Operator: " + getObjectLabel() + " was interrupted : " + errStream.toString() + "\n" + e.getLocalizedMessage(), this);
-			}
-
-
-		}
-		catch (IOException e1) {
-			throw new OperationFailedException("Operator: " + getObjectLabel() + " was encountered an IO exception : " + errStream.toString() + "\n" + e1.getLocalizedMessage(), this);
-		}
-		
-//		now = new Date();
-//		long endMillis = System.currentTimeMillis();
-//		long elapsedMillis = endMillis - beginMillis;
-//		//logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed. Time taken = " + elapsedMillis + " ms ( " + ElapsedTimeFormatter.getElapsedTime(beginMillis, endMillis) + " )");		
 	}
 
 }

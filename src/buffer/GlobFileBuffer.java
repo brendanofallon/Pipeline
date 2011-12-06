@@ -24,6 +24,12 @@ public class GlobFileBuffer extends MultiFileBuffer {
 
 	@Override
 	public void initialize(NodeList children) {
+		boolean guessContig = false;
+		String guessAttr = properties.get(GUESS_CONTIG);
+		if (guessAttr != null) {
+			guessContig = Boolean.parseBoolean(guessAttr);
+		}
+		
 		final String pattern = properties.get(FILENAME_ATTR);
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
@@ -47,6 +53,10 @@ public class GlobFileBuffer extends MultiFileBuffer {
 		for(int i=0; i<listing.length; i++) {
 			FileBuffer buffer = FileTypeGuesser.GuessFileType( listing[i]);
 			System.out.println("Glob buffer is adding : " + listing[i].getAbsolutePath());
+			if (guessContig) {
+				String contig = guessContig(buffer);
+				buffer.setContig(contig);
+			}
 			addFile( buffer );
 		}
 		
