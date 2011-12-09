@@ -1,22 +1,17 @@
 package operator.gatk;
 
-import java.io.File;
+import java.util.logging.Logger;
 
-import operator.MultiOperator;
-import pipeline.Pipeline;
-import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.BEDFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
-import buffer.VCFFile;
+import operator.CommandOperator;
+import operator.OperationFailedException;
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
 
-/**
- * Parallel version of gatk's unified genotyper
- * @author brendan
- *
- */
-public class MultiGenotype extends MultiOperator {
+public class DepthOfCoverage extends CommandOperator {
 
 	public final String defaultMemOptions = " -Xms512m -Xmx2g";
 	public static final String PATH = "path";
@@ -25,15 +20,9 @@ public class MultiGenotype extends MultiOperator {
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
 	
-	
-	public int getPreferredThreadCount() {
-		//Dont use more than 12 threads...
-		return Math.min(Pipeline.getPipelineInstance().getThreadCount(), 12);
-	}
-	
 	@Override
-	protected String[] getCommand(FileBuffer inputBuffer) {
-		
+	protected String getCommand() throws OperationFailedException {
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
@@ -53,8 +42,10 @@ public class MultiGenotype extends MultiOperator {
 			jvmARGStr = "";
 		}
 		
+		
+		FileBuffer inputBuffer = getInputBufferForClass(BAMFile.class);
+		FileBuffer referenceFile = getInputBufferForClass(ReferenceFile.class);
 		String inputPath = inputBuffer.getAbsolutePath();
-		FileBuffer dbsnpFile = getInputBufferForClass(VCFFile.class);
 			
 		FileBuffer bedFile = getInputBufferForClass(BEDFile.class);
 		String bedFilePath = "";
@@ -62,31 +53,33 @@ public class MultiGenotype extends MultiOperator {
 			bedFilePath = bedFile.getAbsolutePath();
 		}
 		
-		int index = inputPath.lastIndexOf(".");
-		String prefix = inputPath;
-		if (index>0)
-			prefix = inputPath.substring(0, index);
-		String outputVCFPath = prefix + ".vcf";
-		FileBuffer vcfBuffer = new VCFFile(new File(outputVCFPath), inputBuffer.getContig());
-		addOutputFile( vcfBuffer );
+		String outputPrefix = inputBuffer.getFile().getName();
+		outputPrefix = outputPrefix.replace("_final", "");
+		outputPrefix = outputPrefix.replace(".bam", ".DOC");
+		String projHome = Pipeline.getPipelineInstance().getProjectHome();
+		if (projHome != null && projHome.length() > 0) {
+			outputPrefix = projHome + outputPrefix;
+		}
+		
+
+		String bedPath = "null";
+		if (bedFile != null)
+			bedPath = bedFile.getAbsolutePath();
+		logger.info("DepthOfCoverage operator " + getObjectLabel() + " is calculating using bedfile: " + bedPath + " and output prefix: " + outputPrefix);
 		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
-		command = command + " -R " + reference.getAbsolutePath() + 
+		command = command + " -R " + referenceFile.getAbsolutePath() + 
 				" -I " + inputPath + 
-				" -T UnifiedGenotyper";
-		command = command + " -o " + outputVCFPath;
-		if (dbsnpFile != null)
-			command = command + " --dbsnp " + dbsnpFile.getAbsolutePath();
-		command = command + " -glm BOTH";
-		command = command + " -stand_call_conf 30.0";
-		command = command + " -stand_emit_conf 10.0";
+				" -T DepthOfCoverage" +
+				" --omitDepthOutputAtEachBase ";
+		command = command + " -o " + outputPrefix;
+		
 		if (inputBuffer.getContig() != null) {
 			command = command + " -L " + inputBuffer.getContig() + " ";
 		}
 		if (inputBuffer.getContig() == null && bedFile != null)
 			command = command + " -L:intervals,BED " + bedFilePath;
-		return new String[]{command};
+		return command;
 	}
 
-	
 }

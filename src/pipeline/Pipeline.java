@@ -200,30 +200,7 @@ public class Pipeline {
 		}
 		
 		
-		//See if we should capture stderr and redirect it to the log file
-		if (props.getProperty(PipelineXMLConstants.CAPTURE_ERR) != null) {
-			Boolean capture = Boolean.parseBoolean( props.getProperty(PipelineXMLConstants.CAPTURE_ERR));
-			if (capture) {
-				Logger stdErrLog = Logger.getLogger("StdErr");
-				try {
-					FileHandler stdErrHandler = new FileHandler("error_log.xml", false);
-					 stdErrHandler.setFormatter(new java.util.logging.SimpleFormatter());
-					stdErrLog.addHandler(stdErrHandler);
-					final LoggingOutputStream logStream = new LoggingOutputStream(stdErrLog, Level.WARNING);
-					final PrintStream errStream = new PrintStream(logStream, true);
-					
-					System.setErr(errStream);
-					primaryLogger.info("Directing all output from standard error to std. error logger");
-				} catch (SecurityException e) {
-					primaryLogger.warning("Could not open file error_log.xml: " + e.getMessage());
-					e.printStackTrace();
-				} catch (IOException e) {
-					primaryLogger.warning("Could not open file error_log.xml: " + e.getMessage());
-					e.printStackTrace();
-				} 
-
-			}
-		}
+		
 	}
 
 	/**
@@ -246,18 +223,18 @@ public class Pipeline {
 			});
 		}
 		
-		try {
-			FileHandler logHandler = new FileHandler(defaultLogFilename + ".xml", true); //Append to existing log
-			primaryLogger.addHandler( logHandler );
-	
-		} catch (SecurityException e) {
-			// TODO Auto-generated catch block
-			System.err.println("ERROR :  Could not open log file for writing! \n " + e.getCause() + e.getLocalizedMessage());
-			e.printStackTrace();
-		} catch (IOException e) {
-			System.err.println("ERROR :  Could not open log file for writing! \n " + e.getCause() + e.getLocalizedMessage());
-			e.printStackTrace();
-		}
+//		try {
+//			FileHandler logHandler = new FileHandler(defaultLogFilename + ".xml", true); //Append to existing log
+//			primaryLogger.addHandler( logHandler );
+//	
+//		} catch (SecurityException e) {
+//			// TODO Auto-generated catch block
+//			System.err.println("ERROR :  Could not open log file for writing! \n " + e.getCause() + e.getLocalizedMessage());
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			System.err.println("ERROR :  Could not open log file for writing! \n " + e.getCause() + e.getLocalizedMessage());
+//			e.printStackTrace();
+//		}
 		
 
 		Date beginTime = new Date();
@@ -272,6 +249,38 @@ public class Pipeline {
 	 * @throws ObjectCreationException
 	 */
 	public void initializePipeline() throws PipelineDocException, ObjectCreationException {
+		
+		//See if we should capture stderr and redirect it to the log file
+		if (props.getProperty(PipelineXMLConstants.CAPTURE_ERR) != null) {
+			System.out.println("Got property for capture err: " + props.getProperty(PipelineXMLConstants.CAPTURE_ERR));
+			Boolean capture = Boolean.parseBoolean( props.getProperty(PipelineXMLConstants.CAPTURE_ERR));
+			if (capture) {
+				Logger stdErrLog = Logger.getLogger("StdErr");
+				try {
+					String projHome = this.getProjectHome();
+					String errorLogPath = projHome + "/error_log.xml";
+					System.out.println("Writing error log to path: " + errorLogPath);
+
+					FileHandler stdErrHandler = new FileHandler(errorLogPath, false);
+					stdErrHandler.setFormatter(new java.util.logging.SimpleFormatter());
+					stdErrLog.addHandler(stdErrHandler);
+					final LoggingOutputStream logStream = new LoggingOutputStream(stdErrLog, Level.WARNING);
+					final PrintStream errStream = new PrintStream(logStream, true);
+
+					System.setErr(errStream);
+					System.err.println("Here's a test string from std err...");
+					primaryLogger.info("Directing all output from standard error to std. error logger at path: " + errorLogPath);
+				} catch (SecurityException e) {
+					primaryLogger.warning("Could not open file error_log.xml  : " + e.getMessage());
+					e.printStackTrace();
+				} catch (IOException e) {
+					primaryLogger.warning("Could not open file error_log.xml: " + e.getMessage());
+					e.printStackTrace();
+				} 
+
+			}
+		}
+				
 		if (xmlDoc == null) {
 			primaryLogger.severe(" ERROR : XML document not found / defined, aborting run ");
 			throw new IllegalStateException("XMLDoc not defined");
@@ -334,16 +343,18 @@ public class Pipeline {
 		Date beginTime = new Date();
 		
 		primaryLogger.info("Executing pipeline");
+
+		Date pipeBegin = new Date();
 		
 		for(Operator op : handler.getOperatorList()) {
 			try {
 				Date start = new Date();
 				fireOperatorBeginning(op);
 				primaryLogger.info("Executing operator : " + op.getObjectLabel() + " class: " + op.getClass());
-				op.performOperation();
+				op.operate();
 				System.err.flush(); //Make sure info is written to logger if necessary
 				Date end = new Date();
-				primaryLogger.info("Operator : " + op.getObjectLabel() + " class: " + op.getClass() + " has completed, total elapsed time: " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()));
+				primaryLogger.info("Operator : " + op.getObjectLabel() + " class: " + op.getClass() + " has completed, operator elapsed time: " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()) + "\n Pipeline elapsed time: " + ElapsedTimeFormatter.getElapsedTime(pipeBegin.getTime(), end.getTime()));
 				fireOperatorCompleted(op);
 			} catch (OperationFailedException e) {
 				fireMessage("Operator failed : " + e);

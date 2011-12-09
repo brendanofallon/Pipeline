@@ -24,28 +24,34 @@ public abstract class PipedCommandOp extends IOOperator {
 	
 	protected StringOutputStream errStream = new StringOutputStream();
 	
-	/**
-	 * The file buffer to which output to stdout will be directed
-	 * @return
-	 */
-	public FileBuffer getPipeDestinationBuffer() {
-		return outputBuffers.get(0);
-	}
-	
 	@Override
 	public void performOperation() throws OperationFailedException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
 		String command = getCommand();
 		
+		runAndCaptureOutput(command, logger, outputBuffers.get(0));
+			
+		Date now = new Date();
+		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed");
+	}
+
+	/**
+	 * We do most of the work here because some classes (such as MultiLaneAligner) use the below code
+	 * to do some output-stream capturing work 
+	 * @param command
+	 * @param logger
+	 * @throws OperationFailedException
+	 */
+	protected void runAndCaptureOutput(String command, Logger logger, FileBuffer destinationBuffer) throws OperationFailedException {
 		//Default to writing to first output buffer if it exists
 		OutputStream writer = null;
 		String outputPath = null;
 				
 		boolean binaryOutput = false;
-		if (outputBuffers.size()>0) {
-			outputPath = getPipeDestinationBuffer().getAbsolutePath();
-			binaryOutput = getPipeDestinationBuffer().isBinary();
+		if (destinationBuffer != null) {
+			outputPath = destinationBuffer.getAbsolutePath();
+			binaryOutput = destinationBuffer.isBinary();
 			try {
 				writer = new FileOutputStream(outputPath);
 			} catch (IOException e1) {
@@ -75,7 +81,7 @@ public abstract class PipedCommandOp extends IOOperator {
 					}
 					else {
 						logger.info(" Pipe operator " + getObjectLabel() + " is piping text output to path : " + outputPath);
-						outputHandler = new StringPipeHandler(p.getInputStream(), new PrintStream(getPipeDestinationBuffer().getFile()));
+						outputHandler = new StringPipeHandler(p.getInputStream(), new PrintStream(destinationBuffer.getFile()));
 					}
 					
 
@@ -96,6 +102,7 @@ public abstract class PipedCommandOp extends IOOperator {
 				//Wait for output handling thread to die
 				if (outputHandler != null && outputHandler.isAlive())
 					outputHandler.join();
+				
 			}
 			catch (IOException e1) {
 				throw new OperationFailedException("Operator: " + getObjectLabel() + " was encountered an IO exception : \n" + errStream.toString() + "\n" + e1.getLocalizedMessage(), this);
@@ -103,11 +110,7 @@ public abstract class PipedCommandOp extends IOOperator {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-			logger.info("[ " + now + "] Operator: " + getObjectLabel() + " has completed");
-		
 	}
-
 	/**
 	 * Return the string containing the command to be executed
 	 * @return

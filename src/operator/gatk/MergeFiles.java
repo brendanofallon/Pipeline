@@ -2,10 +2,13 @@ package operator.gatk;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import buffer.BAMFile;
+import buffer.BEDFile;
 import buffer.FileBuffer;
 import buffer.MultiFileBuffer;
+import buffer.GlobFileBuffer;
 import buffer.ReferenceFile;
 import buffer.VCFFile;
 import operator.CommandOperator;
@@ -23,6 +26,7 @@ public class MergeFiles extends CommandOperator {
 	@Override
 	protected String getCommand() throws OperationFailedException {
 		ReferenceFile reference = (ReferenceFile) getInputBufferForClass(ReferenceFile.class);
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		List<String> filesToMerge = new ArrayList<String>();
 		
 		boolean hasBAMs = false;
@@ -33,7 +37,7 @@ public class MergeFiles extends CommandOperator {
 				reference = (ReferenceFile) buffer;
 				continue;
 			}
-			if (buffer instanceof MultiFileBuffer) {
+			if ((buffer instanceof MultiFileBuffer) || (buffer instanceof GlobFileBuffer)) {
 				MultiFileBuffer multiFile = (MultiFileBuffer)buffer;
 				for(int i=0; i<multiFile.getFileCount(); i++) {
 					FileBuffer mFile = multiFile.getFile(i);
@@ -78,7 +82,15 @@ public class MergeFiles extends CommandOperator {
 			gatkPath = path;
 		}
 		
+		FileBuffer bedFile = getInputBufferForClass(BEDFile.class);
+		
+		
 		String outputPath = outputBuffers.get(0).getAbsolutePath();
+
+		if (!hasBAMs && !hasVCFs) {
+			logger.warning("Found neither BAM nor VCF files for MergeFiles, cannot merge.");
+			return null;
+		}
 		
 		String command = "X?";
 		
@@ -89,6 +101,9 @@ public class MergeFiles extends CommandOperator {
 			for(String filePath : filesToMerge) {
 				command = command + " -I " + filePath;
 			}
+			if (bedFile != null) {
+				command = command + " -L:intervals,BED " + bedFile.getAbsolutePath() + " ";
+			}
 			command = command + " -o " + outputPath;
 		}
 		
@@ -98,6 +113,9 @@ public class MergeFiles extends CommandOperator {
 					" -T CombineVariants ";
 			for(String filePath : filesToMerge) {
 				command = command + " --variant " + filePath;
+			}
+			if (bedFile != null) {
+				command = command + " -L:intervals,BED " + bedFile.getAbsolutePath() + " ";
 			}
 			command = command + " -o " + outputPath;
 		}

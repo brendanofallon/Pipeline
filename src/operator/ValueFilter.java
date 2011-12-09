@@ -142,7 +142,7 @@ public class ValueFilter extends IOOperator {
 			if (target.equals("QUAL")) {
 				String[] toks = expr.split("\\s");
 				value = Double.parseDouble(toks[5]);
-				System.out.println("Target is QUAL : parsed quality of : " + value);
+				//System.out.println("Target is QUAL : parsed quality of : " + value);
 			}
 			else {
 				int index = expr.indexOf(target);
