@@ -31,7 +31,6 @@ public class BWAAligner extends PipedCommandOp {
 			
 		String referencePath = inputBuffers.get(0).getAbsolutePath();
 		String readsPath = inputBuffers.get(1).getAbsolutePath();
-		String outputPath = outputBuffers.get(0).getAbsolutePath();
 
 		String command = pathToBWA + " aln -t " + threads + " " + referencePath + " " + readsPath;
 		return command;

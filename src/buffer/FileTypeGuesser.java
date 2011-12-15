@@ -20,7 +20,7 @@ public class FileTypeGuesser {
 		if (file.getName().endsWith(".csv")) {
 			return new CSVFile(file);
 		}
-		if (file.getName().endsWith(".fastq") || file.getName().endsWith(".fq")) {
+		if (file.getName().endsWith(".fastq") || file.getName().endsWith(".fq") || file.getName().endsWith("fastq.gz") || file.getName().endsWith(".fq.gz")) {
 			return new FastQFile(file);
 		}
 		if (file.getName().endsWith("fas") || file.getName().endsWith("fasta") || file.getName().endsWith("fa")) {

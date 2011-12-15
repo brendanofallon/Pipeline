@@ -20,16 +20,16 @@ public class BinaryPipeHandler extends Thread {
 	public BinaryPipeHandler(InputStream inpStr, OutputStream writer) {
 		this.inpStr = inpStr;
 		this.writer = writer;
+		this.setPriority(Thread.MAX_PRIORITY);
 	}
 
 	public void run() {
-			int c;
 			try {
 				//Attempt to read data in 1Mb chunks, this is a lot faster than
 				//doing things one byte at a time
 				//If an application writes binary data to stdout extremely quickly
 				//then we may need to increase the buffer size, but this appears to be OK for now
-				byte[] data = new byte[1024];
+				byte[] data = new byte[8192];
 				int bytesRead = inpStr.read(data);
 				while(bytesRead >= 0) {
 					writer.write(data, 0, bytesRead);
@@ -38,7 +38,7 @@ public class BinaryPipeHandler extends Thread {
 				writer.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				e.printStackTrace(System.err);
 			}
 
 	}

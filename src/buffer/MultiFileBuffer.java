@@ -32,6 +32,14 @@ public class MultiFileBuffer extends FileBuffer {
 		files.add(buf);
 	}
 	
+	/**
+	 * Return the list of files that this buffer encapsulates
+	 * @return
+	 */
+	public List<FileBuffer> getFiles() {
+		return files;
+	}
+	
 	public void removeFile(FileBuffer buf) {
 		files.remove(buf);
 	}
@@ -88,8 +96,8 @@ public class MultiFileBuffer extends FileBuffer {
 			String name = buff.getFile().getName();
 			int index1 = -1;
 			int index2 = -1;
-			if (name.startsWith("contig")) {
-				index1 = 7;
+			if (name.contains("contig")) {
+				index1 = name.indexOf("contig")+1;
 				index2 = name.indexOf(".");
 			}
 			else {

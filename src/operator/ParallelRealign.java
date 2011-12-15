@@ -2,6 +2,9 @@ package operator;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -11,6 +14,7 @@ import org.w3c.dom.NodeList;
 
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
+import util.ElapsedTimeFormatter;
 
 import buffer.BAMFile;
 import buffer.BEDFile;
@@ -146,7 +150,7 @@ public class ParallelRealign extends IOOperator {
 		Process p;
 
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		logger.info("ParallelRealign is executing command : " + command);
+		logger.info("ParallelRealign is executing command : " + command + "\n Active tasks: " + threadPool.getActiveCount() + "\n Completed tasks: " + threadPool.getCompletedTaskCount() + "\n Pool size: " + threadPool.getCorePoolSize());
 		try {
 			p = r.exec(command);
 			Thread errorHandler = new StringPipeHandler(p.getErrorStream(), System.err);
@@ -159,7 +163,6 @@ public class ParallelRealign extends IOOperator {
 			} catch (InterruptedException e) {
 				throw new OperationFailedException("Target realigner was interrupted : " + System.err.toString() + "\n" + e.getLocalizedMessage(), this);
 			}
-
 
 		}
 		catch (IOException e1) {
@@ -195,6 +198,7 @@ public class ParallelRealign extends IOOperator {
 			logger.info("Beginning contig realignment for contig " + filePrefix);
 			String rand = "" + (int)Math.round( 100000*Math.random() );
 			String targetsPath;
+			Date begin = new Date();
 			String realignedContigPath;
 			String pathPrefix = (String) Pipeline.getPropertyStatic(Pipeline.PROJECT_HOME);
 			if (pathPrefix == null)
@@ -210,7 +214,7 @@ public class ParallelRealign extends IOOperator {
 			}
 			
 			
-			String command = "java -Xmx8g " + jvmARGStr + " -jar " + gatkPath + 
+			String command = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
 					" -R " + referencePath + 
 					" -I " + inputPath + 
 					" -T RealignerTargetCreator -o " + targetsPath;
@@ -220,21 +224,19 @@ public class ParallelRealign extends IOOperator {
 				command = command + " --known " + knownIndelsPath;
 			}
 			
-			String command2 = "java -Xmx8g " + jvmARGStr + " -jar " + gatkPath + 
+			String command2 = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
 					" -R " + referencePath + 
 					" -I " + inputPath + 
 					" -T IndelRealigner " + 
 					" -targetIntervals " + targetsPath + " -o " + realignedContigPath;
 			if (contig != null)
-					command = command +	" -L " + contig;
+					command2 = command2 +	" -L " + contig;
 			if (knownIndelsPath != null) {
-				command = command + " --known " + knownIndelsPath;
+				command2 = command2 + " --known " + knownIndelsPath;
 			}
 
 			try {
-				System.out.println("Executing command : " + command);
 				executeCommand(command);
-				System.out.println("Executing command : " + command2);
 				executeCommand(command2);
 				addOutputFile(realignedContigPath, contig);
 			}
@@ -243,8 +245,8 @@ public class ParallelRealign extends IOOperator {
 				errorException = e;
 			}
 			
-
-			logger.info("Completed realignment for contig " + filePrefix);
+			Date end = new Date();
+			logger.info("Completed realignment for contig " + filePrefix + "\n Elapsed time: " + ElapsedTimeFormatter.getElapsedTime(begin.getTime(), end.getTime()) + "\n Active tasks: " + threadPool.getActiveCount() + "\n Completed tasks: " + threadPool.getCompletedTaskCount() + "\n Pool size: " + threadPool.getCorePoolSize());
 			finished = true;
 		}
 		

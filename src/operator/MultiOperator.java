@@ -1,6 +1,8 @@
 package operator;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -47,10 +49,19 @@ public abstract class MultiOperator extends IOOperator {
 	
 	protected abstract String[] getCommand(FileBuffer inputBuffer);
 	
+	/**
+	 * Return number of threads to use in pool. In general, this should not be greater than
+	 * Pipeline.getThreadCount(), but for some operations we may want it to be less...
+	 * @return
+	 */
+	public int getPreferredThreadCount() {
+		return Pipeline.getPipelineInstance().getThreadCount();
+	}
+	
 	@Override
 	public void performOperation() throws OperationFailedException {
 		
-		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( Pipeline.getPipelineInstance().getThreadCount() );
+		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
 		
 		Date start = new Date();
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
@@ -176,11 +187,11 @@ public abstract class MultiOperator extends IOOperator {
 			try {
 				for (int i=0; i<command.length; i++) {
 					Date begin = new Date();
-					logger.info("Beginning task with command : " + command[i]);
+					logger.info("Beginning task with command : " + command[i] + "\n Total tasks: " + threadPool.getTaskCount() + "\n Active tasks: " + threadPool.getActiveCount() + "\n Completed tasks: " + threadPool.getCompletedTaskCount() + "\n Pool size: " + threadPool.getCorePoolSize());
 					executeCommand(command[i]);
 					Date end = new Date();
 					
-					logger.info("Task with command : " + command[i] + " has completed (elapsed time " + ElapsedTimeFormatter.getElapsedTime(begin.getTime(), end.getTime()) + ")");
+					logger.info("Task with command : " + command[i] + " has completed (elapsed time " + ElapsedTimeFormatter.getElapsedTime(begin.getTime(), end.getTime()) + ")\n Total tasks: " + threadPool.getTaskCount() + "\n Active tasks: " + threadPool.getActiveCount() + "\n Completed tasks: " + threadPool.getCompletedTaskCount() + "\n Pool size: " + threadPool.getCorePoolSize());
 				}
 				
 			} catch (OperationFailedException e) {

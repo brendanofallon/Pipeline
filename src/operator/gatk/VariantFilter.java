@@ -1,6 +1,7 @@
 package operator.gatk;
 
 import buffer.BAMFile;
+import buffer.BEDFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
 import buffer.VCFFile;
@@ -11,7 +12,7 @@ import pipeline.PipelineXMLConstants;
 public class VariantFilter extends CommandOperator {
 
 	public static final String FILTER = "filter";
-	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
+	public final String defaultMemOptions = " -Xms1024m -Xmx8g";
 	public static final String PATH = "path";
 	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
@@ -39,12 +40,16 @@ public class VariantFilter extends CommandOperator {
 		
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
 		String inputFile = getInputBufferForClass(VCFFile.class).getAbsolutePath();
+		FileBuffer bedFile = getInputBufferForClass(BEDFile.class);
 		String outputVCF = outputBuffers.get(0).getAbsolutePath();
-				
+			
+		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
 		command = command + " -R " + reference;
 		command = command + " --variant " + inputFile + " -T VariantFiltration";
 		command = command + " --filterExpression \"" + filterStr + "\" ";
+		if (bedFile != null)
+			command = command + " -L:intervals,BED " + bedFile.getAbsolutePath();
 		command = command + " --out " + outputVCF;
 		return command;
 	}

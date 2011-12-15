@@ -21,8 +21,11 @@ import pipeline.PipelineObject;
  */
 public abstract class Operator extends PipelineObject {
 
+	enum State {Initialized, Started, Completed, Error};
+	
 	protected Map<String, String> properties = new HashMap<String, String>();
 	
+	protected State state = State.Initialized;
 	protected boolean verbose = true;
 	
 	@Override
@@ -31,6 +34,26 @@ public abstract class Operator extends PipelineObject {
 		Logger.getLogger(Pipeline.primaryLoggerName).info("Operator : " + this.getObjectLabel() + " adding attribute " + key + " = " + value);
 	}
 		
+	/**
+	 * Get the current State of this operator
+	 * @return
+	 */
+	public State getState() {
+		return state;
+	}
+	
+	public void operate() throws OperationFailedException {
+		state = State.Started;
+		
+		try {
+			performOperation();
+		}
+		catch (OperationFailedException oex) {
+			state = State.Error;
+			throw oex;
+		}
+		state = State.Completed;
+	}
 	
 	public abstract void performOperation() throws OperationFailedException;
 }

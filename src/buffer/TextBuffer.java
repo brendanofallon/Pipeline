@@ -11,6 +11,9 @@ import org.w3c.dom.NodeList;
  */
 public class TextBuffer extends FileBuffer {
 
+	public TextBuffer() {
+	}
+	
 	public TextBuffer(File file) {
 		super(file);
 	}

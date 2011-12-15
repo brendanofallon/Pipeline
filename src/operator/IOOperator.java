@@ -40,7 +40,7 @@ public abstract class IOOperator extends Operator {
 	 * @param clz
 	 * @return
 	 */
-	public FileBuffer getInputBufferForClass(Class clz) {
+	public FileBuffer getInputBufferForClass(Class<?> clz) {
 		for(FileBuffer buff :  inputBuffers) {
 			if (clz.isAssignableFrom(buff.getClass()))
 				return buff;
@@ -53,7 +53,7 @@ public abstract class IOOperator extends Operator {
 	 * @param clz
 	 * @return
 	 */
-	public List<FileBuffer> getAllInputBuffersForClass(Class clz) {
+	public List<FileBuffer> getAllInputBuffersForClass(Class<?> clz) {
 		List<FileBuffer> buffers = new ArrayList<FileBuffer>();
 		for(FileBuffer buff :  inputBuffers) {
 			if (clz.isAssignableFrom(buff.getClass()))
@@ -67,7 +67,7 @@ public abstract class IOOperator extends Operator {
 	 * @param clz
 	 * @return
 	 */
-	public FileBuffer getOutputBufferForClass(Class clz) {
+	public FileBuffer getOutputBufferForClass(Class<?> clz) {
 		for(FileBuffer buff :  outputBuffers) {
 			if (clz.isAssignableFrom(buff.getClass()))
 				return buff;
@@ -127,8 +127,8 @@ public abstract class IOOperator extends Operator {
 
 		try {
 			p = r.exec(command);
-			Thread errorHandler = new StringPipeHandler(p.getErrorStream(), System.err);
-			errorHandler.start();
+			//Thread errorHandler = new StringPipeHandler(p.getErrorStream(), System.err);
+			//errorHandler.start();
 
 			try {
 				if (p.waitFor() != 0) {
@@ -138,7 +138,7 @@ public abstract class IOOperator extends Operator {
 				throw new OperationFailedException("Task was interrupted : " + System.err.toString() + "\n" + e.getLocalizedMessage(), this);
 			}
 
-
+			
 		}
 		catch (IOException e1) {
 			throw new OperationFailedException("Task encountered an IO exception : " + System.err.toString() + "\n" + e1.getLocalizedMessage(), this);

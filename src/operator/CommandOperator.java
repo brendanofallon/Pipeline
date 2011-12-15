@@ -30,9 +30,13 @@ public abstract class CommandOperator extends IOOperator {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
 		String command = getCommand();
-		logger.info("[ " + (new Date()) + "] Operator: " + getObjectLabel() + " Executing command : " + command );
-		
-		executeCommand(command);
+		if (command != null) {
+			logger.info("[ " + (new Date()) + "] Operator: " + getObjectLabel() + " Executing command : " + command );
+			executeCommand(command);
+		}
+		else {
+			logger.warning("Null command found for command operator " + getObjectLabel() + ", not executing any commands");
+		}
 
 	}
 
