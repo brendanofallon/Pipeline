@@ -27,6 +27,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
+	public static final String SKIPSAI = "skipsai";
 	protected String pathToBWA = "bwa";
 	protected int defaultThreads = 4;
 	protected int threads = defaultThreads;
@@ -68,7 +69,12 @@ public class MultiLaneAligner extends PipedCommandOp {
 		}
 		referencePath = reference.getAbsolutePath();
 		
-		
+		boolean skipSAIGen = false;
+		String skipsaiStr = properties.get(SKIPSAI);
+		if (skipsaiStr != null) {
+			skipSAIGen = Boolean.parseBoolean(skipsaiStr);
+			logger.info("Parsed " + skipSAIGen + " for skip sai file generation");
+		}
 		
 		List<FileBuffer> files = this.getAllInputBuffersForClass(MultiFileBuffer.class);
 		if (files.size() != 2) {
@@ -107,11 +113,13 @@ public class MultiLaneAligner extends PipedCommandOp {
 		for(int i=0; i<files1.getFileCount(); i++) {
 			FileBuffer reads1 = files1.getFile(i);
 			FileBuffer reads2 = files2.getFile(i);
-			AlignerJob task1 = new AlignerJob(reads1);
-			threadPool.submit(task1);
-			AlignerJob task2 = new AlignerJob(reads2);
-			threadPool.submit(task2);
 			
+			if (!skipSAIGen) {
+				AlignerJob task1 = new AlignerJob(reads1);
+				threadPool.submit(task1);
+				AlignerJob task2 = new AlignerJob(reads2);
+				threadPool.submit(task2);
+			}
 			StringPair outputNames = new StringPair();
 			outputNames.readsOne = reads1.getAbsolutePath(); 
 			outputNames.readsTwo = reads2.getAbsolutePath();

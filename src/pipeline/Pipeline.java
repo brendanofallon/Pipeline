@@ -461,25 +461,42 @@ public class Pipeline {
 			projHome = projHome + "/";
 		}
 		
+		String threadCountStr = argParser.getStringOp("threads");
+		int threads = -1; //Use value from properties file if possible
+		if (threadCountStr != null) {
+			threads = Integer.parseInt(threadCountStr);
+		}
+		
 		//Assume all args that end in .xml are input files and execute them in order
 		for(int i=0; i<args.length; i++) {
 			if (args[i].endsWith(".xml")) {
 				File input = new File(args[i]);
 				Pipeline pipeline = new Pipeline(input);
+				
+				//Set project home
 				if (projHome != null && projHome.length()>0)
 					pipeline.setProperty("home", projHome);
+				
+				//Set preferred thread count
+				if (threads > -1) {
+					pipeline.setProperty(PipelineXMLConstants.THREADS_ATTR, "" + threads);
+				}
+				
 				try {
 					pipeline.initializePipeline();
 					pipeline.execute();
 				} catch (PipelineDocException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					e.printStackTrace(System.out);
 				} catch (ObjectCreationException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					e.printStackTrace(System.out);
 				} catch (OperationFailedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					e.printStackTrace(System.out);
 				}
 			}
 		}

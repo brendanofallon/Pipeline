@@ -1,6 +1,7 @@
 package operator;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -208,6 +209,27 @@ public class CompareVCF extends IOOperator {
 		}
 	}
 	
+	/**
+	 * Use a VCFLineParser to count the number of heterozygotes in this VCF file
+	 * @param file
+	 * @return
+	 */
+	private int countHets(File file) {
+		int count = 0;
+		try {
+			VCFLineParser vp = new VCFLineParser(file);
+			while(vp.advanceLine()) {
+				if (vp.isHetero()) 
+					count++;
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return count;
+	}
+	
 	@Override
 	public void performOperation() throws OperationFailedException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
@@ -252,10 +274,16 @@ public class CompareVCF extends IOOperator {
 			System.out.println("Mean quality of sites in A but not in intersection: " + formatter.format(meanQuality(uniqA)));
 			System.out.println("Mean quality of sites in B but not in intersection: " + formatter.format(meanQuality(uniqB)));
 			
-			System.out.println("Sites unique to " + fileA.getFilename());
-			emitToTable(uniqA);
-			System.out.println("Sites unique to " + fileB.getFilename());
-			emitToTable(uniqB);
+			int hetsA = countHets(fileA.getFile());
+			int hetsB = countHets(fileB.getFile());
+			System.out.println("Heterozyotes in " + fileA.getFilename() + " : " + hetsA);
+			System.out.println("Heterozyotes in " + fileB.getFilename() + " : " + hetsB);
+
+			
+//			System.out.println("Sites unique to " + fileA.getFilename());
+//			emitToTable(uniqA);
+//			System.out.println("Sites unique to " + fileB.getFilename());
+//			emitToTable(uniqB);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -263,6 +291,10 @@ public class CompareVCF extends IOOperator {
 		
 		
 	}
+
+
+
+	
 
 
 
