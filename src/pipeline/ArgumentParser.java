@@ -42,11 +42,11 @@ public class ArgumentParser {
 		for(int i=0; i<args.length; i++) {
 			if (args[i].startsWith("-")) {
 				String key = args[i].substring(1);
+				String valStr = "1";
 				if (i+1 < args.length) {
-					String valStr = args[i+1];
-					suppliedArgs.put(key, valStr);
+					valStr = args[i+1];
 				}
-				
+				suppliedArgs.put(key, valStr);
 			}
 		}
 	}

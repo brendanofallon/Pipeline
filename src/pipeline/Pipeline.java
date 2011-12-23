@@ -283,7 +283,7 @@ public class Pipeline {
 				
 		if (xmlDoc == null) {
 			primaryLogger.severe(" ERROR : XML document not found / defined, aborting run ");
-			throw new IllegalStateException("XMLDoc not defined");
+			throw new PipelineDocException("XMLDoc not defined");
 		}
 		
 		Element docElement = xmlDoc.getDocumentElement();
@@ -456,10 +456,23 @@ public class Pipeline {
 		ArgumentParser argParser = new ArgumentParser();
 		argParser.parse(args);
 		
+		
+		String check = argParser.getStringOp("check");
+		boolean checkAndExit = false;
+		if (check != null) {
+			System.out.println("Checking input file only.");
+			checkAndExit = true;
+		}
+		else {
+			System.out.println("Executing file normally (check mode off)");
+		}
+		
 		String projHome = argParser.getStringOp("home");
 		if (projHome != null && (!projHome.endsWith("/"))) {
 			projHome = projHome + "/";
 		}
+		
+		
 		
 		//Assume all args that end in .xml are input files and execute them in order
 		for(int i=0; i<args.length; i++) {
@@ -470,16 +483,22 @@ public class Pipeline {
 					pipeline.setProperty("home", projHome);
 				try {
 					pipeline.initializePipeline();
-					pipeline.execute();
+					
+					if (checkAndExit) {
+						System.out.println("SUCCESS: Pipeline initialized properly");
+					}
+					else {
+						pipeline.execute();
+					}
 				} catch (PipelineDocException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					System.out.println("ERROR: Could not properly parse input document. \n" + e.getMessage());
 				} catch (ObjectCreationException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					System.out.println("ERROR: Could not create some objects \n" + e.getMessage());
 				} catch (OperationFailedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+					System.out.println("ERROR: Operation " + e.getSourceOperator().getObjectLabel() + " failed. \n" + e.getMessage());
 				}
 			}
 		}

@@ -28,6 +28,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
 	protected String pathToBWA = "bwa";
+	protected String skipSAI = "skipsai";
 	protected int defaultThreads = 4;
 	protected int threads = defaultThreads;
 	protected String referencePath = null;
@@ -102,16 +103,25 @@ public class MultiLaneAligner extends PipedCommandOp {
 		
 		logger.info("Beginning multi-lane alignment with " + files1.getFileCount() + " read pairs");
 		
+		boolean skipSAIGen = false;
+		String skipSAIStr = properties.get(skipSAI);
+		if (skipSAIStr != null) {
+			skipSAIGen = Boolean.parseBoolean(skipSAIStr);
+			logger.info("Setting skip .sai generation to : " + skipSAIGen);
+		}
+		
 		//These are done in serial since bwa can parallelize itself
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( Math.max(1, getPreferredThreadCount()/threads) );
 		for(int i=0; i<files1.getFileCount(); i++) {
 			FileBuffer reads1 = files1.getFile(i);
 			FileBuffer reads2 = files2.getFile(i);
-			AlignerJob task1 = new AlignerJob(reads1);
-			threadPool.submit(task1);
-			AlignerJob task2 = new AlignerJob(reads2);
-			threadPool.submit(task2);
 			
+			if (!skipSAIGen) {
+				AlignerJob task1 = new AlignerJob(reads1);
+				threadPool.submit(task1);
+				AlignerJob task2 = new AlignerJob(reads2);
+				threadPool.submit(task2);
+			}
 			StringPair outputNames = new StringPair();
 			outputNames.readsOne = reads1.getAbsolutePath(); 
 			outputNames.readsTwo = reads2.getAbsolutePath();
@@ -120,13 +130,18 @@ public class MultiLaneAligner extends PipedCommandOp {
 			saiFileNames.add(outputNames);
 		}
 		
-		try {
-			logger.info("All alignment jobs have been submitted to MultiLaneAligner, " + getObjectLabel() + ", now awaiting termination");
-			threadPool.shutdown(); //No new tasks will be submitted,
-			threadPool.awaitTermination(2, TimeUnit.DAYS); //Wait until all tasks have completed			
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if (!skipSAIGen) {
+			try {
+				logger.info("All alignment jobs have been submitted to MultiLaneAligner, " + getObjectLabel() + ", now awaiting termination");
+				threadPool.shutdown(); //No new tasks will be submitted,
+				threadPool.awaitTermination(2, TimeUnit.DAYS); //Wait until all tasks have completed			
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		else {
+			logger.info("Skipping .sai generation, no jobs submitted to pool for this task");
 		}
 		
 		logger.info("All bwa aln steps have completed, now creating SAM files");
