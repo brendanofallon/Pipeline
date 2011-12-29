@@ -21,18 +21,35 @@ import util.StringOutputStream;
  */
 public abstract class CommandOperator extends IOOperator {
 	
+	//Stream used to capture output written to System.err
 	protected StringOutputStream errStream = new StringOutputStream();
 
+	/**
+	 * Obtain a (single) command to be executed
+	 * @return
+	 * @throws OperationFailedException
+	 */
 	protected abstract String getCommand() throws OperationFailedException;
+
+	/**
+	 * Obtain a list of commands to be executed. They will be executed serially in the order given 
+	 * @return
+	 * @throws OperationFailedException
+	 */
+	protected String[] getCommands() throws OperationFailedException {
+		return new String[]{ getCommand() };
+	}
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
-		String command = getCommand();
-		if (command != null) {
-			logger.info("[ " + (new Date()) + "] Operator: " + getObjectLabel() + " Executing command : " + command );
-			executeCommand(command);
+		String[] commands = getCommands();
+		if (commands != null) {
+			for(int i=0; i<commands.length; i++) {
+				logger.info("[ " + (new Date()) + "] Operator: " + getObjectLabel() + " Executing command : " + commands[i] );
+				executeCommand(commands[i]);
+			}
 		}
 		else {
 			logger.warning("Null command found for command operator " + getObjectLabel() + ", not executing any commands");

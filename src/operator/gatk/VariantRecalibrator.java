@@ -19,6 +19,11 @@ public class VariantRecalibrator extends CommandOperator {
 	protected int threads = 1;
 	
 	@Override
+	public boolean requiresReference() {
+		return true;
+	}
+	
+	@Override
 	protected String getCommand() {
 		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);

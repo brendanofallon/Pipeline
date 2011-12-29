@@ -10,6 +10,7 @@ import org.w3c.dom.NodeList;
 
 import pipeline.PipelineObject;
 import buffer.FileBuffer;
+import buffer.ReferenceFile;
 
 /**
  * An Input/Output operator. These are a type of operator that works on one or more input files
@@ -25,14 +26,17 @@ public abstract class IOOperator extends Operator {
 	
 	protected List<FileBuffer> inputBuffers = new ArrayList<FileBuffer>();
 	protected List<FileBuffer> outputBuffers = new ArrayList<FileBuffer>();
-	
-	
+		
 	public void addInputBuffer(FileBuffer buff) {
 		inputBuffers.add(buff);
 	}
 	
 	public void addOutputBuffer(FileBuffer buff) {
 		outputBuffers.add(buff);
+	}
+	
+	public boolean requiresReference() {
+		return false;
 	}
 	
 	/**
@@ -113,6 +117,12 @@ public abstract class IOOperator extends Operator {
 			}
 		}
 		
+		if ( requiresReference() ) {
+			ReferenceFile ref = (ReferenceFile) getInputBufferForClass(ReferenceFile.class);
+			if (ref == null) {
+				throw new IllegalArgumentException("Operator " + getObjectLabel() + " requires reference file, but none were found");
+			}
+		}
 	}
 	
 	

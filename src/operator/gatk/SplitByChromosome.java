@@ -38,6 +38,11 @@ public class SplitByChromosome extends IOOperator {
 	protected MultiFileBuffer outputFiles;
 	
 	@Override
+	public boolean requiresReference() {
+		return true;
+	}
+	
+	@Override
 	public void performOperation() throws OperationFailedException {
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(Pipeline.getPipelineInstance().getThreadCount());
 		
@@ -70,16 +75,15 @@ public class SplitByChromosome extends IOOperator {
 		}
 
 		//Submit all jobs to the thread pool
-		for(int i=1; i<24; i++) {
+		for(int i=1; i<25; i++) {
 			String contig = "" + i;
-			if (i == 22)
+			if (i == 23)
 				contig = "X";
-			if (i==23)
+			if (i==24)
 				contig = "Y";
 
 			Split job = new Split(contig);
 			threadPool.submit(job);
-
 		}
 
 		try {

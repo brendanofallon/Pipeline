@@ -16,6 +16,11 @@ public class IndelRealign extends CommandOperator {
 	protected String gatkPath = defaultGATKPath;
 	
 	@Override
+	public boolean requiresReference() {
+		return true;
+	}
+	
+	@Override
 	protected String getCommand() {
 		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);

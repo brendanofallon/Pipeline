@@ -99,7 +99,13 @@ public class ObjectHandler {
 		return operatorList;
 	}
 	
-	
+	/**
+	 * Recursively creates all objects descending from the given XML element (in pre-order) 
+	 * and then creates this element using the default no-arg constructor (as in class.newInstance() )
+	 * @param el
+	 * @return
+	 * @throws ObjectCreationException
+	 */
 	private PipelineObject createElement(Element el) throws ObjectCreationException {
 		
 		if (verbose) {

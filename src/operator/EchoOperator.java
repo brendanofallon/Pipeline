@@ -22,6 +22,8 @@ public class EchoOperator extends Operator {
 		Logger.getLogger(Pipeline.primaryLoggerName).info("Echo operator says : " + message);
 	}
 
+	
+	
 	@Override
 	public void initialize(NodeList children) {
 		for(int i=0; i<children.getLength(); i++) {

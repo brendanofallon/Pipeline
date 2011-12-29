@@ -32,6 +32,11 @@ public class MultiGenotype extends MultiOperator {
 	}
 	
 	@Override
+	public boolean requiresReference() {
+		return true;
+	}
+	
+	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
 		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);

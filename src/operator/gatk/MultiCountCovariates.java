@@ -27,6 +27,11 @@ public class MultiCountCovariates extends MultiOperator {
 	protected int threads = 4;
 	
 	@Override
+	public boolean requiresReference() {
+		return true;
+	}
+	
+	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)

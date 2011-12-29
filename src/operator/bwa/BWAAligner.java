@@ -13,6 +13,11 @@ public class BWAAligner extends PipedCommandOp {
 	protected int threads = defaultThreads;
 
 	@Override
+	public boolean requiresReference() {
+		return true;
+	}
+	
+	@Override
 	protected String getCommand() {
 		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.BWA_PATH);

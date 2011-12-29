@@ -51,20 +51,19 @@ public class CompareVCF extends IOOperator {
 	}
 	
 	private int buildVariantMap(VCFFile file, Map<String, Map<Integer, VariantRecord>> map) throws IOException {
-		BufferedReader reader = new BufferedReader(new FileReader(file.getFile()));
-		String line = reader.readLine();
+		//BufferedReader reader = new BufferedReader(new FileReader(file.getFile()));
+		VCFLineParser vParser = new VCFLineParser(file.getFile());
 		int totalVarsCounted = 0;
 		//skip initial comments, etc
-		while(line != null && line.startsWith("#"))
-			line = reader.readLine();
 		
-		while(line != null) {
-			String[] toks = line.split("\\s");
-			String contig = toks[0];
-			int pos = Integer.parseInt(toks[1]);
-			double qual = Double.parseDouble(toks[5]);
-			double readDepth = parseValue(line, "DP");
-			double alleleFreq = parseValue(line, "AF");
+		while(vParser.advanceLine()) {
+			String contig = vParser.getContig();
+			int pos = vParser.getPosition();
+			double qual = vParser.getQuality();
+			boolean het = vParser.isHetero();
+			//int depth = vParser.
+			//double readDepth = parseValue(line, "DP");
+			
 			
 			Map<Integer, VariantRecord> contigMap = map.get(contig);
 			if (contigMap == null) {
@@ -73,13 +72,10 @@ public class CompareVCF extends IOOperator {
 			}
 			VariantRecord rec = new VariantRecord();
 			rec.quality = qual;
-			rec.readDepth = readDepth;
-			rec.alleleFrequency = alleleFreq;
+			rec.hetero = het;
 			contigMap.put(pos, rec);
 			totalVarsCounted++;
-			line = reader.readLine();
 		}
-		reader.close();
 		return totalVarsCounted;
 	}
 
@@ -203,7 +199,7 @@ public class CompareVCF extends IOOperator {
 			Collections.sort(sites);
 			for(Integer pos : sites) {
 				VariantRecord rec = varC.get(pos);
-				out.println(contig + "\t" + pos + "\t" + rec.quality + "\t" + rec.readDepth + "\t" + rec.alleleFrequency);
+				out.println(contig + "\t" + pos + "\t" + rec.quality + "\t" + rec.hetero );
 			}
 			
 		}
@@ -230,11 +226,36 @@ public class CompareVCF extends IOOperator {
 		return count;
 	}
 	
+	private int countHets(Map<String, Map<Integer, VariantRecord>> recs) {
+		int count = 0;
+		for(String contig : recs.keySet()) {
+			Collection<VariantRecord> varRecs = recs.get(contig).values();
+			for(VariantRecord rec : varRecs) {
+				if (rec.hetero) 
+					count++;
+			}
+		}
+		
+		return count;
+	}
+
+	private int countVariants(Map<String, Map<Integer, VariantRecord>> recs) {
+		int count = 0;
+		for(String contig : recs.keySet()) {
+			Collection<VariantRecord> varRecs = recs.get(contig).values();
+			count += varRecs.size();
+			
+		}
+		
+		return count;
+	}
+	
 	@Override
 	public void performOperation() throws OperationFailedException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		FileBuffer fileA = inputBuffers.get(0);
 		FileBuffer fileB = inputBuffers.get(1);
+		DecimalFormat formatter = new DecimalFormat("#0.00");
 		
 		try {
 			int totalA = buildVariantMap( (VCFFile)fileA, variantsA);
@@ -263,8 +284,12 @@ public class CompareVCF extends IOOperator {
 			Map<String, Map<Integer, VariantRecord>> uniqA = removeFrom(variantsA, intersection);
 			Map<String, Map<Integer, VariantRecord>> uniqB = removeFrom(variantsB, intersection);
 			
+			int hetsA = countHets(variantsA);
+			int hetsB = countHets(variantsB);
+			System.out.println("Heterozyotes in " + fileA.getFilename() + " : " + hetsA + " ( " + formatter.format(100.0*(double)hetsA/(double)countVariants(variantsA)) + " % )");
+			System.out.println("Heterozyotes in " + fileB.getFilename() + " : " + hetsB +  " ( " + formatter.format(100.0*(double)hetsB/(double)countVariants(variantsB)) + " % )");
 			
-			DecimalFormat formatter = new DecimalFormat("#0.00");
+
 			System.out.println("Total intersection size: " + intersectionSize);
 			System.out.println("%Intersection in " + fileA.getFile().getName() + " : " + formatter.format( intersectionSize / (double)totalA));
 			System.out.println("%Intersection in " + fileB.getFile().getName() + " : " + formatter.format( intersectionSize / (double)totalB));
@@ -274,12 +299,11 @@ public class CompareVCF extends IOOperator {
 			System.out.println("Mean quality of sites in A but not in intersection: " + formatter.format(meanQuality(uniqA)));
 			System.out.println("Mean quality of sites in B but not in intersection: " + formatter.format(meanQuality(uniqB)));
 			
-			int hetsA = countHets(fileA.getFile());
-			int hetsB = countHets(fileB.getFile());
-			System.out.println("Heterozyotes in " + fileA.getFilename() + " : " + hetsA);
-			System.out.println("Heterozyotes in " + fileB.getFilename() + " : " + hetsB);
 
-			
+			int uniqAHets = countHets(uniqA);
+			int uniqBHets = countHets(uniqB);
+			System.out.println("Number of hets in discordant A sites: " + uniqAHets +  " ( " + formatter.format(100.0*(double)uniqAHets/(double)countVariants(uniqA)) + " % )");
+			System.out.println("Number of hets in discordant A sites: " + uniqBHets +  " ( " + formatter.format(100.0*(double)uniqBHets/(double)countVariants(uniqB)) + " % )");
 //			System.out.println("Sites unique to " + fileA.getFilename());
 //			emitToTable(uniqA);
 //			System.out.println("Sites unique to " + fileB.getFilename());
@@ -292,17 +316,10 @@ public class CompareVCF extends IOOperator {
 		
 	}
 
-
-
-	
-
-
-
 	public class VariantRecord {
 		Double quality = -1.0;
 		Double qualityB = -1.0;
-		Double readDepth = -1.0;
-		Double alleleFrequency = -1.0;
+		Boolean hetero = null;
 	}
 	
 }

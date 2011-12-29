@@ -24,6 +24,11 @@ public class MergeFiles extends CommandOperator {
 	public static final String JVM_ARGS="jvmargs";
 	
 	@Override
+	public boolean requiresReference() {
+		return true;
+	}
+	
+	@Override
 	protected String getCommand() throws OperationFailedException {
 		ReferenceFile reference = (ReferenceFile) getInputBufferForClass(ReferenceFile.class);
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
