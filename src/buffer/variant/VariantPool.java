@@ -37,4 +37,11 @@ public interface VariantPool {
 	 */
 	public VariantRec findRecord(String contig, int pos);
 	
+	/**
+	 * Return a list of variants that passes the given filter
+	 * @param filter
+	 * @return
+	 */
+	public List<VariantRec> filterPool(VariantFilter filter);
+	
 }

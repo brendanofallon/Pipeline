@@ -79,7 +79,12 @@ public class VariantRec {
 	public boolean isHetero() {
 		return isHetero;
 	}
-		
+	
+	
+	public static String getColumnHeaders() {
+		return "contig \t start \t end \t gene \t variant.type \t exon.func \t pop.freq \t het \t qual \t sift \t polyphen \t mt";  
+	}
+	
 	public String toString() {
 		String variantType = "-";
 		String vType = getAnnotation(VariantRec.VARIANT_TYPE);
@@ -115,7 +120,11 @@ public class VariantRec {
 		if (pFreq != null)
 			freq = "" + pFreq;
 		
-		return contig + "\t" + start + "\t" + end + "\t" + variantType + "\t" + exFunc + "\t" + freq + "\t" + het + "\t" + qual + "\t" + sift + "\t" + polyphen + "\t" + mt;  
+		String gene = getAnnotation(VariantRec.GENE_NAME);
+		if (gene == null)
+			gene = "-";
+		
+		return contig + "\t" + start + "\t" + end + "\t" + gene + "\t" + variantType + "\t" + exFunc + "\t" + freq + "\t" + het + "\t" + qual + "\t" + sift + "\t" + polyphen + "\t" + mt;  
 	}
 	
 	/**

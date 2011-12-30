@@ -1,16 +1,22 @@
 package operator.annovar;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Date;
+import java.util.List;
 import java.util.logging.Logger;
 
 import buffer.AnnovarInputFile;
 import buffer.AnnovarResults;
 import buffer.FileBuffer;
 import buffer.VCFFile;
+import buffer.variant.AbstractVariantPool;
+import buffer.variant.VariantFilter;
+import buffer.variant.VariantRec;
 import operator.CommandOperator;
 import operator.OperationFailedException;
 import pipeline.Pipeline;
@@ -104,11 +110,55 @@ public class AnnovarAnnotate extends CommandOperator {
 		File mtFile = new File(annovarPrefix + ".hg19_ljb_mt_dropped"); 
 		File TKGFile = new File(annovarPrefix + ".hg19_ALL.sites.2010_11_dropped");
 		try {
-			AnnovarResults rec = new AnnovarResults(varFunc, exvarFunc, siftFile, polyphenFile, mtFile, TKGFile);
+			AnnovarResults variants = new AnnovarResults(varFunc, exvarFunc, siftFile, polyphenFile, mtFile, TKGFile);
 			
 			FileBuffer resultsFile = outputBuffers.get(0);
-			rec.compareRanks(new PrintStream(new FileOutputStream("annovar.tophits.csv")));
-			rec.emitNonsynonymousVars(new PrintStream(new FileOutputStream(resultsFile.getAbsolutePath())) );
+			variants.addQuartileInfo();
+			
+			List<VariantRec> lowFreqVars = variants.filterPool(new VariantFilter() {
+
+				@Override
+				public boolean passes(VariantRec rec) {
+					Double freq = rec.getProperty(VariantRec.POP_FREQUENCY); 
+					if (freq == null || freq < 0.02)
+						return true;
+					else
+						return false;
+				}
+				
+			});
+			
+			BufferedWriter writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "low.freq.variants.csv"));
+			writer.write(VariantRec.getColumnHeaders() + "\n");
+			for(VariantRec rec : lowFreqVars) {
+				writer.write(rec + "\n");
+			}
+			writer.close();
+			
+			VariantFilter topQuartile = new HighQuartilesFilter();
+			VariantFilter lowQuartile = new LowQuartilesFilter();
+			
+			List<VariantRec> topHits = AbstractVariantPool.filterList(topQuartile, lowFreqVars);
+			List<VariantRec> bottomHits = AbstractVariantPool.filterList(lowQuartile, lowFreqVars);
+			
+			
+			
+			writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "top.quartile.variants.csv"));
+			writer.write(VariantRec.getColumnHeaders() + "\n");
+			for(VariantRec rec : topHits) {
+				writer.write(rec + "\n");
+			}
+			writer.close();
+			
+			
+			writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "bottom.quartile.variants.csv"));
+			writer.write(VariantRec.getColumnHeaders() + "\n");
+			for(VariantRec rec : bottomHits) {
+				writer.write(rec + "\n");
+			}
+			writer.close();
+	
+			variants.emitNonsynonymousVars(new PrintStream(new FileOutputStream(resultsFile.getAbsolutePath())) );
 			
 		} catch (IOException e) {
 			throw new OperationFailedException("Error opening annovar results files : " + e.getMessage(), this);
@@ -124,4 +174,50 @@ public class AnnovarAnnotate extends CommandOperator {
 		return null;
 	}
 
+	/**
+	 * A filter that passes variants that are in the top quartile for sift, polyphen, and mutation taster scores
+	 * @author brendan
+	 *
+	 */
+	class HighQuartilesFilter implements VariantFilter {
+
+		@Override
+		public boolean passes(VariantRec rec) {
+			if (rec.hasProperty(VariantRec.SIFT_QUARTILE) && rec.hasProperty(VariantRec.POLYPHEN_QUARTILE) && rec.hasProperty(VariantRec.MT_QUARTILE)) {
+				Double siftQ = rec.getProperty(VariantRec.SIFT_QUARTILE);
+				Double ppQ = rec.getProperty(VariantRec.POLYPHEN_QUARTILE);
+				Double mtQ = rec.getProperty(VariantRec.MT_QUARTILE);
+				if (siftQ == 0 && ppQ == 0 && mtQ == 0) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+		
+	
+	/**
+	 * A filter that passes variants that are in the bottom quartile for sift, polyphen, and mutation taster scores
+	 * @author brendan
+	 *
+	 */
+	class LowQuartilesFilter implements VariantFilter {
+
+		@Override
+		public boolean passes(VariantRec rec) {
+			if (rec.hasProperty(VariantRec.SIFT_QUARTILE) && rec.hasProperty(VariantRec.POLYPHEN_QUARTILE) && rec.hasProperty(VariantRec.MT_QUARTILE)) {
+				Double siftQ = rec.getProperty(VariantRec.SIFT_QUARTILE);
+				Double ppQ = rec.getProperty(VariantRec.POLYPHEN_QUARTILE);
+				Double mtQ = rec.getProperty(VariantRec.MT_QUARTILE);
+				if (siftQ > 1 && ppQ > 1 && mtQ > 1) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	
 }
+
+//	out.println("contig \t start \t end \t variant.type \t exon.func \t pop.freq \t het \t qual \t sift \t polyphen \t mt");  
+

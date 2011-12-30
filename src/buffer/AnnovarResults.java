@@ -15,13 +15,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import buffer.variant.AbstractVariantPool;
 import buffer.variant.FileAnnotator;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
 import pipeline.Pipeline;
 
-public class AnnovarResults implements VariantPool {
+/**
+ * AnnovarResults is a collection of variants that are annotated using some tools in annovar. 
+ * Its main functions are to build a list of VariantRec's from an annovar-output file, and to add
+ * some additional annotations to those records based on some annovar filtering tools (like sift & polyphen
+ * scores). 
+ * 
+ * @author brendan
+ *
+ */
+public class AnnovarResults extends AbstractVariantPool {
 
 	private final File variantFuncFile;
 	private final File exonicFuncFile;
@@ -30,7 +40,6 @@ public class AnnovarResults implements VariantPool {
 	private final File mtFile;
 	private final File tkgFile;
 	
-	private Map<String, List<VariantRec>>  vars = new HashMap<String, List<VariantRec>>();
 	
 	public AnnovarResults(File variantFuncFile, File exonicFuncFile, File avsiftFile, File polyphenFile, File mtFile, File tkgFile) throws IOException {
 		this.variantFuncFile = variantFuncFile;
@@ -109,29 +118,7 @@ public class AnnovarResults implements VariantPool {
 
 	}
 	
-	/**
-	 * Search the 'vars' field for a VariantRec at the given contig and position
-	 * @param contig
-	 * @param pos
-	 * @return
-	 */
-	public VariantRec findRecord(String contig, int pos) {
-		List<VariantRec> varList = vars.get(contig);
-		if (varList == null) {
-			Logger.getLogger(Pipeline.primaryLoggerName).warning("AnnovarResults could not find contig: " + contig);
-			return null;
-		}
-		
-		VariantRec qRec = new VariantRec(contig, pos, pos, 'x', 'x', 0, false, false);
-		
-		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
-		if (index < 0) {
-			return null;
-		}
-		
-		return varList.get(index);
-		
-	}
+
 	
 	/**
 	 * Create a variant record by parsing values from the given line. The line is assumed
@@ -158,9 +145,12 @@ public class AnnovarResults implements VariantPool {
 	}
 	
 	/**
-	 * Populate the variant record list with sift ranking information
+	 * Populate the variant records with quartile information. Right now we do
+	 * this for sift scores, polyphen scores, and mutation taster scores. The quartiles are
+	 * determined by ordering all variants for which scores are available and dividing into four equal-
+	 * sized pieces.  
 	 */
-	public void compareRanks(PrintStream out) {
+	public void addQuartileInfo() {
 		List<VariantRec> siftRanked = new ArrayList<VariantRec>(1024);
 		for(String contig : vars.keySet()) {
 			for(VariantRec rec : vars.get(contig)) {
@@ -210,26 +200,6 @@ public class AnnovarResults implements VariantPool {
 			rec.addProperty(VariantRec.MT_QUARTILE, Math.floor(4.0 * (double)i / (double)mtRanked.size()));
 		}
 		
-//		out.println("Top 100 siftranked vars");
-//		for(int i=0; i<Math.min(siftRanked.size(), 100); i++) {
-//			out.println( siftRanked.get(i) );
-//		}
-		
-		//out.println("Vars in top quartile of all methods: ");
-		//out.println("contig \t start \t end \t gene \t variantType \t exonicType \t qual \t siftScore \t siftRank \t siftQuartile \t polyphenScore \t polyphenRank \t polyphenQuartile \t mtScore \t mtRank \t mtQuartile");
-		out.println("contig \t start \t end \t variant.type \t exon.func \t pop.freq \t het \t qual \t sift \t polyphen \t mt");  
-
-		for(VariantRec rec : siftRanked) {
-			if (rec.hasProperty(VariantRec.SIFT_QUARTILE) && rec.hasProperty(VariantRec.POLYPHEN_QUARTILE) && rec.hasProperty(VariantRec.MT_QUARTILE)) {
-				Double siftQ = rec.getProperty(VariantRec.SIFT_QUARTILE);
-				Double ppQ = rec.getProperty(VariantRec.POLYPHEN_QUARTILE);
-				Double mtQ = rec.getProperty(VariantRec.MT_QUARTILE);
-				if (siftQ == 0 && ppQ == 0 && mtQ == 0) {
-					out.println(rec);
-				}
-			}
-		}
-		
 	}
 	
 	public void emitNonsynonymousVars(PrintStream out) {
@@ -250,23 +220,6 @@ public class AnnovarResults implements VariantPool {
 		}
 	}
 
-	@Override
-	public int getContigCount() {
-		return vars.size();
-	}
 
-	@Override
-	public Collection<String> getContigs() {
-		return vars.keySet();
-	}
-
-	@Override
-	public List<VariantRec> getVariantsForContig(String contig) {
-		List<VariantRec> varList = vars.get(contig);
-		if (varList != null)
-			return varList;
-		else 
-			return new ArrayList<VariantRec>();
-	}
 	
 }
