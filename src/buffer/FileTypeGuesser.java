@@ -35,7 +35,9 @@ public class FileTypeGuesser {
 		if (file.getName().endsWith("vcf")) {
 			return new VCFFile(file);
 		}
-		
+		if (file.getName().contains("fastq") ) {
+			return new FastQFile(file);
+		}
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		logger.warning("Could not find file type associated with file : " + file.getAbsolutePath() + " guesser is returning null");
 		return null;

@@ -34,11 +34,19 @@ public class BEDFile extends FileBuffer {
 	}
 	
 	/**
-	 * Construct/initialize a map which allows us to easily look up which sites are in
-	 * the intervals described by this BED file
-	 * @throws IOException 
+	 * Build an intervals map from this BED file and strip 'chr' from all contigs
+	 * @throws IOException
 	 */
 	public void buildIntervalsMap() throws IOException {
+		buildIntervalsMap(true);
+	}
+	
+	/**
+	 * Construct/initialize a map which allows us to easily look up which sites are in
+	 * the intervals described by this BED file. If arg is true, strip chr from all contig labels
+	 * @throws IOException 
+	 */
+	public void buildIntervalsMap(boolean stripChr) throws IOException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		logger.info("Building intervals map for BED file " + getFilename());
 		BufferedReader reader = new BufferedReader(new FileReader(getAbsolutePath()));
@@ -48,6 +56,8 @@ public class BEDFile extends FileBuffer {
 			if (line.length()>0) {
 				String[] toks = line.split("\\s");
 				String contig = toks[0];
+				if (stripChr)
+					contig = contig.replace("chr", "");
 				Integer begin = Integer.parseInt(toks[1]);
 				Integer end = Integer.parseInt(toks[2]);
 				Interval interval = new Interval(begin, end);
@@ -56,6 +66,7 @@ public class BEDFile extends FileBuffer {
 				if (contigIntervals == null) {
 					contigIntervals = new ArrayList<Interval>(2048);
 					intervals.put(contig, contigIntervals);
+					System.out.println("BED file adding contig: " + contig);
 				}
 				contigIntervals.add(interval);
 			}

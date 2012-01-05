@@ -56,7 +56,7 @@ public class FilterVCFByBED extends IOOperator {
 				//System.out.println("Searching for contig: " + contig + " pos: " + pos);
 				if (bedFile.contains(contig, pos)) {
 					varsFound++;
-					System.out.println("found contig: " + contig + " pos:" + pos + ", have " + varsFound + " total");
+					//System.out.println("found contig: " + contig + " pos:" + pos + ", have " + varsFound + " total");
 					writer.write(vParser.getCurrentLine() + "\n");
 				}
 				else {

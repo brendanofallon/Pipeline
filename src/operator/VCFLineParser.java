@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
+import buffer.variant.VariantRec;
+
 /**
  * This class provides a uniform interface for extracting values from a single line of a vcf file.
  * It uses a differed-implementation strategy so we dont have to store too much info 
@@ -22,6 +24,9 @@ public class VCFLineParser {
 		
 		public VCFLineParser(File file) throws IOException {
 			this.file = file;
+//			System.out.println("ATtempting to open file with raw name: " + file.getName());
+//			System.out.println("Absolute path: " + file.getAbsolutePath());
+//			System.out.println("File exists: " + file.exists());
 			this.reader = new BufferedReader(new FileReader(file));
 			currentLine = reader.readLine();
 			readHeader();
@@ -35,6 +40,20 @@ public class VCFLineParser {
 		
 		public boolean isPassing() {
 			return currentLine.contains("PASS");
+		}
+		
+		/**
+		 * Converts the information in the current line to a VariantRec
+		 * @return
+		 */
+		public VariantRec toVariantRec() {
+			if (currentLine == null)
+				return null;
+			else {
+				//System.out.println(currentLine);
+				VariantRec rec = new VariantRec(getContig(), getStart(), getStart()+1, getRef(), getAlt(), getQuality(), false, isHetero() );
+				return rec;
+			}
 		}
 		
 		/**
@@ -62,12 +81,28 @@ public class VCFLineParser {
 		}
 		
 		/**
-		 * Return position item for current line
+		 * Return the (starting) position item for current line
 		 * @return
 		 */
 		public int getPosition() {
 			if (lineToks != null) {
 				return Integer.parseInt(lineToks[1]);
+			}
+			else
+				return -1;
+		}
+		
+		public int getStart() {
+			return getPosition();
+		}
+		
+		/**
+		 * Return the end of this variant
+		 * @return
+		 */
+		public int getEnd() {
+			if (lineToks != null) {
+				return Integer.parseInt(lineToks[2]);
 			}
 			else
 				return -1;

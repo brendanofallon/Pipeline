@@ -11,6 +11,7 @@ import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.FileBuffer;
+import buffer.MultiFileBuffer;
 
 public class MergeFiles extends CommandOperator {
 	
@@ -35,6 +36,13 @@ public class MergeFiles extends CommandOperator {
 			FileBuffer buff = inputBuffers.get(i);
 			if (buff instanceof BAMFile) {
 				inputPaths.append(" " + buff.getAbsolutePath());
+			}
+			
+			if (buff instanceof MultiFileBuffer) {
+				MultiFileBuffer mBuf = (MultiFileBuffer)buff;
+				for(int j=0; j<mBuf.getFileCount(); j++) {
+					inputPaths.append(" " + mBuf.getFile(j).getAbsolutePath());
+				}
 			}
 		}
 		

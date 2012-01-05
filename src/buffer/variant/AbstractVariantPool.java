@@ -20,6 +20,22 @@ public class AbstractVariantPool implements VariantPool {
 	protected Map<String, List<VariantRec>>  vars = new HashMap<String, List<VariantRec>>();
 
 	/**
+	 * Create a new pool with all the variants in the source pool
+	 * @param sourceVars
+	 */
+	public AbstractVariantPool(VariantPool sourceVars) {
+		addAll(sourceVars);
+	}
+	
+	
+	/**
+	 * Construct new empty variant pool
+	 */
+	public AbstractVariantPool() {
+		//blank on purpose
+	}
+	
+	/**
 	 * Search the 'vars' field for a VariantRec at the given contig and position
 	 * @param contig
 	 * @param pos
@@ -41,6 +57,114 @@ public class AbstractVariantPool implements VariantPool {
 		
 		return varList.get(index);
 		
+	}
+	
+	/**
+	 * Add all variants from source to this pool
+	 * @param source
+	 */
+	public void addAll(VariantPool source) {
+		for(String contig : source.getContigs()) {
+			for(VariantRec rec : source.getVariantsForContig(contig)) {
+				this.addRecord(rec);
+			}
+		}
+	}
+	
+	/**
+	 * Return total number of variants in pool
+	 * @return
+	 */
+	public int size() {
+		int count = 0;
+		for(String contig : getContigs()) {
+			count += this.getVariantsForContig(contig).size();
+		}
+		return count;
+	}
+	
+	/**
+	 * Return a new variant pool that is the intersection of this pool and the given pool.
+	 * Note that variants are not cloned - they are the variants from this pool
+	 * @param varsB
+	 * @return
+	 */
+	public VariantPool intersect(VariantPool varsB) {
+		AbstractVariantPool intersect = new AbstractVariantPool();
+		for(String contig : getContigs()) {
+			for(VariantRec rec : getVariantsForContig(contig)) {
+				if (varsB.findRecord(rec.getContig(), rec.getStart()) != null) {
+					intersect.addRecord(rec);
+				}
+			}
+		}
+		return intersect;
+	}
+	
+	/**
+	 * Removes from this pool all variants at the sites of the variants in the second pool
+	 * @param toRemove
+	 * @return
+	 */
+	public int removeVariants(VariantPool toRemove) {
+		int removedCount = 0;
+		for(String contig : toRemove.getContigs()) {
+			for(VariantRec rec : toRemove.getVariantsForContig(contig)) {
+				boolean found = removeRecordAtPos(rec.getContig(), rec.getStart());
+				if (found)
+					removedCount++;
+			}
+		}
+		return removedCount;
+	}
+	
+	/**
+	 * Return total number of heterozygotes in pool
+	 * @return
+	 */
+	public int countHeteros() {
+		int count = 0;
+		for(String contig : vars.keySet()) {
+			Collection<VariantRec> varRecs = this.getVariantsForContig(contig);
+			for(VariantRec rec : varRecs) {
+				if (rec.isHetero()) 
+					count++;
+			}
+		}
+
+		return count;
+
+	}
+	
+	public boolean removeRecordAtPos(String contig, int pos) {
+		List<VariantRec> varList = vars.get(contig);
+		if (varList == null) {
+			return false;
+		}
+		
+		VariantRec qRec = new VariantRec(contig, pos, pos, 'x', 'x', 0, false, false);
+		
+		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
+		if (index < 0) {
+			return false;
+		}
+		
+		varList.remove(index);
+		return true;
+	}
+	
+	/**
+	 * Add a new record to the pool. This re-sorts the contig every time to ensure that records are sorted
+	 * @param rec
+	 */
+	public void addRecord(VariantRec rec) {
+		List<VariantRec> contigVars = vars.get( rec.getContig() ); 
+		if (contigVars == null) {
+			contigVars = new ArrayList<VariantRec>(128);
+			vars.put(rec.getContig(), contigVars);
+		}
+		contigVars.add(rec);
+		Collections.sort(contigVars, VariantRec.getPositionComparator());
 	}
 	
 	@Override

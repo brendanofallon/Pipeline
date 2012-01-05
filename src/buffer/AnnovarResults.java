@@ -39,15 +39,24 @@ public class AnnovarResults extends AbstractVariantPool {
 	private final File polyphenFile;
 	private final File mtFile;
 	private final File tkgFile;
+	private final File phyloPFile;
 	
 	
-	public AnnovarResults(File variantFuncFile, File exonicFuncFile, File avsiftFile, File polyphenFile, File mtFile, File tkgFile) throws IOException {
+	
+	public AnnovarResults(File variantFuncFile, 
+						File exonicFuncFile, 
+						File avsiftFile, 
+						File polyphenFile, 
+						File mtFile, 
+						File tkgFile, 
+						File phyloPFile) throws IOException {
 		this.variantFuncFile = variantFuncFile;
 		this.exonicFuncFile = exonicFuncFile;
 		this.avsiftFile = avsiftFile;
 		this.polyphenFile = polyphenFile;
 		this.mtFile = mtFile;
 		this.tkgFile = tkgFile;
+		this.phyloPFile = phyloPFile;
 		
 		//Otherwise mysterious error regarding general contract violation crops up during sorting procedure
 		System.setProperty("java.util.Arrays.useLegacyMergeSort", "true");
@@ -115,6 +124,9 @@ public class AnnovarResults extends AbstractVariantPool {
 		
 		FileAnnotator freqAnnotator = new FileAnnotator(tkgFile, VariantRec.POP_FREQUENCY, 1, this);
 		freqAnnotator.annotateAll();
+		
+		FileAnnotator phyloPAnnotator = new FileAnnotator(phyloPFile, VariantRec.PHYLOP_SCORE, 1, this);
+		phyloPAnnotator.annotateAll();
 
 	}
 	
@@ -151,6 +163,7 @@ public class AnnovarResults extends AbstractVariantPool {
 	 * sized pieces.  
 	 */
 	public void addQuartileInfo() {
+		
 		List<VariantRec> siftRanked = new ArrayList<VariantRec>(1024);
 		for(String contig : vars.keySet()) {
 			for(VariantRec rec : vars.get(contig)) {
@@ -167,7 +180,7 @@ public class AnnovarResults extends AbstractVariantPool {
 			//rec.siftRank = i;
 			rec.addProperty(VariantRec.SIFT_QUARTILE, Math.floor(4.0 * (double)i / (double)siftRanked.size()));
 		}
-		
+				
 		
 		List<VariantRec> polyphenRanked = new ArrayList<VariantRec>(1024);
 		for(String contig : vars.keySet()) {
@@ -182,9 +195,8 @@ public class AnnovarResults extends AbstractVariantPool {
 			VariantRec rec = polyphenRanked.get(i);
 			//rec.polyphenRank = i;
 			rec.addProperty(VariantRec.POLYPHEN_QUARTILE, Math.floor(4.0 * (double)i / (double)polyphenRanked.size()));
-
 		}
-		
+				
 		List<VariantRec> mtRanked = new ArrayList<VariantRec>(1024);
 		for(String contig : vars.keySet()) {
 			for(VariantRec rec : vars.get(contig)) {
@@ -196,10 +208,39 @@ public class AnnovarResults extends AbstractVariantPool {
 		Collections.sort(mtRanked, VariantRec.getPropertyComparator(VariantRec.MT_SCORE));
 		for(int i=0; i<mtRanked.size(); i++) {
 			VariantRec rec = mtRanked.get(i);
-			//rec.mtRank = i;
 			rec.addProperty(VariantRec.MT_QUARTILE, Math.floor(4.0 * (double)i / (double)mtRanked.size()));
 		}
+				
 		
+		
+		List<VariantRec> phyloPRanked = new ArrayList<VariantRec>(1024);
+		for(String contig : vars.keySet()) {
+			for(VariantRec rec : vars.get(contig)) {
+				if (rec.hasProperty(VariantRec.PHYLOP_SCORE))
+					phyloPRanked.add( rec );
+			}
+		}
+		
+		Collections.sort(phyloPRanked, VariantRec.getPropertyComparator(VariantRec.PHYLOP_SCORE));
+		for(int i=0; i<phyloPRanked.size(); i++) {
+			VariantRec rec = phyloPRanked.get(i);
+			rec.addProperty(VariantRec.PHYLOP_QUARTILE, Math.floor(4.0 * (double)i / (double)phyloPRanked.size()));
+		}
+		
+		//Make a nicely-formatted little summary of the ranked variants
+		StringBuffer rankingSummary = new StringBuffer();
+		double siftMidpoint = siftRanked.get(siftRanked.size()/2).getProperty(VariantRec.SIFT_SCORE);
+		double polyphenMidpoint = polyphenRanked.get(polyphenRanked.size()/2).getProperty(VariantRec.POLYPHEN_SCORE);
+		double mtMidpoint = mtRanked.get(mtRanked.size()/2).getProperty(VariantRec.MT_SCORE);
+		double phylopMidpoint = phyloPRanked.get(phyloPRanked.size()/2).getProperty(VariantRec.PHYLOP_SCORE);
+
+		rankingSummary.append("Ranking summary: \n");
+		rankingSummary.append("SIFT variants total \t: " + siftRanked.size() + " midpoint: " + siftMidpoint + "\n");
+		rankingSummary.append("Polyphen variants total\t: " + polyphenRanked.size() + " midpoint: " + polyphenMidpoint + "\n");
+		rankingSummary.append("MT variants total \t: " + mtRanked.size() + " midpoint: " + mtMidpoint + "\n");
+		rankingSummary.append("PhyloP variants total\t: " + phyloPRanked.size() + " midpoint: " + phylopMidpoint + "\n");
+		
+		Logger.getLogger(Pipeline.primaryLoggerName).info(rankingSummary.toString());
 	}
 	
 	public void emitNonsynonymousVars(PrintStream out) {

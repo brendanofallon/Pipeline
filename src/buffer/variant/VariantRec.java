@@ -82,7 +82,7 @@ public class VariantRec {
 	
 	
 	public static String getColumnHeaders() {
-		return "contig \t start \t end \t gene \t variant.type \t exon.func \t pop.freq \t het \t qual \t sift \t polyphen \t mt";  
+		return "contig \t start \t end \t gene \t variant.type \t exon.func \t pop.freq \t het \t qual \t sift \t polyphen \t mt \t phylop";  
 	}
 	
 	public String toString() {
@@ -114,6 +114,11 @@ public class VariantRec {
 		Double mtScore = getProperty(VariantRec.MT_SCORE);
 		if (mtScore != null)
 			mt = "" + mtScore;
+
+		String phylopStr = "NA";
+		Double phylop = getProperty(VariantRec.POP_FREQUENCY);
+		if (phylop != null)
+			phylopStr = "" + phylop;
 		
 		String freq = "0.0";
 		Double pFreq = getProperty(VariantRec.POP_FREQUENCY);
@@ -124,7 +129,7 @@ public class VariantRec {
 		if (gene == null)
 			gene = "-";
 		
-		return contig + "\t" + start + "\t" + end + "\t" + gene + "\t" + variantType + "\t" + exFunc + "\t" + freq + "\t" + het + "\t" + qual + "\t" + sift + "\t" + polyphen + "\t" + mt;  
+		return contig + "\t" + start + "\t" + end + "\t" + gene + "\t" + variantType + "\t" + exFunc + "\t" + freq + "\t" + het + "\t" + qual + "\t" + sift + "\t" + polyphen + "\t" + mt + "\t" + phylopStr;  
 	}
 	
 	/**
@@ -196,9 +201,13 @@ public class VariantRec {
 	public static final String SIFT_QUARTILE = "siftquartile";
 	public static final String MT_QUARTILE = "mtquartile";
 	public static final String POLYPHEN_QUARTILE = "ppquartile";
+	public static final String PHYLOP_QUARTILE = "phylopquartile";
+	public static final String PHYLOP_SCORE = "phylopscore";
 	public static final String VARIANT_TYPE = "varianttype";
 	public static final String EXON_FUNCTION = "exonfunction";
 	public static final String NM_NUMBER = "nmnumber";
 	public static final String GENE_NAME = "gene";
+
+
 	
 }

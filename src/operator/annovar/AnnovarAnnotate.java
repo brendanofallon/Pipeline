@@ -85,7 +85,7 @@ public class AnnovarAnnotate extends CommandOperator {
 		String command3 = "perl " + annovarPath + "annotate_variation.pl -filter -dbtype avsift --buildver " + buildVer + " --sift_threshold " + siftThreshold + "  " + annovarInputPath + " --outfile " + annovarPrefix + " " + annovarPath + "humandb/";
 		
 		//Polyphen 
-		String command4 = "perl " + annovarPath + "annotate_variation.pl -filter -dbtype ljb_pp2 --buildver " + buildVer + "  " + annovarInputPath + " --outfile " + annovarPrefix + " " + annovarPath + "humandb/";
+		String command4 = "perl " + annovarPath + "annotate_variation.pl -filter -dbtype ljb_pp2 --buildver " + buildVer + "  " + annovarInputPath + " --outfile " + annovarPrefix + " -score_threshold 0.0 " + annovarPath + "humandb/";
 
 		//GERP
 		//Annovar currently broken with gerp
@@ -93,10 +93,12 @@ public class AnnovarAnnotate extends CommandOperator {
 		//File gerpResults = new File(outputPath + "hg19_ljb_gerp++_filtered"); 
 		
 		//MutationTaster
-		String command6 = "perl " + annovarPath + "annotate_variation.pl -filter -dbtype ljb_mt --buildver " + buildVer + "  " + annovarInputPath + " --outfile " + annovarPrefix + " " + annovarPath + "humandb/";
-				
+		String command6 = "perl " + annovarPath + "annotate_variation.pl -filter -dbtype ljb_mt --buildver " + buildVer + "  " + annovarInputPath + " --outfile " + annovarPrefix + " -score_threshold 0.0 " + annovarPath + "humandb/";
+
+		//PhyloP
+		String command7 = "perl " + annovarPath + "annotate_variation.pl -filter -dbtype ljb_phylop --buildver " + buildVer + "  " + annovarInputPath + " --outfile " + annovarPrefix + " -score_threshold 0.0 " + annovarPath + "humandb/";
 		
-		return new String[]{command1, command15, command2, command3, command4, /*command5, */ command6};
+		return new String[]{command1, command15, command2, command3, command4, /*command5, */ command6, command7};
 	}
 	
 	public void performOperation() throws OperationFailedException {
@@ -109,8 +111,9 @@ public class AnnovarAnnotate extends CommandOperator {
 		File polyphenFile = new File(annovarPrefix + ".hg19_ljb_pp2_dropped"); 
 		File mtFile = new File(annovarPrefix + ".hg19_ljb_mt_dropped"); 
 		File TKGFile = new File(annovarPrefix + ".hg19_ALL.sites.2010_11_dropped");
+		File phlyoPFile = new File(annovarPrefix + ".hg19_ljb_phylop_dropped");
 		try {
-			AnnovarResults variants = new AnnovarResults(varFunc, exvarFunc, siftFile, polyphenFile, mtFile, TKGFile);
+			AnnovarResults variants = new AnnovarResults(varFunc, exvarFunc, siftFile, polyphenFile, mtFile, TKGFile, phlyoPFile);
 			
 			FileBuffer resultsFile = outputBuffers.get(0);
 			variants.addQuartileInfo();
@@ -137,10 +140,13 @@ public class AnnovarAnnotate extends CommandOperator {
 			
 			VariantFilter topQuartile = new HighQuartilesFilter();
 			VariantFilter lowQuartile = new LowQuartilesFilter();
+			VariantFilter nonBadFilter = new NonBadFilter();
+			VariantFilter badFilter = new BadFilter();
 			
 			List<VariantRec> topHits = AbstractVariantPool.filterList(topQuartile, lowFreqVars);
 			List<VariantRec> bottomHits = AbstractVariantPool.filterList(lowQuartile, lowFreqVars);
-			
+			List<VariantRec> nonBadVariants = AbstractVariantPool.filterList(nonBadFilter, lowFreqVars);
+			List<VariantRec> badVariants = AbstractVariantPool.filterList(badFilter, lowFreqVars);
 			
 			
 			writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "top.quartile.variants.csv"));
@@ -157,8 +163,23 @@ public class AnnovarAnnotate extends CommandOperator {
 				writer.write(rec + "\n");
 			}
 			writer.close();
+			
+			writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "tolerated.variants.csv"));
+			writer.write(VariantRec.getColumnHeaders() + "\n");
+			for(VariantRec rec : nonBadVariants) {
+				writer.write(rec + "\n");
+			}
+			writer.close();
+			
+			writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "not.tolerated.variants.csv"));
+			writer.write(VariantRec.getColumnHeaders() + "\n");
+			for(VariantRec rec : badVariants) {
+				writer.write(rec + "\n");
+			}
+			writer.close();
 	
 			variants.emitNonsynonymousVars(new PrintStream(new FileOutputStream(resultsFile.getAbsolutePath())) );
+			
 			
 		} catch (IOException e) {
 			throw new OperationFailedException("Error opening annovar results files : " + e.getMessage(), this);
@@ -217,6 +238,54 @@ public class AnnovarAnnotate extends CommandOperator {
 		}
 	}
 	
+	/**
+	 * A filter that passes all variants that are not 'bad', that is those that have high sift scores and low polyphen and mt scores
+	 * @author brendan
+	 *
+	 */
+	class NonBadFilter implements VariantFilter {
+
+		@Override
+		public boolean passes(VariantRec rec) {
+			if (rec.hasProperty(VariantRec.SIFT_SCORE) && rec.hasProperty(VariantRec.POLYPHEN_SCORE) && rec.hasProperty(VariantRec.MT_SCORE)) {
+				Double siftScore = rec.getProperty(VariantRec.SIFT_SCORE);
+				Double ppScore = rec.getProperty(VariantRec.POLYPHEN_SCORE);
+				Double mtScore = rec.getProperty(VariantRec.MT_SCORE);
+				//Polyphen score is the posterior probability that the variant IS DAMAGING, so small
+				//scores indicate low probability that the variant is damaging. 
+				
+				if (siftScore > 0.05 && ppScore < 0.20 && mtScore < 0.20) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	
+	/**
+	 * This filter passes all variants where sift, polyphen, and mt all seem to agree on deleteriousness.
+	 * These are the most likely to be disease causing
+	 * @author brendan
+	 *
+	 */
+	class BadFilter implements VariantFilter {
+
+		@Override
+		public boolean passes(VariantRec rec) {
+			if (rec.hasProperty(VariantRec.SIFT_SCORE) && rec.hasProperty(VariantRec.POLYPHEN_SCORE) && rec.hasProperty(VariantRec.MT_SCORE)) {
+				Double siftScore = rec.getProperty(VariantRec.SIFT_SCORE);
+				Double ppScore = rec.getProperty(VariantRec.POLYPHEN_SCORE);
+				Double mtScore = rec.getProperty(VariantRec.MT_SCORE);
+				//Polyphen score is the posterior probability that the variant IS DAMAGING, so small
+				//scores indicate low probability that the variant is damaging. 
+				
+				if (siftScore <= 0.05 && ppScore > 0.80 && mtScore > 0.80) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
 }
 
 //	out.println("contig \t start \t end \t variant.type \t exon.func \t pop.freq \t het \t qual \t sift \t polyphen \t mt");  
