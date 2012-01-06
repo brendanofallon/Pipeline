@@ -287,10 +287,11 @@ public class CompareVCF extends IOOperator {
 			int uniqBHets = uniqB.countHeteros();
 			System.out.println("Number of hets in discordant A sites: " + uniqAHets +  " ( " + formatter.format(100.0*(double)uniqAHets/(double)uniqA.size()) + " % )");
 			System.out.println("Number of hets in discordant A sites: " + uniqBHets +  " ( " + formatter.format(100.0*(double)uniqBHets/(double)uniqB.size()) + " % )");
-//			System.out.println("Sites unique to " + fileA.getFilename());
-//			emitToTable(uniqA);
-//			System.out.println("Sites unique to " + fileB.getFilename());
-//			emitToTable(uniqB);
+
+			System.out.println("\n\n Sites unique to " + fileA.getFilename());
+			uniqA.listAll(System.out);
+			System.out.println("\n\nSites unique to " + fileB.getFilename());
+			uniqB.listAll(System.out);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

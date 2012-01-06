@@ -5,6 +5,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.logging.Logger;
+
+import pipeline.Pipeline;
 
 import buffer.variant.VariantRec;
 
@@ -52,6 +55,9 @@ public class VCFLineParser {
 			else {
 				//System.out.println(currentLine);
 				VariantRec rec = new VariantRec(getContig(), getStart(), getStart()+1, getRef(), getAlt(), getQuality(), false, isHetero() );
+				Integer depth = getDepth();
+				if (depth != null)
+					rec.addProperty(VariantRec.DEPTH, new Double(getDepth()));
 				return rec;
 			}
 		}
@@ -90,6 +96,26 @@ public class VCFLineParser {
 			}
 			else
 				return -1;
+		}
+		
+		public Integer getDepth() {
+			String info = lineToks[7];
+			
+			String target = "DP";
+			int index = info.indexOf(target);
+			if (index < 0) {
+				return null;
+			}
+			
+			//System.out.println( info.substring(index, index+10) + " ...... " + info.substring(index+target.length()+1, info.indexOf(';', index)));
+			try {
+				Integer value = Integer.parseInt(info.substring(index+target.length()+1, info.indexOf(';', index)));
+				return value;
+			}
+			catch (NumberFormatException nfe) {
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Could not parse depth from vcf line: " );
+			}
+			return null;
 		}
 		
 		public int getStart() {

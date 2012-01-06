@@ -1,12 +1,17 @@
 package buffer.variant;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import buffer.ReferenceFile;
 
 import pipeline.Pipeline;
 
@@ -81,6 +86,18 @@ public class AbstractVariantPool implements VariantPool {
 			count += this.getVariantsForContig(contig).size();
 		}
 		return count;
+	}
+	
+	/**
+	 * Emit a tab-separated listing of all variants to the given stream
+	 * @param out
+	 */
+	public void listAll(PrintStream out) {
+		for(String contig : getContigs() ) {
+			for(VariantRec rec : this.getVariantsForContig(contig)) {
+				out.println(contig + "\t" + rec.getStart() + "\t . \t" + rec.ref + "\t" + rec.alt + "\t" + rec.getQuality() + "\t" + rec.getProperty(VariantRec.DEPTH));
+			}
+		}
 	}
 	
 	/**
@@ -198,6 +215,20 @@ public class AbstractVariantPool implements VariantPool {
 		return passing;
 	}
 	
+	public void toVCF(ReferenceFile ref, List<String> annotationKeys, PrintStream out) {
+		//Make a VCF header
+		out.println("##fileformat=VCFv4.1");
+		
+		Calendar now = Calendar.getInstance();
+		out.println("##fileDate=" + now.get(Calendar.YEAR) + now.get(Calendar.MONTH) + now.get(Calendar.DAY_OF_WEEK_IN_MONTH) );
+		out.println("##source=PipelineVariantPool");
+		out.println("##reference=" + ref.getFilename()  );
+		for(String contig : getContigs()) {
+			out.println("##contig=<ID=" + contig + ",species=\"Homo sapiens\">\n" );
+		}
+		
+		
+	}
 	/**
 	 * Return a new list of variants that are those in the given list that pass the given filter
 	 * @param filter

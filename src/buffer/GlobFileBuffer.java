@@ -47,7 +47,8 @@ public class GlobFileBuffer extends MultiFileBuffer {
 		File[] listing = projDir.listFiles(fileMatcher);
 	
 		if (listing.length == 0) {
-			logger.warning("GlobFileBuffer with pattern " + pattern + " matched zero files!");
+			logger.severe("GlobFileBuffer with pattern " + pattern + " matched zero files!");
+			throw new IllegalArgumentException("Glob file buffer did not match any files, this is probably an error");
 		}
 		
 		for(int i=0; i<listing.length; i++) {

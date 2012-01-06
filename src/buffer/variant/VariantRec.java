@@ -207,6 +207,7 @@ public class VariantRec {
 	public static final String EXON_FUNCTION = "exonfunction";
 	public static final String NM_NUMBER = "nmnumber";
 	public static final String GENE_NAME = "gene";
+	public static final String DEPTH = "depth";
 
 
 	
