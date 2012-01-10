@@ -67,7 +67,7 @@ public class VCFLineParser {
 				if (stripChr)
 					contig = contig.replace("chr", "");
 				//System.out.println(currentLine);
-				VariantRec rec = new VariantRec(contig, getStart(), getStart()+1, getRef(), getAlt(), getQuality(), false, isHetero() );
+				VariantRec rec = new VariantRec(contig, getStart(), getStart()+1,  getRef(), getAlt(), getQuality(), false, isHetero() );
 				Integer depth = getDepth();
 				if (depth != null)
 					rec.addProperty(VariantRec.DEPTH, new Double(getDepth()));
@@ -155,20 +155,20 @@ public class VCFLineParser {
 				return -1.0;
 		}
 		
-		public char getRef() {
+		public String getRef() {
 			if (lineToks != null) {
-				return lineToks[3].charAt(0);
+				return lineToks[3];
 			}
 			else
-				return '?';
+				return "?";
 		}
 		
-		public char getAlt() {
+		public String getAlt() {
 			if (lineToks != null) {
-				return lineToks[4].charAt(0);
+				return lineToks[4];
 			}
 			else
-				return '?';
+				return "?";
 		}
 		
 		public int getLineNumber() {

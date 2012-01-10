@@ -173,7 +173,8 @@ public class AnnovarAnnotate extends MultiOperator {
 		//PhyloP
 		String command7 = "perl " + annovarPath + "annotate_variation.pl -filter -dbtype ljb_phylop --buildver " + buildVer + "  " + annovarInputPath + " --outfile " + annovarPrefix + " -score_threshold 0.0 " + annovarPath + "humandb/";
 		
-		return new String[]{command15, command2, command3, command4, /*command5, */ command6, command7};
+		return new String[]{command2};
+		//return new String[]{command15, command2, command3, command4, /*command5, */ command6, command7 };
 	}
 	
 	/**
@@ -181,9 +182,7 @@ public class AnnovarAnnotate extends MultiOperator {
 	 *  that have 
 	 * @throws OperationFailedException 
 	 */
-	private void generateOutputFiles() throws OperationFailedException {
-		//super.performOperation();
-		 
+	private void generateOutputFiles() throws OperationFailedException {	 
 		File varFunc = new File(annovarPrefix + ".variant_function"); 
 
 		File exvarFunc = new File(annovarPrefix + ".exonic_variant_function"); 
@@ -194,83 +193,24 @@ public class AnnovarAnnotate extends MultiOperator {
 		File phlyoPFile = new File(annovarPrefix + ".hg19_ljb_phylop_dropped");
 		try {
 			AnnovarResults variants = new AnnovarResults(varFunc, exvarFunc, siftFile, polyphenFile, mtFile, TKGFile, phlyoPFile);
-			
-			FileBuffer resultsFile = outputBuffers.get(0);
-			variants.addQuartileInfo();
-			
-			List<VariantRec> lowFreqVars = variants.filterPool(new VariantFilter() {
 
-				@Override
-				public boolean passes(VariantRec rec) {
-					Double freq = rec.getProperty(VariantRec.POP_FREQUENCY); 
-					if (freq == null || freq < 0.02)
-						return true;
-					else
-						return false;
-				}
-				
-			});
-			
-			BufferedWriter writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "low.freq.variants.csv"));
-			writer.write(VariantRec.getColumnHeaders() + "\n");
-			for(VariantRec rec : lowFreqVars) {
-				writer.write(rec + "\n");
-			}
-			writer.close();
-			
-			VariantFilter topQuartile = new HighQuartilesFilter();
-			VariantFilter lowQuartile = new LowQuartilesFilter();
-			VariantFilter nonBadFilter = new NonBadFilter();
-			VariantFilter badFilter = new BadFilter();
-			
-			List<VariantRec> topHits = AbstractVariantPool.filterList(topQuartile, lowFreqVars);
-			List<VariantRec> bottomHits = AbstractVariantPool.filterList(lowQuartile, lowFreqVars);
-			List<VariantRec> nonBadVariants = AbstractVariantPool.filterList(nonBadFilter, lowFreqVars);
-			List<VariantRec> badVariants = AbstractVariantPool.filterList(badFilter, lowFreqVars);
-			
-			
-			writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "top.quartile.variants.csv"));
-			writer.write(VariantRec.getColumnHeaders() + "\n");
-			for(VariantRec rec : topHits) {
-				writer.write(rec + "\n");
-			}
-			writer.close();
-			
-			
-			writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "bottom.quartile.variants.csv"));
-			writer.write(VariantRec.getColumnHeaders() + "\n");
-			for(VariantRec rec : bottomHits) {
-				writer.write(rec + "\n");
-			}
-			writer.close();
-			
-			writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "tolerated.variants.csv"));
-			writer.write(VariantRec.getColumnHeaders() + "\n");
-			for(VariantRec rec : nonBadVariants) {
-				writer.write(rec + "\n");
-			}
-			writer.close();
-			
-			writer = new BufferedWriter(new FileWriter(Pipeline.getPipelineInstance().getProjectHome() + "not.tolerated.variants.csv"));
-			writer.write(VariantRec.getColumnHeaders() + "\n");
-			for(VariantRec rec : badVariants) {
-				writer.write(rec + "\n");
-			}
-			writer.close();
-	
-			variants.emitNonsynonymousVars(new PrintStream(new FileOutputStream(resultsFile.getAbsolutePath())) );
-			
 			List<String> keys = new ArrayList<String>();
 			keys.add(VariantRec.GENE_NAME);
 			keys.add(VariantRec.VARIANT_TYPE);
 			keys.add(VariantRec.EXON_FUNCTION);
-			keys.add(VariantRec.POP_FREQUENCY);
-			keys.add(VariantRec.SIFT_SCORE);
-			keys.add(VariantRec.POLYPHEN_SCORE);
-			keys.add(VariantRec.MT_SCORE);
-			keys.add(VariantRec.PHYLOP_SCORE);
+			keys.add(VariantRec.NM_NUMBER);
+			keys.add(VariantRec.CDOT);
+			keys.add(VariantRec.PDOT);
+//			keys.add(VariantRec.POP_FREQUENCY);
+//			keys.add(VariantRec.SIFT_SCORE);
+//			keys.add(VariantRec.POLYPHEN_SCORE);
+//			keys.add(VariantRec.MT_SCORE);
+//			keys.add(VariantRec.PHYLOP_SCORE);
 			
-			variants.listAll(System.out, keys);
+			VCFFile inputVCF = (VCFFile) getInputBufferForClass(VCFFile.class);
+			String outputFilename = inputVCF.getAbsolutePath();
+			outputFilename = outputFilename.replace(".vcf", ".annotated.csv");
+			variants.listAll(new PrintStream(new FileOutputStream(outputFilename)), keys);
 		} catch (IOException e) {
 			throw new OperationFailedException("Error opening annovar results files : " + e.getMessage(), this);
 		}

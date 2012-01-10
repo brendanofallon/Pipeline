@@ -75,14 +75,16 @@ public class AnnovarResults extends AbstractVariantPool {
 		String line = reader.readLine();
 		while(line != null) {
 			VariantRec rec = buildRecord(line);
-			String contig = rec.getContig();
-			List<VariantRec> varList = vars.get(contig);
-			if (varList == null) {
-				varList = new ArrayList<VariantRec>(512);
-				vars.put(contig, varList);
+			if (rec != null) {
+				String contig = rec.getContig();
+				List<VariantRec> varList = vars.get(contig);
+				if (varList == null) {
+					varList = new ArrayList<VariantRec>(512);
+					vars.put(contig, varList);
+				}
+
+				varList.add(rec);
 			}
-				
-			varList.add(rec);
 			line = reader.readLine();
 			
 		}
@@ -98,35 +100,55 @@ public class AnnovarResults extends AbstractVariantPool {
 		reader = new BufferedReader(new FileReader(exonicFuncFile));
 		line = reader.readLine();
 		while(line != null) {
-			if (line.length()>0) {
+			if (line.length()>1) {
 				String[] toks = line.split("\\t");
 				String exonicFunc = toks[1];
+				
+				String NM = "NA";
+				String exonNum = "NA";
+				String cDot = "NA";
+				String pDot = "NA";
+				
+				String[] details = toks[2].split(":");
+				if (details.length>4) {
+					NM = details[1];
+					exonNum = details[2];
+					cDot = details[3];
+					pDot = details[4];
+					int idx = pDot.indexOf(",");
+					if (idx > 0)
+						pDot = pDot.substring(0, idx);
+				}
+				
 				String contig = toks[3];
 				int pos = Integer.parseInt( toks[4] );
 				
 				VariantRec rec = findRecord(contig, pos);
 				if (rec != null)
 					rec.addAnnotation(VariantRec.EXON_FUNCTION, exonicFunc);
+					rec.addAnnotation(VariantRec.NM_NUMBER, NM);
+					rec.addAnnotation(VariantRec.CDOT, cDot);
+					rec.addAnnotation(VariantRec.PDOT, pDot);
 			}
 			line = reader.readLine();
 		}
 		reader.close();
 		
 		//Add some annotations/ properties to the variant records  
-		FileAnnotator siftAnnotator = new FileAnnotator(avsiftFile, VariantRec.SIFT_SCORE, 1, this);
-		siftAnnotator.annotateAll();
-		
-		FileAnnotator polyphenAnnotator = new FileAnnotator(polyphenFile, VariantRec.POLYPHEN_SCORE, 1, this);
-		polyphenAnnotator.annotateAll();
-				
-		FileAnnotator mtAnnotator = new FileAnnotator(mtFile, VariantRec.MT_SCORE, 1, this);
-		mtAnnotator.annotateAll();
-		
-		FileAnnotator freqAnnotator = new FileAnnotator(tkgFile, VariantRec.POP_FREQUENCY, 1, this);
-		freqAnnotator.annotateAll();
-		
-		FileAnnotator phyloPAnnotator = new FileAnnotator(phyloPFile, VariantRec.PHYLOP_SCORE, 1, this);
-		phyloPAnnotator.annotateAll();
+//		FileAnnotator siftAnnotator = new FileAnnotator(avsiftFile, VariantRec.SIFT_SCORE, 1, this);
+//		siftAnnotator.annotateAll();
+//		
+//		FileAnnotator polyphenAnnotator = new FileAnnotator(polyphenFile, VariantRec.POLYPHEN_SCORE, 1, this);
+//		polyphenAnnotator.annotateAll();
+//				
+//		FileAnnotator mtAnnotator = new FileAnnotator(mtFile, VariantRec.MT_SCORE, 1, this);
+//		mtAnnotator.annotateAll();
+//		
+//		FileAnnotator freqAnnotator = new FileAnnotator(tkgFile, VariantRec.POP_FREQUENCY, 1, this);
+//		freqAnnotator.annotateAll();
+//		
+//		FileAnnotator phyloPAnnotator = new FileAnnotator(phyloPFile, VariantRec.PHYLOP_SCORE, 1, this);
+//		phyloPAnnotator.annotateAll();
 
 	}
 	
@@ -139,21 +161,37 @@ public class AnnovarResults extends AbstractVariantPool {
 	 * @return
 	 */
 	private VariantRec buildRecord(String line) {		
-		String[] toks = line.split("\\s");
+		String[] toks = line.split("\\t");
 		String variantType = toks[0];
 		String gene = toks[1];
 		String contig = toks[2];
-		int start = Integer.parseInt(toks[3]);
-		int end = Integer.parseInt(toks[4]);
-		char ref = toks[5].charAt(0);
-		char alt = toks[6].charAt(0);
-		boolean isHet = toks[7].contains("het");
-		double qual = Double.parseDouble(toks[8]);
 		
-		VariantRec rec = new VariantRec(contig, start, end, ref, alt, qual, variantType.contains("exonic"), isHet);
-		rec.addAnnotation(VariantRec.GENE_NAME, gene);
-		rec.addAnnotation(VariantRec.VARIANT_TYPE, variantType);
-		return rec;
+		try {
+			int start = Integer.parseInt(toks[3]);
+			int end = Integer.parseInt(toks[4]);
+			String ref = toks[5];
+			String alt = toks[6];
+			
+			//Sometimes there are two 
+			int indexOffset = 0;
+			if (toks[7].length()<2)
+				indexOffset=1;
+			boolean isHet = toks[7+indexOffset].contains("het");
+			double qual = Double.parseDouble(toks[8+indexOffset]);
+
+			VariantRec rec = new VariantRec(contig, start, end, ref, alt, qual, variantType.contains("exonic"), isHet);
+			rec.addAnnotation(VariantRec.GENE_NAME, gene);
+			rec.addAnnotation(VariantRec.VARIANT_TYPE, variantType);
+			return rec;
+		}
+		catch(NumberFormatException nfe) {
+			System.out.println("Error parsing record from annovar line: " + line);
+			System.out.println("Tokens: " );
+			for(int i=0; i<toks.length; i++) {
+				System.out.println(i + " : " + toks[i]);
+			}
+			return null;
+		}
 	}
 	
 	/**

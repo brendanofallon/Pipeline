@@ -15,8 +15,8 @@ public class VariantRec {
 	String contig;
 	int start;
 	int end;
-	char ref;
-	char alt;
+	String ref;
+	String alt;
 	Double qual;
 	boolean isExonic;
 	boolean isHetero;
@@ -26,8 +26,8 @@ public class VariantRec {
 	public VariantRec(String contig, 
 							int start, 
 							int end, 
-							char ref, 
-							char alt, 
+							String ref, 
+							String alt, 
 							double qual, 
 							boolean isExon,
 							boolean isHetero) {
@@ -232,6 +232,8 @@ public class VariantRec {
 	public static final String NM_NUMBER = "nmnumber";
 	public static final String GENE_NAME = "gene";
 	public static final String DEPTH = "depth";
+	public static final String CDOT = "cdot";
+	public static final String PDOT = "pdot";
 
 
 	

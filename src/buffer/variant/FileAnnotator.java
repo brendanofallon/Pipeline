@@ -4,22 +4,30 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.w3c.dom.NodeList;
+
+import pipeline.PipelineObject;
 
 import buffer.AnnovarResults;
 
-public class FileAnnotator {
+public class FileAnnotator extends PipelineObject {
 
-	File inputFile;
-	String label;
-	int column;
-	AnnovarResults variants;
+	protected File inputFile;
+	protected String label;
+	protected int column;
+	protected VariantPool variants;
+	protected Map<String, String> properties = new HashMap<String, String>();
 	
-	public FileAnnotator(File inputFile, String propertyLabel, int column, AnnovarResults variantsList) {
+	public FileAnnotator(File inputFile, String propertyLabel, int column, VariantPool pool) {
 		this.inputFile = inputFile;
 		this.column = column;
 		this.label = propertyLabel;
-		this.variants = variantsList;
+		this.variants = pool;
 	}
+	
 	
 	/**
 	 * Read all lines from the input file, parse the value at the column specified in the constructor,
@@ -43,6 +51,18 @@ public class FileAnnotator {
 			line = reader.readLine();
 		}
 		reader.close();
+	}
+
+	@Override
+	public void setAttribute(String key, String value) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void initialize(NodeList children) {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }

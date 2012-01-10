@@ -1,5 +1,6 @@
 package buffer.variant;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -11,16 +12,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import operator.OperationFailedException;
+import operator.Operator;
+import operator.VCFLineParser;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import buffer.ReferenceFile;
+import buffer.VCFFile;
 
 import pipeline.Pipeline;
+import pipeline.PipelineObject;
 
 /**
  * Base class for things that maintain a collection of VariantRecs
  * @author brendan
  *
  */
-public class AbstractVariantPool implements VariantPool {
+public class AbstractVariantPool extends Operator implements VariantPool  {
 
 	protected Map<String, List<VariantRec>>  vars = new HashMap<String, List<VariantRec>>();
 
@@ -53,7 +64,7 @@ public class AbstractVariantPool implements VariantPool {
 			return null;
 		}
 		
-		VariantRec qRec = new VariantRec(contig, pos, pos, 'x', 'x', 0, false, false);
+		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false, false);
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {
@@ -98,6 +109,7 @@ public class AbstractVariantPool implements VariantPool {
 				String het = "hom";
 				if (rec.isHetero())
 					het = "het";
+				//out.println(contig + "\t" + rec.getStart() + "\t . \t" + rec.ref + "\t" + rec.alt + "\t" + het + "\t" + rec.getQuality() + "\t" + rec.getProperty(VariantRec.DEPTH));
 				out.println(contig + "\t" + rec.getStart() + "\t . \t" + rec.ref + "\t" + rec.alt + "\t" + het + "\t" + rec.getQuality() + "\t" + rec.getProperty(VariantRec.DEPTH));
 			}
 		}
@@ -174,7 +186,7 @@ public class AbstractVariantPool implements VariantPool {
 			return false;
 		}
 		
-		VariantRec qRec = new VariantRec(contig, pos, pos, 'x', 'x', 0, false, false);
+		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false, false);
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {
@@ -264,5 +276,54 @@ public class AbstractVariantPool implements VariantPool {
 		}
 		return passing;
 	}
+
+
+	@Override
+	public void setAttribute(String key, String value) {
+		properties.put(key, value);
+	}
+
+
+	@Override
+	public void initialize(NodeList children) {
+		for(int i=0; i<children.getLength(); i++) {
+			Node child = children.item(i);
+			if (child.getNodeType() == Node.ELEMENT_NODE) {
+				Element el = (Element)child;
+				PipelineObject obj = getObjectFromHandler(el.getNodeName());
+				if (obj instanceof VCFFile) {
+					inputVariants = (VCFFile)obj;
+				}
+				
+			}
+		}
+	}
+
+
+	@Override
+	public void performOperation() throws OperationFailedException {
+		if (inputVariants == null)
+			throw new OperationFailedException("No input variants specified", this);
+
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+		logger.info("Building variant pool from variants in file " + inputVariants.getFilename());
+		try {
+			VCFLineParser vParser = new VCFLineParser(inputVariants.getFile());
+			while( vParser.advanceLine() ) {
+				VariantRec rec = vParser.toVariantRec();
+				if (rec != null) {
+					this.addRecord( rec );
+				}
+			}
+		} catch (IOException e) {
+			throw new OperationFailedException("Could not open input variants file", this);
+		}
+		
+
+		logger.info("Built variant pool with " + getContigs().size() + " contigs and " + this.size() + " total variants");
+	}
+	
+	
+	private VCFFile inputVariants = null;
 	
 }
