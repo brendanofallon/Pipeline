@@ -127,7 +127,8 @@ public abstract class IOOperator extends Operator {
 	
 	
 	/**
-	 * Execute the given system command in its own process
+	 * Execute the given system command in its own process, and wait until the process has completed
+	 * to return. If the exit value of the process is not zero, an OperationFailedException in thrown
 	 * @param command
 	 * @throws OperationFailedException
 	 */

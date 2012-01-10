@@ -3,6 +3,7 @@ package operator;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -60,109 +61,11 @@ public class CompareVCF extends IOOperator {
 		
 		while(vParser.advanceLine()) {
 			vars.addRecord( vParser.toVariantRec() );
-//			String contig = vParser.getContig();
-//			int pos = vParser.getPosition();
-//			double qual = vParser.getQuality();
-//			boolean het = vParser.isHetero();
-//			//int depth = vParser.
-//			//double readDepth = parseValue(line, "DP");
-//			
-//			
-//			Map<Integer, VariantRecord> contigMap = map.get(contig);
-//			if (contigMap == null) {
-//				contigMap = new HashMap<Integer, VariantRecord>();
-//				map.put(contig, contigMap);
-//			}
-//			VariantRecord rec = new VariantRecord();
-//			rec.quality = qual;
-//			rec.hetero = het;
-//			contigMap.put(pos, rec);
-//			totalVarsCounted++;
 		}
 		return totalVarsCounted;
 	}
 
-//	protected AbstractVariantPool findIntersectionContig(VariantPool varA,  VariantPool varB) {
-//		Map<Integer, VariantRecord> inter = new HashMap<Integer, VariantRecord>();
-//		for(Integer pos : varA.keySet()) {
-//			VariantRecord recB = varB.get(pos);
-//			if (recB != null) {
-//				VariantRecord recA = varB.get(pos);
-//				VariantRecord intRec = new VariantRecord();
-//				intRec.quality = recA.quality;
-//				intRec.qualityB = recB.quality;
-//				inter.put(pos, intRec);
-//			}
-//		}
-//		return inter;
-//	}
 
-	
-//	protected Map<String, Map<Integer, VariantRecord>> findIntersection(Map<String, Map<Integer, VariantRecord>> varA, Map<String, Map<Integer, VariantRecord>> varB) {
-//		Map<String, Map<Integer, VariantRecord>> allIntersection = new HashMap<String, Map<Integer, VariantRecord>>();
-//		Set<String> contigsA = varA.keySet();
-//		for(String contigA : contigsA) {
-//			Map<Integer, VariantRecord> varsA = varA.get(contigA);
-//			Map<Integer, VariantRecord> varsB = varB.get(contigA);
-//			
-//			if (varsB == null) {
-//				System.out.println("WARNING : Contig '" + contigA + "' found in first variant file but not second!");
-//			}
-//			else {
-//				Map<Integer, VariantRecord> inter = findIntersectionContig(varsA, varsB);
-//				allIntersection.put(contigA, inter);
-//			}
-//		}
-//		return allIntersection;
-//	}
-	
-	/**
-	 * Produce a new map that is contains only the variants in the first set, but none of the variants in the second set
-	 * @param vars
-	 * @param toRemove
-	 * @return
-	 */
-//	private Map<String, Map<Integer, VariantRecord>> removeFrom(
-//			Map<String, Map<Integer, VariantRecord>> vars,
-//			Map<String, Map<Integer, VariantRecord>> toRemove) {
-//		
-//		Map<String, Map<Integer, VariantRecord>> uniq = new HashMap<String, Map<Integer, VariantRecord>>();
-//		Set<String> contigsA = vars.keySet();
-//		for(String contigA : contigsA) {
-//			Map<Integer, VariantRecord> varsContig = vars.get(contigA);
-//			Map<Integer, VariantRecord> removeContig = toRemove.get(contigA);
-//			
-//			if (removeContig == null) {
-//				System.out.println("WARNING : Contig '" + contigA + "' found in first variant file but not second!");
-//			}
-//			else {
-//				Map<Integer, VariantRecord> inter = removeByContig(varsContig, removeContig);
-//				uniq.put(contigA, inter);
-//			}
-//		}
-//		
-//		return uniq;
-//	}
-	
-	/**
-	 * Returns a new contig map that contains only those variants from the first contig but none from the second 
-	 * @param varsContig
-	 * @param removeContig
-	 * @return
-	 */
-//	private Map<Integer, VariantRecord> removeByContig(
-//			Map<Integer, VariantRecord> varsContig,
-//			Map<Integer, VariantRecord> removeContig) {
-//		Map<Integer, VariantRecord> uniC = new HashMap<Integer, VariantRecord>();
-//		//I'm guess this does't clone the variantrecords.. so changes in the variant records
-//		//in the new map will be reflected in the old map
-//		uniC.putAll(varsContig);
-//		
-//		for(Integer pos : removeContig.keySet()) {
-//			uniC.remove(pos);
-//		}
-//		return uniC;
-//	}
 
 	/**
 	 * Returns average of quality scores across all variants in set
@@ -181,34 +84,7 @@ public class CompareVCF extends IOOperator {
 		
 		return sum/count;
 	}
-//	
-//	private static double sumQuality(Collection<VariantRec> recs) {
-//		double sum = 0;
-//		for(VariantRec rec : recs) {
-//			sum += rec.getQuality();
-//		}
-//		return sum;
-//	}
-	
-//	public static void emitToTable(Map<String, Map<Integer, VariantRecord>> vars) {
-//		PrintStream out = System.out;
-//		
-//		out.println("CHR\tPOS\tQUAL\tDP\tAF");
-//		List<String> contigs = new ArrayList<String>();
-//		contigs.addAll(vars.keySet());
-//		Collections.sort(contigs);
-//		for(String contig: contigs) {
-//			Map<Integer, VariantRecord> varC = vars.get(contig);
-//			List<Integer> sites = new ArrayList<Integer>(1000);
-//			sites.addAll(varC.keySet());
-//			Collections.sort(sites);
-//			for(Integer pos : sites) {
-//				VariantRecord rec = varC.get(pos);
-//				out.println(contig + "\t" + pos + "\t" + rec.quality + "\t" + rec.hetero );
-//			}
-//			
-//		}
-//	}
+
 	
 	/**
 	 * Use a VCFLineParser to count the number of heterozygotes in this VCF file
@@ -230,19 +106,7 @@ public class CompareVCF extends IOOperator {
 		
 		return count;
 	}
-	
-	
 
-//	private int countVariants(Map<String, Map<Integer, VariantRecord>> recs) {
-//		int count = 0;
-//		for(String contig : recs.keySet()) {
-//			Collection<VariantRecord> varRecs = recs.get(contig).values();
-//			count += varRecs.size();
-//			
-//		}
-//		
-//		return count;
-//	}
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -288,10 +152,10 @@ public class CompareVCF extends IOOperator {
 			System.out.println("Number of hets in discordant A sites: " + uniqAHets +  " ( " + formatter.format(100.0*(double)uniqAHets/(double)uniqA.size()) + " % )");
 			System.out.println("Number of hets in discordant A sites: " + uniqBHets +  " ( " + formatter.format(100.0*(double)uniqBHets/(double)uniqB.size()) + " % )");
 
-			System.out.println("\n\n Sites unique to " + fileA.getFilename());
-			uniqA.listAll(System.out);
-			System.out.println("\n\nSites unique to " + fileB.getFilename());
-			uniqB.listAll(System.out);
+		//	System.out.println("\n\n Sites unique to " + fileA.getFilename());
+			uniqA.listAll(new PrintStream(new FileOutputStream("unique_to_" + fileA.getFilename())));
+		//	System.out.println("\n\nSites unique to " + fileB.getFilename());
+			uniqB.listAll(new PrintStream(new FileOutputStream("unique_to_" + fileB.getFilename())));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

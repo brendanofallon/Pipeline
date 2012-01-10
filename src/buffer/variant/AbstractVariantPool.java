@@ -95,7 +95,22 @@ public class AbstractVariantPool implements VariantPool {
 	public void listAll(PrintStream out) {
 		for(String contig : getContigs() ) {
 			for(VariantRec rec : this.getVariantsForContig(contig)) {
-				out.println(contig + "\t" + rec.getStart() + "\t . \t" + rec.ref + "\t" + rec.alt + "\t" + rec.getQuality() + "\t" + rec.getProperty(VariantRec.DEPTH));
+				String het = "hom";
+				if (rec.isHetero())
+					het = "het";
+				out.println(contig + "\t" + rec.getStart() + "\t . \t" + rec.ref + "\t" + rec.alt + "\t" + het + "\t" + rec.getQuality() + "\t" + rec.getProperty(VariantRec.DEPTH));
+			}
+		}
+	}
+	
+	/**
+	 * Emit a tab-separated listing of all variants, including properties associated with the given keys, to the given stream
+	 * @param out
+	 */
+	public void listAll(PrintStream out, List<String> keys) {
+		for(String contig : getContigs() ) {
+			for(VariantRec rec : this.getVariantsForContig(contig)) {		
+				out.println(contig + "\t" + rec.getStart() + "\t . \t" + rec.ref + "\t" + rec.alt + "\t" + rec.getQuality() + "\t" + rec.getProperty(VariantRec.DEPTH) + rec.getPropertyString(keys));
 			}
 		}
 	}
@@ -215,6 +230,12 @@ public class AbstractVariantPool implements VariantPool {
 		return passing;
 	}
 	
+	/**
+	 * Incomplete: Emit this variant pool in vcf format to a printstream
+	 * @param ref
+	 * @param annotationKeys
+	 * @param out
+	 */
 	public void toVCF(ReferenceFile ref, List<String> annotationKeys, PrintStream out) {
 		//Make a VCF header
 		out.println("##fileformat=VCFv4.1");

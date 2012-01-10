@@ -6,21 +6,35 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import buffer.AnnovarInputFile;
 import buffer.AnnovarResults;
 import buffer.FileBuffer;
+import buffer.MultiFileBuffer;
+import buffer.ReferenceFile;
 import buffer.VCFFile;
 import buffer.variant.AbstractVariantPool;
 import buffer.variant.VariantFilter;
 import buffer.variant.VariantRec;
 import operator.CommandOperator;
+import operator.MultiOperator;
 import operator.OperationFailedException;
+import operator.MultiOperator.TaskOperator;
 import pipeline.Pipeline;
+import pipeline.PipelineObject;
 import pipeline.PipelineXMLConstants;
+import util.ElapsedTimeFormatter;
 
 /**
  * Use annovar to produce variant annotation files. 
@@ -29,7 +43,7 @@ import pipeline.PipelineXMLConstants;
  * @author brendan
  *
  */
-public class AnnovarAnnotate extends CommandOperator {
+public class AnnovarAnnotate extends MultiOperator {
 
 	
 	public static final String BUILD_VER = "buildver";
@@ -41,8 +55,12 @@ public class AnnovarAnnotate extends CommandOperator {
 	private String annovarPrefix = "annovar.output";
 	//protected double freqFilter = 0.0; //Frequency filtering level, all variants with frequency higher than this level in 1000g will be moved to the dropped file
 	
-	@Override
-	protected String[] getCommands() {
+	
+	/**
+	 * Works in a manner similar to MultiOperator.performOperation... but a command has to be executed before
+	 * the all of the others... and there's some work to do at after all tasks have completed
+	 */
+	public void performOperation() throws OperationFailedException {
 		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.ANNOVAR_PATH);
 		if (path != null)
 			annovarPath = path.toString();
@@ -59,7 +77,6 @@ public class AnnovarAnnotate extends CommandOperator {
 			annovarPath = userPath;
 		}
 		
-		
 		annovarPrefix = Pipeline.getPipelineInstance().getProjectHome() + annovarPrefix;
 		
 		//First step is to convert input VCF to annovar format
@@ -72,12 +89,70 @@ public class AnnovarAnnotate extends CommandOperator {
 		AnnovarInputFile annovarInput = new AnnovarInputFile(new File(Pipeline.getPipelineInstance().getProjectHome() + "annovar.input"));
 		
 		
-		String command1 = "perl " + annovarPath + "convert2annovar.pl -format " + format + " " + inputPath + " --outfile " + annovarInput.getAbsolutePath(); 
+		String generateInputFile = "perl " + annovarPath + "convert2annovar.pl -format " + format + " " + inputPath + " --outfile " + annovarInput.getAbsolutePath(); 
+		
+		executeCommand(generateInputFile);
 		
 		String annovarInputPath = annovarInput.getAbsolutePath();
 		
+		
+		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
+		
+		Date start = new Date();
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+		
+		logger.info("Beginning parallel annotation operation " + getObjectLabel());
+		
+		List<TaskOperator> jobs = new ArrayList<TaskOperator>();
+		
+		String commands[] = getCommands(annovarInputPath);
+		for(int i=0; i<commands.length; i++) {
+			String command = commands[i];
+			if (command != null) {
+				TaskOperator task = new TaskOperator(new String[]{command}, logger);
+				jobs.add(task);
+				threadPool.submit(task);
+			}
+		}
+
+		
+		try {
+			logger.info("All tasks have been submitted to multioperator " + getObjectLabel() + ", now awaiting termination...");
+			threadPool.shutdown(); //No new tasks will be submitted,
+			threadPool.awaitTermination(7, TimeUnit.DAYS); //Wait until all tasks have completed
+			
+			//Check for errors
+			boolean allOK = true;
+			for(TaskOperator job : jobs) {
+				if (job.isError()) {
+					allOK = false;
+					logger.severe("Parallel task in operator " + getObjectLabel() + " encountered error: " + job.getException());
+				}
+			}
+			if (!allOK) {
+				throw new OperationFailedException("One or more tasks in parallel operator " + getObjectLabel() + " encountered an error.", this);
+			}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	
+		generateOutputFiles();
+		
+		Date end = new Date();
+		logger.info("Annotation job " + getObjectLabel() + " has completed (Total time " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()) + " )");
+
+	}
+	
+	/**
+	 * Obtain the list of commands that will be submitted to the thread pool
+	 * @return
+	 */
+	protected String[] getCommands(String annovarInputPath) {
+
 		//Filter all variants by 1000g, setting maf to 0 means that all variants will be put into dropped file 
 		String command15 = "perl " + annovarPath + "annotate_variation.pl -filter -dbtype 1000g2010nov_all -maf 0 --buildver " + buildVer + " " + annovarInputPath + " --outfile " + annovarPrefix + " " + annovarPath + "humandb/";
+		
 		
 		String command2 = "perl " + annovarPath + "annotate_variation.pl -geneanno --buildver " + buildVer + " " + annovarInputPath + " --outfile " + annovarPrefix + " " + annovarPath + "humandb/";
 		
@@ -98,11 +173,16 @@ public class AnnovarAnnotate extends CommandOperator {
 		//PhyloP
 		String command7 = "perl " + annovarPath + "annotate_variation.pl -filter -dbtype ljb_phylop --buildver " + buildVer + "  " + annovarInputPath + " --outfile " + annovarPrefix + " -score_threshold 0.0 " + annovarPath + "humandb/";
 		
-		return new String[]{command1, command15, command2, command3, command4, /*command5, */ command6, command7};
+		return new String[]{command15, command2, command3, command4, /*command5, */ command6, command7};
 	}
 	
-	public void performOperation() throws OperationFailedException {
-		super.performOperation();
+	/**
+	 * Grab info from all of the files that annovar has generated and create a VariantPool with 
+	 *  that have 
+	 * @throws OperationFailedException 
+	 */
+	private void generateOutputFiles() throws OperationFailedException {
+		//super.performOperation();
 		 
 		File varFunc = new File(annovarPrefix + ".variant_function"); 
 
@@ -180,16 +260,76 @@ public class AnnovarAnnotate extends CommandOperator {
 	
 			variants.emitNonsynonymousVars(new PrintStream(new FileOutputStream(resultsFile.getAbsolutePath())) );
 			
+			List<String> keys = new ArrayList<String>();
+			keys.add(VariantRec.GENE_NAME);
+			keys.add(VariantRec.VARIANT_TYPE);
+			keys.add(VariantRec.EXON_FUNCTION);
+			keys.add(VariantRec.POP_FREQUENCY);
+			keys.add(VariantRec.SIFT_SCORE);
+			keys.add(VariantRec.POLYPHEN_SCORE);
+			keys.add(VariantRec.MT_SCORE);
+			keys.add(VariantRec.PHYLOP_SCORE);
 			
+			variants.listAll(System.out, keys);
 		} catch (IOException e) {
 			throw new OperationFailedException("Error opening annovar results files : " + e.getMessage(), this);
 		}
 
 
 	}
-
-
+	
 	@Override
+	public void initialize(NodeList children) {
+		Element inputList = getChildForLabel("input", children);
+		Element outputList = getChildForLabel("output", children);
+		
+		if (inputList != null) {
+			NodeList inputChildren = inputList.getChildNodes();
+			for(int i=0; i<inputChildren.getLength(); i++) {
+				Node iChild = inputChildren.item(i);
+				if (iChild.getNodeType() == Node.ELEMENT_NODE) {
+					PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
+					if (obj == null)
+						throw new IllegalArgumentException("Unknown object reference to MultiOperator " + getObjectLabel());
+					if (obj instanceof MultiFileBuffer) 
+						throw new IllegalArgumentException("Annotation operator cannot currently handle multi-file buffers");
+					
+					if (obj instanceof ReferenceFile) {
+						reference = (ReferenceFile) obj;
+					}
+					if (obj instanceof FileBuffer) {
+						addInputBuffer( (FileBuffer)obj);
+					}
+					
+				}
+			}
+		}
+		
+		if (outputList != null) {
+			NodeList outputChilden = outputList.getChildNodes();
+			for(int i=0; i<outputChilden.getLength(); i++) {
+				Node iChild = outputChilden.item(i);
+				if (iChild.getNodeType() == Node.ELEMENT_NODE) {
+					PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
+					if (obj == null)
+						throw new IllegalArgumentException("Unknown object reference to MultiOperator " + getObjectLabel());
+					if (obj instanceof FileBuffer) {
+						addOutputBuffer( (FileBuffer)obj );
+					}
+				}
+			}
+		}
+		
+		if (inputFiles == null) {
+			Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+			logger.warning("No file found for input to Annotation operator " + getObjectLabel());
+			if (inputBuffers.size()==0 || (inputBuffers.size()==1 && reference != null)) {
+				logger.severe("Also, no file buffers as input either. This is probably an error.");
+				throw new IllegalArgumentException("No input buffers found for multi-operator " + getObjectLabel());
+			}
+		}
+	}
+
 	protected String getCommand() throws OperationFailedException {
 		//Nothing to do since we've overridden getCommands()
 		return null;
@@ -285,6 +425,12 @@ public class AnnovarAnnotate extends CommandOperator {
 			}
 			return false;
 		}
+	}
+
+	@Override
+	protected String[] getCommand(FileBuffer inputBuffer) {
+		//Nothing to do since we've overridden performOperation
+		return null;
 	}
 }
 

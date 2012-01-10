@@ -2,6 +2,7 @@ package buffer.variant;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -58,6 +59,29 @@ public class VariantRec {
 	
 	public boolean hasProperty(String key) {
 		return props.get(key)!=null;
+	}
+	
+	/**
+	 * Returns a tab-separated string containing properties (but not annotation) 
+	 * values indexed by the list of keys given
+	 * @param propKeys
+	 * @return
+	 */
+	public String getPropertyString(List<String> propKeys) {
+		StringBuffer buf = new StringBuffer();
+		for(String key : propKeys) {
+			Double val = props.get(key);
+			if (val != null)
+				buf.append("\t" + val);
+			else {
+				String anno = annotations.get(key);
+				if (anno != null)
+					buf.append("\t" + anno);
+				else
+					buf.append("\t NA");
+			}
+		}
+		return buf.toString();
 	}
 	
 	public String getContig() {

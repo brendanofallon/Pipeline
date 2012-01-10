@@ -1,0 +1,18 @@
+
+<!-- Just like the name says, this writes all variants in the given vcf file that are
+     contained in regions defined by the bed file to a new vcf file -->
+<Pipeline>
+
+<BED class="buffer.BEDFile" filename="/home/brendan/exomeBEDfiles/SeqCap_EZ_Exome_v2_nochr_noprobe.bed" />
+
+ <Filter class="operator.FilterVCFByBED" >
+   <input>
+      <BED />
+      <inVCF class="buffer.VCFFile" filename="your_input_variants.vcf" />
+    </input>
+    <output>
+      <outVCF class="buffer.VCFFile" filename="your_filtered_variants.vcf" />
+    </output>
+  </Filter>
+
+</Pipeline>

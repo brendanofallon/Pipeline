@@ -23,7 +23,7 @@ public class FileAnnotator {
 	
 	/**
 	 * Read all lines from the input file, parse the value at the column specified in the constructor,
-	 * and add that annotation to the VariantRecord at the given position in the variant pool
+	 * and add that PROPERTY to the VariantRecord at the given position in the variant pool
 	 * @throws IOException 
 	 */
 	public void annotateAll() throws IOException {

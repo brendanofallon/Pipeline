@@ -46,15 +46,28 @@ public class VCFLineParser {
 		}
 		
 		/**
-		 * Converts the information in the current line to a VariantRec
+		 * Converts the information in the current line to a VariantRec, by default this
+		 * will strip 'chr' from all contig names
 		 * @return
 		 */
 		public VariantRec toVariantRec() {
+			return toVariantRec(true);
+		}
+		
+		/**
+		 * Convert current line into a variant record
+		 * @param stripChr If true, strip 'chr' from contig name, if false do not alter contig name
+		 * @return A new variant record containing the information in this vcf line
+		 */
+		public VariantRec toVariantRec(boolean stripChr) {
 			if (currentLine == null)
 				return null;
 			else {
+				String contig = getContig();
+				if (stripChr)
+					contig = contig.replace("chr", "");
 				//System.out.println(currentLine);
-				VariantRec rec = new VariantRec(getContig(), getStart(), getStart()+1, getRef(), getAlt(), getQuality(), false, isHetero() );
+				VariantRec rec = new VariantRec(contig, getStart(), getStart()+1, getRef(), getAlt(), getQuality(), false, isHetero() );
 				Integer depth = getDepth();
 				if (depth != null)
 					rec.addProperty(VariantRec.DEPTH, new Double(getDepth()));
