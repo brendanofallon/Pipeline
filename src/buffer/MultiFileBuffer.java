@@ -97,7 +97,7 @@ public class MultiFileBuffer extends FileBuffer {
 			int index1 = -1;
 			int index2 = -1;
 			if (name.contains("contig")) {
-				index1 = name.indexOf("contig")+1;
+				index1 = name.indexOf("contig")+7;
 				index2 = name.indexOf(".");
 			}
 			else {

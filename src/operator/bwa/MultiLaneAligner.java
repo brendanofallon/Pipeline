@@ -27,6 +27,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
+	public static final String SKIPSAI = "skipsai";
 	protected String pathToBWA = "bwa";
 	protected String skipSAI = "skipsai";
 	protected int defaultThreads = 4;
@@ -69,7 +70,12 @@ public class MultiLaneAligner extends PipedCommandOp {
 		}
 		referencePath = reference.getAbsolutePath();
 		
-		
+		boolean skipSAIGen = false;
+		String skipsaiStr = properties.get(SKIPSAI);
+		if (skipsaiStr != null) {
+			skipSAIGen = Boolean.parseBoolean(skipsaiStr);
+			logger.info("Parsed " + skipSAIGen + " for skip sai file generation");
+		}
 		
 		List<FileBuffer> files = this.getAllInputBuffersForClass(MultiFileBuffer.class);
 		if (files.size() != 2) {

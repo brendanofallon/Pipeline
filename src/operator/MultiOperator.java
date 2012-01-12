@@ -75,9 +75,11 @@ public abstract class MultiOperator extends IOOperator {
 		for(int i=0; i<inputFiles.getFileCount(); i++) {
 			FileBuffer inputBuffer = inputFiles.getFile(i);
 			String command[] = getCommand(inputBuffer);
-			TaskOperator task = new TaskOperator(command, logger);
-			jobs.add(task);
-			threadPool.submit(task);
+			if (command != null) {
+				TaskOperator task = new TaskOperator(command, logger);
+				jobs.add(task);
+				threadPool.submit(task);
+			}
 		}
 		
 		try {

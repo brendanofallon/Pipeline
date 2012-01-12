@@ -471,16 +471,27 @@ public class Pipeline {
 		if (projHome != null && (!projHome.endsWith("/"))) {
 			projHome = projHome + "/";
 		}
-		
-		
+		String threadCountStr = argParser.getStringOp("threads");
+		int threads = -1; //Use value from properties file if possible
+		if (threadCountStr != null) {
+			threads = Integer.parseInt(threadCountStr);
+		}
 		
 		//Assume all args that end in .xml are input files and execute them in order
 		for(int i=0; i<args.length; i++) {
 			if (args[i].endsWith(".xml")) {
 				File input = new File(args[i]);
 				Pipeline pipeline = new Pipeline(input);
+				
+				//Set project home
 				if (projHome != null && projHome.length()>0)
 					pipeline.setProperty("home", projHome);
+				
+				//Set preferred thread count
+				if (threads > -1) {
+					pipeline.setProperty(PipelineXMLConstants.THREADS_ATTR, "" + threads);
+				}
+				
 				try {
 					pipeline.initializePipeline();
 					
@@ -493,12 +504,14 @@ public class Pipeline {
 				} catch (PipelineDocException e) {
 					e.printStackTrace();
 					System.out.println("ERROR: Could not properly parse input document. \n" + e.getMessage());
+					e.printStackTrace(System.out);
 				} catch (ObjectCreationException e) {
 					e.printStackTrace();
 					System.out.println("ERROR: Could not create some objects \n" + e.getMessage());
+					e.printStackTrace(System.out);
 				} catch (OperationFailedException e) {
-					e.printStackTrace();
 					System.out.println("ERROR: Operation " + e.getSourceOperator().getObjectLabel() + " failed. \n" + e.getMessage());
+					e.printStackTrace(System.out);
 				}
 			}
 		}
