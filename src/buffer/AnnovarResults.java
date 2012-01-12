@@ -156,7 +156,7 @@ public class AnnovarResults extends AbstractVariantPool {
 	
 	/**
 	 * Create a variant record by parsing values from the given line. The line is assumed
-	 * to be in basic annovar format. 
+	 * to be in basic annovar input format. 
 	 * @param line
 	 * @return
 	 */
@@ -178,10 +178,12 @@ public class AnnovarResults extends AbstractVariantPool {
 				indexOffset=1;
 			boolean isHet = toks[7+indexOffset].contains("het");
 			double qual = Double.parseDouble(toks[8+indexOffset]);
+			Double depth = Double.parseDouble(toks[9+indexOffset]);
 
 			VariantRec rec = new VariantRec(contig, start, end, ref, alt, qual, variantType.contains("exonic"), isHet);
 			rec.addAnnotation(VariantRec.GENE_NAME, gene);
 			rec.addAnnotation(VariantRec.VARIANT_TYPE, variantType);
+			rec.addProperty(VariantRec.DEPTH, depth);
 			return rec;
 		}
 		catch(NumberFormatException nfe) {

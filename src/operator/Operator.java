@@ -1,5 +1,6 @@
 package operator;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -34,6 +35,15 @@ public abstract class Operator extends PipelineObject {
 		Logger.getLogger(Pipeline.primaryLoggerName).info("Operator : " + this.getObjectLabel() + " adding attribute " + key + " = " + value);
 	}
 		
+	@Override
+	public String getAttribute(String key) {
+		return properties.get(key);
+	}
+	
+	public Collection<String> getAttributeKeys() {
+		return properties.keySet();
+	}
+	
 	/**
 	 * Get the current State of this operator
 	 * @return

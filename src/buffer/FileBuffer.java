@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,6 +40,15 @@ public abstract class FileBuffer extends PipelineObject {
 	
 	public void setAttribute(String key, String value) {
 		properties.put(key, value);
+	}
+	
+
+	public String getAttribute(String key) {
+		return properties.get(key);
+	}
+	
+	public Collection<String> getAttributeKeys() {
+		return properties.keySet();
 	}
 	
 	/**

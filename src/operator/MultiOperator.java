@@ -43,7 +43,7 @@ public abstract class MultiOperator extends IOOperator {
 	 * Adds a new file to the list of output files. Under normal use getCommand() should call this
 	 * to add the appropriate file to the list of output files
 	 */
-	protected void addOutputFile(FileBuffer outputFile) {
+	protected synchronized void addOutputFile(FileBuffer outputFile) {
 		outputFiles.addFile(outputFile);
 	}
 	
@@ -106,6 +106,11 @@ public abstract class MultiOperator extends IOOperator {
 		Date end = new Date();
 		logger.info("Parallel multi-operation " + getObjectLabel() + " has completed (Total time " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()) + " )");
 
+		
+		if (inputFiles != null && outputFiles != null && inputFiles.getFileCount() != outputFiles.getFileCount()) {
+			logger.severe("Uh oh, we didn't find the name number of input as output files! input files size: " + inputFiles.getFileCount() + " output files: " + outputFiles.getFileCount());
+		}
+		
 	}
 
 	

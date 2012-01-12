@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,10 +56,17 @@ public class FileAnnotator extends PipelineObject {
 
 	@Override
 	public void setAttribute(String key, String value) {
-		// TODO Auto-generated method stub
-		
+		properties.put(key, value);
+	}
+	
+	public String getAttribute(String key) {
+		return properties.get(key);
 	}
 
+	public Collection<String> getAttributeKeys() {
+		return properties.keySet();
+	}
+	
 	@Override
 	public void initialize(NodeList children) {
 		// TODO Auto-generated method stub

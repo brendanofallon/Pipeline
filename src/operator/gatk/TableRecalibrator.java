@@ -19,7 +19,7 @@ public class TableRecalibrator extends CommandOperator {
 
 	public static final String GATK_PATH = "gatk.path";
 	public static final String JVM_ARGS="jvmargs";
-	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
+	public final String defaultMemOptions = " -Xms1g -Xmx8g";
 	public static final String PATH = "path";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;

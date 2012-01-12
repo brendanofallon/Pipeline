@@ -159,6 +159,8 @@ public class SplitByChromosome extends IOOperator {
 					" -L " + contig;
 			
 			try {
+				Logger.getLogger(Pipeline.primaryLoggerName).info("Split operator is executing command " + command);		
+
 				executeCommand(command);
 				addOutputFile(new BAMFile(new File(outputPath), contig));
 			} catch (OperationFailedException e) {

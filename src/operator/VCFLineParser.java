@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 
 import pipeline.Pipeline;
 
+import buffer.VCFFile;
 import buffer.variant.VariantRec;
 
 /**
@@ -27,14 +28,15 @@ public class VCFLineParser {
 		
 		public VCFLineParser(File file) throws IOException {
 			this.file = file;
-//			System.out.println("ATtempting to open file with raw name: " + file.getName());
-//			System.out.println("Absolute path: " + file.getAbsolutePath());
-//			System.out.println("File exists: " + file.exists());
 			this.reader = new BufferedReader(new FileReader(file));
 			currentLine = reader.readLine();
 			readHeader();
 		}
 
+		public VCFLineParser(VCFFile file) throws IOException {
+			this(file.getFile());
+		}
+		
 		private void readHeader() throws IOException {
 			while (currentLine != null && currentLine.startsWith("#")) {
 				advanceLine();

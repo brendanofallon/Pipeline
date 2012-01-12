@@ -1,5 +1,6 @@
 package pipeline;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -88,7 +89,34 @@ public abstract class PipelineObject {
 	public abstract void setAttribute(String key, String value);
 
 	/**
+	 * Obtain the value for some property associated with the given key. 
+	 * @param key
+	 * @param value
+	 */	
+	public abstract String getAttribute(String key);
+	
+	/**
+	 * Return keys for all attributes
+	 * @return
+	 */
+	public abstract Collection<String> getAttributeKeys();
+	
+	/**
 	 * Called after 
 	 */
 	public abstract void initialize(NodeList children);
+	
+	/**
+	 * Returns true if all of the attributes in this object are the
+	 * same as ( .equals() is true) those specified for the given object
+	 * @param obj
+	 * @return
+	 */
+//	public boolean attributesAreEqual(PipelineObject obj) {
+//		for(String key : getAttributeKeys()) {
+//			if (! (this.getAttribute(key).equals(obj.getAttribute(key))))
+//				return false;
+//		}
+//		return true;
+//	}
 }

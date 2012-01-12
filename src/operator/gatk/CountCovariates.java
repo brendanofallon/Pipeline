@@ -63,10 +63,13 @@ public class CountCovariates extends CommandOperator {
 			knownSitesStr.append("-knownSites " + buff.getAbsolutePath() + " ");
 		}
 		
+		if (knownSitesFiles.size() == 0) {
+			throw new IllegalArgumentException("You must list some known sites files for CountCovariates to work");
+		}
 		
 		String csvOutput = outputBuffers.get(0).getAbsolutePath();
 		
-		String covariateList = "-cov QualityScoreCovariate -cov CycleCovariate -cov DinucCovariate -cov MappingQualityCovariate ";
+		String covariateList = "-cov QualityScoreCovariate -cov CycleCovariate -cov DinucCovariate -cov MappingQualityCovariate -cov HomopolymerCovariate ";
 		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + 
 				" -R " + reference + 

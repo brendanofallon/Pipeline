@@ -92,11 +92,11 @@ public class ParallelRealign extends IOOperator {
 		if (inputBam != null) {
 			logger.info("ParallelRealign: found single input BAM file, submitting by contig");
 
-			for(int i=1; i<24; i++) {
+			for(int i=1; i<25; i++) {
 				String contig = "" + i;
-				if (i == 22)
+				if (i == 23)
 					contig = "X";
-				if (i==23)
+				if (i==24)
 					contig = "Y";
 
 				TargetAndRealign job = new TargetAndRealign(contig, inputBam.getAbsolutePath(), logger, contig);
