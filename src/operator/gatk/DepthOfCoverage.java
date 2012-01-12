@@ -13,12 +13,17 @@ import pipeline.PipelineXMLConstants;
 
 public class DepthOfCoverage extends CommandOperator {
 
-	public final String defaultMemOptions = " -Xms512m -Xmx2g";
+	public final String defaultMemOptions = " -Xms2g -Xmx8g";
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
 	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
+	
+	@Override
+	public boolean requiresReference() {
+		return true;
+	}
 	
 	@Override
 	protected String getCommand() throws OperationFailedException {

@@ -172,7 +172,7 @@ public abstract class MultiOperator extends IOOperator {
 	 * @author brendan
 	 *
 	 */
-	class TaskOperator implements Runnable {
+	public class TaskOperator implements Runnable {
 
 		final String[] command;
 		Logger logger;

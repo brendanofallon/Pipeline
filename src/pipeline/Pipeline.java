@@ -195,8 +195,12 @@ public class Pipeline {
 		
 		//Set the PROJECT_HOME property to user.dir, unless it was already specified
 		if (props.getProperty(PROJECT_HOME) == null) {
-			primaryLogger.info("Setting PROJECT_HOME to " + System.getProperty("user.dir"));
-			props.setProperty(PROJECT_HOME, System.getProperty("user.dir"));
+			String pHome = System.getProperty("user.dir");
+			if (! pHome.endsWith("/")) {
+				pHome = pHome + "/";
+			}
+			primaryLogger.info("Setting PROJECT_HOME to " + pHome);
+			props.setProperty(PROJECT_HOME, pHome);
 		}
 		
 		

@@ -18,7 +18,7 @@ public class RowFilter extends IOOperator {
 		String inputPath = inputBuffers.get(0).getAbsolutePath();
 		String outputFile = outputBuffers.get(0).getAbsolutePath();
 		
-		//Right now we emit all lines that are 'comments' (which start with '#') and/or
+		//Right now we emit all lines that are 'comments' (which start with '#') AND
 		//lines which contain the expression in 'filter'
 		
 		try {

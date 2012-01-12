@@ -22,6 +22,10 @@ public class BWASampe extends PipedCommandOp {
 	protected String defaultRG = "@RG\\tID:unknown\\tSM:unknown\\tPL:ILLUMINA";
 	protected String readGroupStr = defaultRG;
 	
+	@Override
+	public boolean requiresReference() {
+		return true;
+	}
 	
 	@Override
 	protected String getCommand() {

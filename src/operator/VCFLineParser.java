@@ -5,6 +5,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.logging.Logger;
+
+import pipeline.Pipeline;
+
+import buffer.variant.VariantRec;
 
 /**
  * This class provides a uniform interface for extracting values from a single line of a vcf file.
@@ -22,6 +27,9 @@ public class VCFLineParser {
 		
 		public VCFLineParser(File file) throws IOException {
 			this.file = file;
+//			System.out.println("ATtempting to open file with raw name: " + file.getName());
+//			System.out.println("Absolute path: " + file.getAbsolutePath());
+//			System.out.println("File exists: " + file.exists());
 			this.reader = new BufferedReader(new FileReader(file));
 			currentLine = reader.readLine();
 			readHeader();
@@ -35,6 +43,36 @@ public class VCFLineParser {
 		
 		public boolean isPassing() {
 			return currentLine.contains("PASS");
+		}
+		
+		/**
+		 * Converts the information in the current line to a VariantRec, by default this
+		 * will strip 'chr' from all contig names
+		 * @return
+		 */
+		public VariantRec toVariantRec() {
+			return toVariantRec(true);
+		}
+		
+		/**
+		 * Convert current line into a variant record
+		 * @param stripChr If true, strip 'chr' from contig name, if false do not alter contig name
+		 * @return A new variant record containing the information in this vcf line
+		 */
+		public VariantRec toVariantRec(boolean stripChr) {
+			if (currentLine == null)
+				return null;
+			else {
+				String contig = getContig();
+				if (stripChr)
+					contig = contig.replace("chr", "");
+				//System.out.println(currentLine);
+				VariantRec rec = new VariantRec(contig, getStart(), getStart()+1,  getRef(), getAlt(), getQuality(), false, isHetero() );
+				Integer depth = getDepth();
+				if (depth != null)
+					rec.addProperty(VariantRec.DEPTH, new Double(getDepth()));
+				return rec;
+			}
 		}
 		
 		/**
@@ -62,12 +100,48 @@ public class VCFLineParser {
 		}
 		
 		/**
-		 * Return position item for current line
+		 * Return the (starting) position item for current line
 		 * @return
 		 */
 		public int getPosition() {
 			if (lineToks != null) {
 				return Integer.parseInt(lineToks[1]);
+			}
+			else
+				return -1;
+		}
+		
+		public Integer getDepth() {
+			String info = lineToks[7];
+			
+			String target = "DP";
+			int index = info.indexOf(target);
+			if (index < 0) {
+				return null;
+			}
+			
+			//System.out.println( info.substring(index, index+10) + " ...... " + info.substring(index+target.length()+1, info.indexOf(';', index)));
+			try {
+				Integer value = Integer.parseInt(info.substring(index+target.length()+1, info.indexOf(';', index)));
+				return value;
+			}
+			catch (NumberFormatException nfe) {
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Could not parse depth from vcf line: " );
+			}
+			return null;
+		}
+		
+		public int getStart() {
+			return getPosition();
+		}
+		
+		/**
+		 * Return the end of this variant
+		 * @return
+		 */
+		public int getEnd() {
+			if (lineToks != null) {
+				return Integer.parseInt(lineToks[2]);
 			}
 			else
 				return -1;
@@ -81,20 +155,20 @@ public class VCFLineParser {
 				return -1.0;
 		}
 		
-		public char getRef() {
+		public String getRef() {
 			if (lineToks != null) {
-				return lineToks[3].charAt(0);
+				return lineToks[3];
 			}
 			else
-				return '?';
+				return "?";
 		}
 		
-		public char getAlt() {
+		public String getAlt() {
 			if (lineToks != null) {
-				return lineToks[4].charAt(0);
+				return lineToks[4];
 			}
 			else
-				return '?';
+				return "?";
 		}
 		
 		public int getLineNumber() {
