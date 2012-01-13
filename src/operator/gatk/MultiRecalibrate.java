@@ -65,7 +65,7 @@ public void performOperation() throws OperationFailedException {
 		
 		for(int i=0; i<inputBAMs.size(); i++) {
 			FileBuffer inputBuffer = inputBAMs.get(i);
-			String command[] = getCountCovarCommand(inputBuffer, recalDataFiles.get(i));
+			String command[] = getFullCommand(inputBuffer, recalDataFiles.get(i));
 			logger.info("Submitting task with command : " + command[0]);
 			if (command != null) {
 				TaskOperator task = new TaskOperator(command, logger);
@@ -78,22 +78,22 @@ public void performOperation() throws OperationFailedException {
 			logger.info("All count-covariate tasks have been submitted to multioperator " + getObjectLabel() + ", now awaiting termination...");
 			threadPool.shutdown(); //No new tasks will be submitted,
 			threadPool.awaitTermination(7, TimeUnit.DAYS); //Wait until all tasks have completed
-			threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
+			//threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		for(int i=0; i<inputBAMs.size(); i++) {
-			FileBuffer inputBuffer = inputBAMs.get(i);
-			String command[] = getApplyRecalCommand(inputBuffer, recalDataFiles.get(i));
-			logger.info("Submitting task with command : " + command[0]);
-			if (command != null) {
-				TaskOperator task = new TaskOperator(command, logger);
-				jobs.add(task);
-				threadPool.submit(task);
-			}
-		}
+//		for(int i=0; i<inputBAMs.size(); i++) {
+//			FileBuffer inputBuffer = inputBAMs.get(i);
+//			String command[] = getApplyRecalCommand(inputBuffer, recalDataFiles.get(i));
+//			logger.info("Submitting task with command : " + command[0]);
+//			if (command != null) {
+//				TaskOperator task = new TaskOperator(command, logger);
+//				jobs.add(task);
+//				threadPool.submit(task);
+//			}
+//		}
 		
 		try {
 			logger.info("All tasks have been submitted to multioperator " + getObjectLabel() + ", now awaiting termination...");
@@ -122,7 +122,18 @@ public void performOperation() throws OperationFailedException {
 	}
 	
 
-	private String[] getApplyRecalCommand(FileBuffer inputBuffer, CSVFile recalDataFile) {
+	/**
+	 * Obtain an array with both commands we want to execute (count covariates & apply recal)
+	 * This replaces getCommand(...) since we need to pass in the csv file as well 
+	 * @param inputBuffer
+	 * @param csvFile
+	 * @return
+	 */
+	private String[] getFullCommand(FileBuffer inputBuffer, CSVFile csvFile) {
+		return new String[]{ getCountCovarCommand(inputBuffer, csvFile), getApplyRecalCommand(inputBuffer, csvFile) };
+	}
+
+	private String getApplyRecalCommand(FileBuffer inputBuffer, CSVFile recalDataFile) {
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
@@ -146,10 +157,10 @@ public void performOperation() throws OperationFailedException {
 		if (inputBuffer.getContig() != null) {
 				command = command + " -L " + inputBuffer.getContig();
 		}
-		return new String[]{command};
+		return command;
 	}
 
-	protected String[] getCountCovarCommand(FileBuffer inputBuffer, CSVFile recalDataFile) {
+	protected String getCountCovarCommand(FileBuffer inputBuffer, CSVFile recalDataFile) {
 		if (inputBuffer instanceof VCFFile || inputBuffer instanceof ReferenceFile || inputBuffer instanceof CSVFile) {
 			return null;
 		}
@@ -198,7 +209,7 @@ public void performOperation() throws OperationFailedException {
 		if (inputBuffer.getContig() != null) {
 			command = command + " -L " + inputBuffer.getContig();
 		}
-		return new String[]{command};
+		return command;
 	}
 
 	@Override

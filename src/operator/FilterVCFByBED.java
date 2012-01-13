@@ -57,7 +57,7 @@ public class FilterVCFByBED extends IOOperator {
 			Map<String, Integer> counts = new HashMap<String, Integer>();
 			while( vParser.advanceLine()) {
 				totVars++;
-				String contig = vParser.getContig();
+				String contig = vParser.getContig().replace("chr", "")	;
 				int pos = vParser.getPosition();
 				//System.out.println("Searching for contig: " + contig + " pos: " + pos);
 				if (bedFile.contains(contig, pos)) {
