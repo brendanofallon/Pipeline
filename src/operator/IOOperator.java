@@ -10,6 +10,7 @@ import org.w3c.dom.NodeList;
 
 import pipeline.PipelineObject;
 import buffer.FileBuffer;
+import buffer.MultiFileBuffer;
 import buffer.ReferenceFile;
 
 /**
@@ -77,6 +78,31 @@ public abstract class IOOperator extends Operator {
 				return buff;
 		}
 		return null;
+	}
+	
+	protected void checkContigs(MultiFileBuffer files) {
+		for(int j=1; j<24; j++) {
+			String contig = "" + j;
+			if (j == 23) 
+				contig = "X";
+			boolean found = false;
+			for(int i=0; i<files.getFileCount(); i++) {
+				if (files.getFile(i).getContig() != null && files.getFile(i).getContig().equals(contig)) {
+					found = true;
+				}
+			}
+			
+			if (!found) {
+				System.err.println("Could not find contig " + contig + " in files!");
+				for(int i=0; i<files.getFileCount(); i++) {
+					FileBuffer buff = files.getFile(i);
+					System.err.println(buff.getContig() + "\t" + buff.getAbsolutePath() );
+				}
+				throw new IllegalArgumentException("Could not find contig " + contig + " among files!");
+			}
+			
+		}
+		
 	}
 	
 	@Override

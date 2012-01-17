@@ -35,6 +35,11 @@ public abstract class MultiOperator extends IOOperator {
 	protected ReferenceFile reference;
 	protected ThreadPoolExecutor threadPool = null;
 	
+	public static final String checkcontigs = "checkcontigs";
+	
+	//If true, make sure that all contigs (except y) are present in input and output files
+	protected boolean checkContigs = true;
+	
 	public MultiOperator() {
 		
 	}
@@ -58,8 +63,23 @@ public abstract class MultiOperator extends IOOperator {
 		return Pipeline.getPipelineInstance().getThreadCount();
 	}
 	
+	/**
+	 * Traverse through input files and see if we have all of the contigs (Y is optional) 
+	 */
+	protected void checkInputContigs() {
+		checkContigs(inputFiles);
+	}
+	
+	protected void checkOutputContigs() {
+		checkContigs(outputFiles);
+	}
+	
+	
 	@Override
 	public void performOperation() throws OperationFailedException {
+		if (checkContigs) {
+			checkInputContigs();
+		}
 		
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
 		
@@ -102,20 +122,30 @@ public abstract class MultiOperator extends IOOperator {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	
-		Date end = new Date();
-		logger.info("Parallel multi-operation " + getObjectLabel() + " has completed (Total time " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()) + " )");
 
 		
+		if (checkContigs) {
+			checkOutputContigs();
+		}
 		if (inputFiles != null && outputFiles != null && inputFiles.getFileCount() != outputFiles.getFileCount()) {
 			logger.severe("Uh oh, we didn't find the name number of input as output files! input files size: " + inputFiles.getFileCount() + " output files: " + outputFiles.getFileCount());
 		}
 		
+		Date end = new Date();
+		logger.info("Parallel multi-operation " + getObjectLabel() + " has completed (Total time " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()) + " )");
+
 	}
 
 	
 	@Override
 	public void initialize(NodeList children) {
+		String checkStr = properties.get(checkcontigs);
+		if (checkStr != null) {
+			Boolean check = Boolean.parseBoolean(checkStr);
+			checkContigs = check;
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Check contig is " + checkContigs + " for MultiOperator " + getObjectLabel());
+		}
+		
 		Element inputList = getChildForLabel("input", children);
 		Element outputList = getChildForLabel("output", children);
 		
