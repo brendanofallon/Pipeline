@@ -23,6 +23,7 @@ import buffer.variant.AbstractVariantPool;
 import buffer.variant.VariantRec;
 
 import pipeline.Pipeline;
+import util.VCFLineParser;
 
 public class CompareVCF extends IOOperator {
 

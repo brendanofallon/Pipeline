@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import pipeline.Pipeline;
+import util.VCFLineParser;
 
 import buffer.BEDFile;
 import buffer.FileBuffer;

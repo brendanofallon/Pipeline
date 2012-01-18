@@ -14,7 +14,6 @@ import java.util.logging.Logger;
 
 import operator.OperationFailedException;
 import operator.Operator;
-import operator.VCFLineParser;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -25,6 +24,7 @@ import buffer.VCFFile;
 
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
+import util.VCFLineParser;
 
 /**
  * Base class for things that maintain a collection of VariantRecs

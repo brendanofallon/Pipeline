@@ -1,4 +1,4 @@
-package operator;
+package util;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,7 +25,9 @@ public class VCFLineParser {
 		private int currentLineNumber = -1;
 		private String currentLine = null;
 		private String[] lineToks = null;
-		
+		private String[] formatToks = null; //Tokenized format string, produced as needed
+		private int gtCol = -1; //Format column which contains genotype info
+				
 		public VCFLineParser(File file) throws IOException {
 			this.file = file;
 			this.reader = new BufferedReader(new FileReader(file));
@@ -210,6 +212,70 @@ public class VCFLineParser {
 
 		public String getCurrentLine() {
 			return currentLine;
+		}
+		
+		/**
+		 * Returns true if the phasing separator is "|" and not "/" 
+		 * @return
+		 */
+		public boolean isPhased() {
+			if (formatToks == null) {
+				if (formatToks == null) {
+					createFormatString();
+				}
+			}
+			
+			String[] formatValues = lineToks[9].split("\t");
+			String GTStr = formatValues[gtCol];
+			if (GTStr.charAt(1) == '|') {
+				return true;
+			}
+			else {
+				return false;
+			}
+			
+		}
+		
+		public boolean firstIsAlt() {
+			if (formatToks == null) {
+				createFormatString();
+			}
+	
+			String[] formatValues = lineToks[9].split("\t");
+			String GTStr = formatValues[gtCol];
+			if (GTStr.charAt(0) == '1') {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		public boolean secondIsAlt() {
+			if (formatToks == null) {
+				createFormatString();
+			}
+			
+			String[] formatValues = lineToks[9].split("\t");
+			String GTStr = formatValues[gtCol];
+			if (GTStr.charAt(2) == '1') {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		private void createFormatString() {
+			String formatStr = lineToks[8];
+			formatToks = formatStr.split(":");
+			for(int i=0; i<formatToks.length; i++) {
+				if (formatToks[i].equals("GT")) {
+					gtCol = i;
+					break;
+				}
+			}
+
 		}
 		
 //		public static void main(String[] args) {

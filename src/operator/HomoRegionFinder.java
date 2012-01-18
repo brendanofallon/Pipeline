@@ -4,6 +4,8 @@ import java.io.IOException;
 
 import org.w3c.dom.NodeList;
 
+import util.VCFLineParser;
+
 import buffer.VCFFile;
 
 /**

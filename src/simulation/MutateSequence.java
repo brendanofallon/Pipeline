@@ -23,7 +23,7 @@ import cern.jet.random.engine.MersenneTwister;
 import cern.jet.random.engine.RandomEngine;
 
 /**
- * Sprikle some mutations on a sequence
+ * Sprinkle some mutations on a sequence
  * @author brendan
  *
  */
@@ -306,6 +306,10 @@ public class MutateSequence {
 			contigs.put(contig, seq);
 			System.out.println("Found contig: " + contig + " of length: " + seq.length());
 
+			String trueMutsFilename = outputFile + "-truemuts.vcf";
+			
+			BufferedWriter trueMutsWriter = new BufferedWriter(new FileWriter(trueMutsFilename));
+			
 			BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
 			for(String key : contigs.keySet()) {
 				StringBuilder contSeq = contigs.get(key);
@@ -329,6 +333,7 @@ public class MutateSequence {
 				System.err.println("Final contig length : " + contSeq.length());
 				for(MutRec snp : snps) {
 					System.out.println(key + "\t" + snp);
+					trueMutsWriter.write(key + "\t" + snp + "\n");
 				}
 				
 				writeContig(key, contSeq, writer);
@@ -338,6 +343,7 @@ public class MutateSequence {
 				writeContig(key, contigs.get(key), writer);
 			}
 			writer.close();
+			trueMutsWriter.close();
 			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block

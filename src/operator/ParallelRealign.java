@@ -40,7 +40,6 @@ public class ParallelRealign extends MultiOperator {
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
 	protected String jvmARGStr = "";
-	protected String referencePath = null;
 	protected String knownIndelsPath = null;
 	protected MultiFileBuffer multiBAM;
 	
@@ -150,6 +149,10 @@ public class ParallelRealign extends MultiOperator {
 //		}
 //	}
 	
+	public boolean requiresReference() {
+		return true;
+	}
+	
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
@@ -192,7 +195,7 @@ public class ParallelRealign extends MultiOperator {
 		
 		
 		String command = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
-				" -R " + referencePath + 
+				" -R " + reference.getAbsolutePath() + 
 				" -I " + inputPath + 
 				" -T RealignerTargetCreator -o " + targetsPath;
 		if (contig != null)
@@ -202,7 +205,7 @@ public class ParallelRealign extends MultiOperator {
 		}
 		
 		String command2 = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
-				" -R " + referencePath + 
+				" -R " + reference.getAbsolutePath() + 
 				" -I " + inputPath + 
 				" -T IndelRealigner " + 
 				" -targetIntervals " + targetsPath + " -o " + realignedContigPath;

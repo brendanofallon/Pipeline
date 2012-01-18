@@ -77,9 +77,7 @@ public abstract class MultiOperator extends IOOperator {
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
-		if (checkContigs) {
-			checkInputContigs();
-		}
+		
 		
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
 		
@@ -89,6 +87,9 @@ public abstract class MultiOperator extends IOOperator {
 			throw new OperationFailedException("InputFiles buffer has not been initialized for MultiOperator " + getObjectLabel(), this);
 		}
 		logger.info("Beginning parallel multi-operation " + getObjectLabel() + " with " + inputFiles.getFileCount() + " input files");
+		if (checkContigs) {
+			checkInputContigs();
+		}
 		
 		List<TaskOperator> jobs = new ArrayList<TaskOperator>();
 		

@@ -17,9 +17,9 @@ import buffer.variant.AbstractVariantPool;
 import buffer.variant.VariantRec;
 import operator.IOOperator;
 import operator.OperationFailedException;
-import operator.VCFLineParser;
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
+import util.VCFLineParser;
 
 /**
  * An operator that can flexibly add multiple types of annotations to a variant pool

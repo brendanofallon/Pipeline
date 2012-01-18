@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import operator.VCFLineParser;
 import pipeline.Pipeline;
+import util.VCFLineParser;
 
 public class BEDFile extends FileBuffer {
 
