@@ -214,6 +214,7 @@ public class ParallelRealign extends MultiOperator {
 		if (knownIndelsPath != null) {
 			command2 = command2 + " --known " + knownIndelsPath;
 		}
+		outputFiles.addFile(new BAMFile(new File(realignedContigPath), contig));
 		return new String[]{command, command2};
 	}
 	

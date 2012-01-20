@@ -28,13 +28,28 @@ public class VCFLineParser {
 		private String[] formatToks = null; //Tokenized format string, produced as needed
 		private int gtCol = -1; //Format column which contains genotype info
 				
+		private String sample = null; //Emit information for only this sample if specified (when not given, defaults to first sample)
+		private int sampleColumn = -1; //Column that stores information for the given sample
+		
+		public VCFLineParser(File file, String sample) throws IOException {
+			this.file = file;
+			this.reader = new BufferedReader(new FileReader(file));
+			currentLine = reader.readLine();
+			this.sample = sample; //Sample must be specified before header is read
+			readHeader();
+
+		}
+		
 		public VCFLineParser(File file) throws IOException {
 			this.file = file;
 			this.reader = new BufferedReader(new FileReader(file));
 			currentLine = reader.readLine();
+			sampleColumn = 9; //First column with info, this is the default when no sample is specified
 			readHeader();
 		}
 
+		
+		
 		public VCFLineParser(VCFFile file) throws IOException {
 			this(file.getFile());
 		}
@@ -42,12 +57,70 @@ public class VCFLineParser {
 		private void readHeader() throws IOException {
 			while (currentLine != null && currentLine.startsWith("#")) {
 				advanceLine();
+				
+				if (currentLine.startsWith("#CHROM")) {
+					String[] toks = currentLine.split("\t");
+					if (sample == null) {
+						sampleColumn = 9;
+						sample = toks[9];
+					}
+					else {
+						for(int col = 0; col<toks.length; col++) {
+							if (toks[col].equals(sample)) {
+								sampleColumn = col;
+							}
+						}
+					}
+					if (sampleColumn < 0) {
+						throw new IllegalArgumentException("Cannot find column for sample " + sample);
+					}
+				}
+				
+				
+			}
+		}
+		
+		public String getSampleName() {
+			return sample;
+		}
+		
+		/**
+		 * Advance the current line until the contig found is the given contig. If
+		 * already at the given contig, do nothing
+		 * @param contig
+		 * @throws IOException 
+		 */
+		public void advanceToContig(String contig) throws IOException {
+			while (hasLine() && (!getContig().equals(contig))) {
+				advanceLine();
+			}
+			if (! hasLine()) {
+				throw new IllegalArgumentException("Could not find contig " + contig + " in vcf");
+			}
+		}
+		
+		/**
+		 * Advance the current line until we reach a contig whose name matches the contig arg,
+		 * and we find a variant whose position is equal to or greater than the given position
+		 * @throws IOException 
+		 */
+		public void advanceTo(String contig, int pos) throws IOException {
+			advanceToContig(contig);
+			while(hasLine() && getPosition() < pos) {
+				advanceLine();
+				if (! hasLine()) {
+					throw new IllegalArgumentException("Advanced beyond end file looking for pos: " + pos);
+				}
+				if (! getContig().equals(contig)) {
+					throw new IllegalArgumentException("Could not find position " + pos + " in contig " + contig);
+				}
 			}
 		}
 		
 		public boolean isPassing() {
 			return currentLine.contains("PASS");
 		}
+		
 		
 		/**
 		 * Converts the information in the current line to a VariantRec, by default this
@@ -92,6 +165,14 @@ public class VCFLineParser {
 				lineToks = currentLine.split("\\t");
 
 			currentLineNumber++;
+			return currentLine != null;
+		}
+
+		/**
+		 * Returns true if the current line is not null. 
+		 * @return
+		 */
+		public boolean hasLine() {
 			return currentLine != null;
 		}
 		
@@ -220,12 +301,10 @@ public class VCFLineParser {
 		 */
 		public boolean isPhased() {
 			if (formatToks == null) {
-				if (formatToks == null) {
-					createFormatString();
-				}
+				createFormatString();
 			}
 			
-			String[] formatValues = lineToks[9].split("\t");
+			String[] formatValues = lineToks[sampleColumn].split("\t");
 			String GTStr = formatValues[gtCol];
 			if (GTStr.charAt(1) == '|') {
 				return true;
@@ -236,12 +315,16 @@ public class VCFLineParser {
 			
 		}
 		
+		/**
+		 * True if the first item in the genotype string indicates an 'alt' allele
+		 * @return
+		 */
 		public boolean firstIsAlt() {
 			if (formatToks == null) {
 				createFormatString();
 			}
 	
-			String[] formatValues = lineToks[9].split("\t");
+			String[] formatValues = lineToks[sampleColumn].split("\t");
 			String GTStr = formatValues[gtCol];
 			if (GTStr.charAt(0) == '1') {
 				return true;
@@ -251,12 +334,16 @@ public class VCFLineParser {
 			}
 		}
 		
+		/**
+		 * True if the second item in the genotype string indicates an 'alt' allele
+		 * @return
+		 */
 		public boolean secondIsAlt() {
 			if (formatToks == null) {
 				createFormatString();
 			}
 			
-			String[] formatValues = lineToks[9].split("\t");
+			String[] formatValues = lineToks[sampleColumn].split("\t");
 			String GTStr = formatValues[gtCol];
 			if (GTStr.charAt(2) == '1') {
 				return true;

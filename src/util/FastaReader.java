@@ -22,7 +22,7 @@ public class FastaReader {
 		if (! currentLine.trim().startsWith(">")) {
 			throw new IOException("First line doesn't start with >");
 		}
-		String chrStr = currentLine.trim().replace(">chr", "");
+		String chrStr = currentLine.trim().replace(">", "").replace("chr", "");
 		int startIndex = chrStr.indexOf(">");
 		int endIndex = chrStr.indexOf(" ");
 		Integer tr;
@@ -82,12 +82,18 @@ public class FastaReader {
 	}
 	
 	public void advance(int toAdvance) throws IOException {
+		if (currentLine ==null) 
+			throw new IllegalArgumentException("line is null, end of file probably reached");
+		
 		int currentTrack= getCurrentTrack();
 		
 		int toEndOfLine = currentLine.length() - lineOffset -1; //Number of bases to end of current line, 0 means lineOffset is pointing at last character in line
 		
 		while(toAdvance > toEndOfLine) {
 			int advanced = advanceLine();
+			if (currentLine ==null) {
+				return;
+			}
 			if (currentTrack != getCurrentTrack())
 				throw new IllegalArgumentException("Advance went past end of track " + currentTrack);
 			toEndOfLine = currentLine.length() - lineOffset-1; 
@@ -126,7 +132,44 @@ public class FastaReader {
 			if (getCurrentTrack() != startTrack) {
 				throw new IllegalArgumentException("Advanced past end of track " + startTrack);
 			}
-			out.write((1+currentPos) + "\t" + nextPos() + "\n");
+			//out.write((1+currentPos) + "\t" + nextPos() + "\n");
+			out.write( nextPos() );
+		}
+	}
+
+	/**
+	 * Emit exactly the same bases to BOTH of the given writers. This is convenient if you're writing
+	 * results for both chromosomes of a vcf file simultaneously
+	 * @param endPos
+	 * @param out1
+	 * @param out2
+	 * @throws IOException
+	 */
+	public void emitBasesTo(int endPos, Writer out1, Writer out2) throws IOException {
+		int startTrack = getCurrentTrack();
+		while (currentPos < endPos) {
+			if (getCurrentTrack() != startTrack) {
+				throw new IllegalArgumentException("Advanced past end of track " + startTrack);
+			}
+			//out.write((1+currentPos) + "\t" + nextPos() + "\n");
+			char c = nextPos();
+			//refOut.write( c );
+			out1.write( c );
+			out2.write( c );
+		}
+	}
+	
+	/**
+	 * Emit all bases to until the end of this contig is reached 
+	 * @param out
+	 * @throws IOException
+	 */
+	public void emitBasesToContigEnd(Writer out) throws IOException {
+		int startTrack = getCurrentTrack();
+		while (getCurrentTrack() == startTrack) {
+			out.write( nextPos() );
+			if (currentLine == null)
+				return;
 		}
 	}
 	
