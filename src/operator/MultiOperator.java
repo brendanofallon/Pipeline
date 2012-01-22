@@ -34,7 +34,10 @@ public abstract class MultiOperator extends IOOperator {
 	protected MultiFileBuffer outputFiles;
 	protected ReferenceFile reference;
 	protected ThreadPoolExecutor threadPool = null;
+
+	protected Integer userThreadCount = null;
 	
+	public static final String threads = "threads";
 	public static final String checkcontigs = "checkcontigs";
 	
 	//If true, make sure that all contigs (except y) are present in input and output files
@@ -55,12 +58,16 @@ public abstract class MultiOperator extends IOOperator {
 	protected abstract String[] getCommand(FileBuffer inputBuffer);
 	
 	/**
-	 * Return number of threads to use in pool. In general, this should not be greater than
-	 * Pipeline.getThreadCount(), but for some operations we may want it to be less...
+	 * Return number of threads to use in pool. This is Pipeline.getThreadCount()
+	 * unless the user has specified a threads="x" argument to this operator, in which
+	 * case it's x
 	 * @return
 	 */
 	public int getPreferredThreadCount() {
-		return Pipeline.getPipelineInstance().getThreadCount();
+		if (userThreadCount != null)
+			return userThreadCount;
+		else
+			return Pipeline.getPipelineInstance().getThreadCount();
 	}
 	
 	/**
@@ -138,6 +145,12 @@ public abstract class MultiOperator extends IOOperator {
 	
 	@Override
 	public void initialize(NodeList children) {
+		String threadsStr = properties.get(threads);
+		if (threadsStr != null) {
+			int threads = Integer.parseInt(threadsStr);
+			userThreadCount = threads;
+		}
+		
 		String checkStr = properties.get(checkcontigs);
 		if (checkStr != null) {
 			Boolean check = Boolean.parseBoolean(checkStr);
