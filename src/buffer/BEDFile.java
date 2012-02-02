@@ -72,7 +72,38 @@ public class BEDFile extends FileBuffer {
 			}
 			line = reader.readLine();
 		}
+		
+		sortAllContigs();
+		
 		logger.info("Done building intervals map for " + getFilename());
+		for(String contig : intervals.keySet()) {
+			List<Interval> list = intervals.get(contig);
+			int tot = countSize(list);
+			System.out.println(contig + "\t :" + list.size() + "\t" + tot);
+		}
+	}
+	
+	/**
+	 * Sort all intervals in all contigs by starting position
+	 */
+	private void sortAllContigs() {
+		for(String contig : intervals.keySet()) {
+			List<Interval> list = intervals.get(contig);
+			Collections.sort(list, new IntervalComparator());
+		}
+	}
+
+	/**
+	 * Count number of bases subtended by all intervals in the list
+	 * @param list
+	 * @return
+	 */
+	private static int countSize(List<Interval> list) {
+		int size = 0;
+		for(Interval inter : list) {
+			size += inter.end - inter.begin;
+		}
+		return size;
 	}
 	
 	/**
@@ -87,7 +118,7 @@ public class BEDFile extends FileBuffer {
 		List<Interval> cInts = intervals.get(contig);
 		Interval qInterval = new Interval(pos, pos);
 		if (cInts == null) {
-			//System.out.println("Contig " + contig + " is not in BED file!");
+			System.out.println("Contig " + contig + " is not in BED file!");
 			return false;
 		}
 		else {

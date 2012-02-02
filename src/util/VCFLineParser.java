@@ -144,7 +144,7 @@ public class VCFLineParser {
 				if (stripChr)
 					contig = contig.replace("chr", "");
 				//System.out.println(currentLine);
-				VariantRec rec = new VariantRec(contig, getStart(), getStart()+1,  getRef(), getAlt(), getQuality(), false, isHetero() );
+				VariantRec rec = new VariantRec(contig, getStart(), getStart()+1,  getRef(), getAlt(), getQuality(), isHetero() );
 				Integer depth = getDepth();
 				if (depth != null)
 					rec.addProperty(VariantRec.DEPTH, new Double(getDepth()));

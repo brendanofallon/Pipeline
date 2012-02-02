@@ -1,4 +1,4 @@
-package operator;
+package operator.variant;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import operator.IOOperator;
+import operator.OperationFailedException;
 
 import pipeline.Pipeline;
 import util.VCFLineParser;

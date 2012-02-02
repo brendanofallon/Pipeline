@@ -31,10 +31,6 @@ public class PolyphenAnnotator extends AnnovarAnnotator {
 			throw new OperationFailedException("Error occurred during polyphen annotation: " + e.getMessage(), this);
 		}
 		
-		List<String> keys = new ArrayList<String>();
-		keys.add(VariantRec.POLYPHEN_SCORE);
-		keys.add(VariantRec.SIFT_SCORE);
-		variants.listAll(System.out, keys);
 	}
 	
 	

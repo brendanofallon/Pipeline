@@ -31,10 +31,5 @@ public class MTAnnotator extends AnnovarAnnotator {
 			throw new OperationFailedException("Error occurred during polyphen annotation: " + e.getMessage(), this);
 		}
 		
-		List<String> keys = new ArrayList<String>();
-		keys.add(VariantRec.SIFT_SCORE);
-		keys.add(VariantRec.POLYPHEN_SCORE);
-		keys.add(VariantRec.MT_SCORE);
-		variants.listAll(System.out, keys);
 	}
 }

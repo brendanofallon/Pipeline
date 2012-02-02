@@ -2,15 +2,54 @@
 <!-- Uses annovar to annotate the given VCF file. This will produce lots of different output files... -->
 <Pipeline>
 
+<InputVCF class="buffer.VCFFile" filename="your_input.vcf" />
 
- <annotate class="operator.annovar.AnnovarAnnotate">
-   <input>
-     <annovarInput class="buffer.VCFFile" filename="your_input_variants.vcf" />
-   </input>
-   <output>
-     <annotations class="buffer.CSVFile" filename="annovar.output.csv" />
-   </output>
- </annotate>
+<MakeInput class="operator.annovar.ConvertVCFAnnovar">
+ <input>
+	<InputVCF />
+ </input>
+ <output>
+	<AnnoInput class="buffer.AnnovarInputFile" filename="annovar.input" />
+ </output>
+</MakeInput>
 
+<VariantPool class="buffer.variant.AbstractVariantPool">
+	<InputVCF />
+</VariantPool>
+
+<GeneAnnotate class="operator.annovar.GeneAnnotator">
+	<AnnoInput />
+	<VariantPool />
+</GeneAnnotate>
+
+<SiftAnnotate class="operator.annovar.SiftAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</SiftAnnotate>
+
+<PolyphenAnnotate class="operator.annovar.PolyphenAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PolyphenAnnotate>
+
+<MTAnnotate class="operator.annovar.MTAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</MTAnnotate>
+
+<PhyloPAnnotate class="operator.annovar.PhyloPAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PhyloPAnnotate>
+
+<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PopFreqAnnotate>
+
+<ToFile class="operator.VariantPoolToFile">
+	<VariantPool />
+	<CSVFile class="buffer.CSVFile" filename="fancy_new_variants.csv" />
+</ToFile>
 
 </Pipeline>

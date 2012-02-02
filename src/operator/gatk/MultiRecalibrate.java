@@ -24,7 +24,7 @@ import buffer.VCFFile;
 
 public class MultiRecalibrate extends MultiOperator {
 
-	public final String defaultMemOptions = " -Xms512m -Xmx2g";
+	public final String defaultMemOptions = "-Xmx4g";
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
 	public static final String JVM_ARGS="jvmargs";
@@ -37,7 +37,7 @@ public class MultiRecalibrate extends MultiOperator {
 		return true;
 	}
 	
-public void performOperation() throws OperationFailedException {
+	public void performOperation() throws OperationFailedException {
 		
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
 		
@@ -83,18 +83,7 @@ public void performOperation() throws OperationFailedException {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-//		for(int i=0; i<inputBAMs.size(); i++) {
-//			FileBuffer inputBuffer = inputBAMs.get(i);
-//			String command[] = getApplyRecalCommand(inputBuffer, recalDataFiles.get(i));
-//			logger.info("Submitting task with command : " + command[0]);
-//			if (command != null) {
-//				TaskOperator task = new TaskOperator(command, logger);
-//				jobs.add(task);
-//				threadPool.submit(task);
-//			}
-//		}
-		
+				
 		try {
 			logger.info("All tasks have been submitted to multioperator " + getObjectLabel() + ", now awaiting termination...");
 			threadPool.shutdown(); //No new tasks will be submitted,

@@ -1,4 +1,4 @@
-package operator;
+package operator.variant;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+
+import operator.IOOperator;
+import operator.OperationFailedException;
 
 import buffer.FileBuffer;
 import buffer.VCFFile;

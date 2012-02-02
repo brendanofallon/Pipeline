@@ -1,7 +1,10 @@
 package buffer.variant;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -19,6 +22,9 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import buffer.BEDFile;
+import buffer.CSVFile;
+import buffer.FileBuffer;
 import buffer.ReferenceFile;
 import buffer.VCFFile;
 
@@ -35,6 +41,106 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 
 	protected Map<String, List<VariantRec>>  vars = new HashMap<String, List<VariantRec>>();
 
+	/**
+	 * Read a variant pool from a CSV-formatted file, the first 8 coumns are assumed to be:
+	 * 1. Contig
+	 * 2. start pos
+	 * 3. info - ?
+	 * 4. Ref allele
+	 * 5. alt allele
+	 * 6. quality
+	 * 7. het/ hom
+	 * @param file
+	 * @throws IOException
+	 */
+	public AbstractVariantPool(CSVFile file) throws IOException {
+		importFromCSV(file);
+	}
+
+	public AbstractVariantPool(VCFFile file) throws IOException {
+		importFromVCF(file);
+	}
+	
+	/**
+	 * Read a variant pool from a CSV-formatted file, the first 7 columns are assumed to be:
+	 * 1. Contig
+	 * 2. start pos
+	 * 3. info - ?
+	 * 4. Ref allele
+	 * 5. alt allele
+	 * 6. quality
+	 * 7. het/ hom
+	 * @param file
+	 * @throws IOException
+	 */
+	private void importFromCSV(CSVFile file) throws IOException {
+		BufferedReader reader = new BufferedReader(new FileReader(file.getFile()));
+		String line = reader.readLine();
+		int lineNum = 0;
+		while (line != null) {
+			try {
+
+				String[] toks = line.split("\\t");
+				if (line.length()==0 || toks.length==1) {
+					line = reader.readLine();
+					continue;
+				}
+				String contig = toks[0];
+				Integer pos = Integer.parseInt(toks[1]);
+				String ref = toks[3];
+				String alt = toks[4];
+				Double qual = Double.parseDouble(toks[5]);
+				boolean isHet = toks[6].contains("het");
+				//Double depth = Double.parseDouble(toks[7]);
+
+				VariantRec rec = new VariantRec(contig, pos, pos+ref.length(), ref, alt, qual, isHet);
+				//rec.addProperty(VariantRec.DEPTH, depth);
+				addRecordNoSort(rec);
+				lineNum++;
+
+			}
+			catch (Exception ex) {
+				System.err.println("Error on line : " + lineNum);
+				System.err.println("Line is : " + line);
+				ex.printStackTrace();
+			}
+
+			line = reader.readLine();
+		}
+		sortAllContigs();
+	}
+	
+	/**
+	 * Import all variants from the given vcf file
+	 * @param file
+	 * @throws IOException
+	 */
+	private void importFromVCF(VCFFile file) throws IOException {
+		VCFLineParser vParser = new VCFLineParser(file);
+		
+		//int lineNumber = 0;
+		do {
+			VariantRec rec = vParser.toVariantRec();
+			this.addRecordNoSort(rec);
+//			lineNumber++;
+//			if (lineNumber % 10000 == 0) {
+//				double frac = 100.0*(double)lineNumber / (double)lineCount;
+//				DecimalFormat formatter = new DecimalFormat("#0.00");
+//				System.out.println(file.getFile().getName() + " : line " + lineNumber + " of " + lineCount + " ( " + formatter.format(frac) + "% )");
+//			}
+		} while (vParser.advanceLine());
+		sortAllContigs();
+	}
+	
+	/**
+	 * Sort all variant records in each contig
+	 */
+	public void sortAllContigs() {
+		for(String contig : getContigs()) {
+			List<VariantRec> records = getVariantsForContig(contig);
+			Collections.sort(records, VariantRec.getPositionComparator());
+		}
+	}
 	/**
 	 * Create a new pool with all the variants in the source pool
 	 * @param sourceVars
@@ -64,16 +170,47 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 			return null;
 		}
 		
-		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false, false);
+		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false);
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {
+			System.out.println("Could not find variant at contig: " + contig + " pos:" + pos + " index is : " + index);
+			index *= -1;
+			index = Math.max(0, index-5);
+			for(int i=0; i<10; i++) {
+				System.out.println(varList.get(index+i));
+			}
+			
 			return null;
 		}
 		
 		return varList.get(index);
 		
 	}
+	
+	/**
+	 * Attemp to find the record at the given contig and position, but don't emit a warning if 
+	 * we can't find it
+	 * @param contig
+	 * @param pos
+	 * @return
+	 */
+	public VariantRec findRecordNoWarn(String contig, int pos) {
+		List<VariantRec> varList = vars.get(contig);
+		if (varList == null) {
+			System.err.println("Contig: " + contig + " not found");
+			return null;
+		}
+		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false);
+		
+		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
+		if (index < 0) {
+			return null;
+		}
+		
+		return varList.get(index);		
+	}
+	
 	
 	/**
 	 * Add all variants from source to this pool
@@ -85,6 +222,23 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 				this.addRecord(rec);
 			}
 		}
+	}
+	
+	/**
+	 * Count lines in a file, used for progress estimation when reading big vcfs 
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 */
+	private static int countLines(VCFFile file) throws IOException {
+		BufferedReader reader = new BufferedReader(new FileReader(file.getAbsolutePath()));
+		int lines = 0;
+		String line = reader.readLine();
+		while (line != null) {
+			lines++;
+			line = reader.readLine();
+		}
+		return lines;
 	}
 	
 	/**
@@ -106,11 +260,8 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 	public void listAll(PrintStream out) {
 		for(String contig : getContigs() ) {
 			for(VariantRec rec : this.getVariantsForContig(contig)) {
-				String het = "hom";
-				if (rec.isHetero())
-					het = "het";
 				//out.println(contig + "\t" + rec.getStart() + "\t . \t" + rec.ref + "\t" + rec.alt + "\t" + het + "\t" + rec.getQuality() + "\t" + rec.getProperty(VariantRec.DEPTH));
-				out.println(contig + "\t" + rec.getStart() + "\t . \t" + rec.ref + "\t" + rec.alt + "\t" + het + "\t" + rec.getQuality() + "\t" + rec.getProperty(VariantRec.DEPTH));
+				out.println( rec.toSimpleString() );
 			}
 		}
 	}
@@ -122,7 +273,7 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 	public void listAll(PrintStream out, List<String> keys) {
 		for(String contig : getContigs() ) {
 			for(VariantRec rec : this.getVariantsForContig(contig)) {		
-				out.println(contig + "\t" + rec.getStart() + "\t . \t" + rec.ref + "\t" + rec.alt + "\t" + rec.getQuality() + "\t" + rec.getProperty(VariantRec.DEPTH) + rec.getPropertyString(keys));
+				out.println(rec.toSimpleString() + rec.getPropertyString(keys));
 			}
 		}
 	}
@@ -133,16 +284,76 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 	 * @param varsB
 	 * @return
 	 */
-	public VariantPool intersect(VariantPool varsB) {
+	public VariantPool intersect(AbstractVariantPool varsB) {
 		AbstractVariantPool intersect = new AbstractVariantPool();
 		for(String contig : getContigs()) {
 			for(VariantRec rec : getVariantsForContig(contig)) {
-				if (varsB.findRecord(rec.getContig(), rec.getStart()) != null) {
+				VariantRec recB = varsB.findRecordNoWarn(rec.getContig(), rec.getStart());
+				if (recB != null && rec.getAlt().equals(recB.getAlt())) {
+					rec.addAnnotation(VariantRec.altB, recB.getAlt());
+					if (recB.isHetero()) {
+						rec.addAnnotation(VariantRec.zygosityB, "het");
+					}
+					else {
+						rec.addAnnotation(VariantRec.zygosityB, "hom");
+					}
 					intersect.addRecord(rec);
 				}
 			}
 		}
 		return intersect;
+	}
+	
+	/**
+	 * Remove from this variant pool the variant at the given contig and pos whose ALT allele matches
+	 * the given allele
+	 * @param contig
+	 * @param pos
+	 * @param allele
+	 * @return
+	 */
+	private boolean removeVariantAllele(String contig, int pos, String allele) {
+		List<VariantRec> varList = vars.get(contig);
+		if (varList == null) {
+			return false;
+		}
+		
+		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false);
+		
+		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
+		//This pool does not contain a variant at the given position
+		if (index < 0) {
+			return false;
+		}
+		
+		//Found a variant at this position, now search all
+		VariantRec var = varList.get(index);
+		while(var.getStart() == pos) {
+			index--;
+			if (index < 0)
+				break;
+			var = varList.get(index);
+		}
+		index++;
+		var = varList.get(index);
+		
+		//Index now points at LAST variant with given position (yes, there may be more than one variant at this pos)
+		while(var.getStart() == pos && index < varList.size()) {
+			if (var.getAlt().equals(allele)) {
+				varList.remove(index);
+				if (index >= varList.size()) {
+					break;
+				}
+				var = varList.get(index);
+			} else {
+				index++;
+				if (index >= varList.size()) {
+					break;
+				}
+				var = varList.get(index);
+			}
+		}
+		return true;
 	}
 	
 	/**
@@ -154,9 +365,7 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 		int removedCount = 0;
 		for(String contig : toRemove.getContigs()) {
 			for(VariantRec rec : toRemove.getVariantsForContig(contig)) {
-				boolean found = removeRecordAtPos(rec.getContig(), rec.getStart());
-				if (found)
-					removedCount++;
+				removeVariantAllele(rec.getContig(), rec.getStart(), rec.getAlt());
 			}
 		}
 		return removedCount;
@@ -186,7 +395,7 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 			return false;
 		}
 		
-		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false, false);
+		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false);
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {
@@ -202,13 +411,24 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 	 * @param rec
 	 */
 	public void addRecord(VariantRec rec) {
+		addRecordNoSort(rec);
+		List<VariantRec> contigVars = vars.get( rec.getContig() ); 
+		Collections.sort(contigVars, VariantRec.getPositionComparator());
+	}
+	
+	/**
+	 * Add a new record to the pool but do not sort the contig it was added to. This is 
+	 * faster if you're adding lots of variants (from a VCFFile, for instance), but
+	 * requires that all contigs are sorted 
+	 * @param rec
+	 */
+	public void addRecordNoSort(VariantRec rec) {
 		List<VariantRec> contigVars = vars.get( rec.getContig() ); 
 		if (contigVars == null) {
-			contigVars = new ArrayList<VariantRec>(128);
+			contigVars = new ArrayList<VariantRec>(8192);
 			vars.put(rec.getContig(), contigVars);
 		}
 		contigVars.add(rec);
-		Collections.sort(contigVars, VariantRec.getPositionComparator());
 	}
 	
 	@Override
@@ -220,6 +440,34 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 	public Collection<String> getContigs() {
 		return vars.keySet();
 	}
+	
+	/**
+	 * Obtain a list of all property keys used in the variants
+	 * @return
+	 */
+	public List<String> getPropertyKeys() {
+		int max = 10000; //Don't examine more than this many records
+		int count = 0;
+		List<String> keys = new ArrayList<String>();
+
+		for(String contig : getContigs()) {
+			List<VariantRec> vars = getVariantsForContig(contig);
+			for(int i=0; i<vars.size() && count < max; i++) {
+				VariantRec rec = vars.get(i);
+				for(String key: rec.getPropertyKeys()) {
+					if (! keys.contains(key)) {
+						keys.add( key );
+					}
+				}
+				count++;
+				if (count > max) {
+					break;
+				}
+			}
+		}
+		return keys;
+	}
+	
 
 	@Override
 	public List<VariantRec> getVariantsForContig(String contig) {
@@ -243,6 +491,27 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 	}
 	
 	/**
+	 * Returns a list of all variants that are in are in the given BED file 
+	 * @param bedFile
+	 * @return
+	 * @throws IOException 
+	 */
+	public AbstractVariantPool filterByBED(BEDFile bedFile) throws IOException {
+		bedFile.buildIntervalsMap();
+		AbstractVariantPool pool = new AbstractVariantPool();
+		for(String contig : getContigs()) {
+			List<VariantRec> vars = getVariantsForContig(contig);
+			for(VariantRec rec : vars) {
+				if (bedFile.contains(contig, rec.getStart())) {
+					pool.addRecordNoSort(rec);
+				}
+			}
+		}
+		pool.sortAllContigs();
+		return pool;
+	}
+	
+	/**
 	 * Incomplete: Emit this variant pool in vcf format to a printstream
 	 * @param ref
 	 * @param annotationKeys
@@ -260,8 +529,36 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 			out.println("##contig=<ID=" + contig + ",species=\"Homo sapiens\">\n" );
 		}
 		
-		
+		throw new IllegalStateException("Not completed yet");
 	}
+	
+	/**
+	 * Emit all variants to the given printstream in a table-style format
+	 * @param annotationKeys
+	 * @param out
+	 */
+	public void emitToTable(List<String> annotationKeys, PrintStream out) {
+		StringBuilder header = new StringBuilder();
+		header.append(VariantRec.getBasicHeader());
+		
+		for(String key : annotationKeys) {
+			header.append("\t" + key);
+		}
+		
+		out.print(header.toString() + "\n");
+		
+		
+		for(String contig : getContigs()) {
+			List<VariantRec> records = getVariantsForContig(contig);
+			for(VariantRec rec : records) {
+				out.print(rec.toBasicString() + "\t");
+				out.print(rec.getPropertyString(annotationKeys) + "\n");
+			}
+		}
+		out.flush();
+	}
+	
+	
 	/**
 	 * Return a new list of variants that are those in the given list that pass the given filter
 	 * @param filter
@@ -294,7 +591,9 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 				if (obj instanceof VCFFile) {
 					inputVariants = (VCFFile)obj;
 				}
-				
+				if (obj instanceof CSVFile) {
+					inputVariants = (CSVFile)obj;					
+				}
 			}
 		}
 	}
@@ -305,25 +604,33 @@ public class AbstractVariantPool extends Operator implements VariantPool  {
 		if (inputVariants == null)
 			throw new OperationFailedException("No input variants specified", this);
 
+
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		logger.info("Building variant pool from variants in file " + inputVariants.getFilename());
-		try {
-			VCFLineParser vParser = new VCFLineParser(inputVariants.getFile());
-			while( vParser.advanceLine() ) {
-				VariantRec rec = vParser.toVariantRec();
-				if (rec != null) {
-					this.addRecord( rec );
-				}
+		
+		if (inputVariants instanceof VCFFile) {
+			try {
+				importFromVCF( (VCFFile)inputVariants );
+			} catch (IOException e) {
+				e.printStackTrace();
+				throw new OperationFailedException("IO error reading file: " + inputVariants.getAbsolutePath(), this);
 			}
-		} catch (IOException e) {
-			throw new OperationFailedException("Could not open input variants file", this);
 		}
 		
-
-		logger.info("Built variant pool with " + getContigs().size() + " contigs and " + this.size() + " total variants");
+		if (inputVariants instanceof CSVFile) {
+			try {
+				importFromCSV( (CSVFile)inputVariants );
+			} catch (IOException e) {
+				e.printStackTrace();
+				throw new OperationFailedException("IO error reading file: " + inputVariants.getAbsolutePath(), this);
+			}
+		}
+				
+		
+		logger.info("Created variant pool with " + getContigs().size() + " contigs and " + this.size() + " total variants");
 	}
 	
 	
-	private VCFFile inputVariants = null;
+	private FileBuffer inputVariants = null;
 	
 }
