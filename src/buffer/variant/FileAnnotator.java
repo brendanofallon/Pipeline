@@ -12,8 +12,6 @@ import org.w3c.dom.NodeList;
 
 import pipeline.PipelineObject;
 
-import buffer.AnnovarResults;
-
 public class FileAnnotator extends PipelineObject {
 
 	protected File inputFile;

@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 import pipeline.Pipeline;
 
 import buffer.VCFFile;
+import buffer.variant.VariantLineReader;
 import buffer.variant.VariantRec;
 
 /**
@@ -18,7 +19,7 @@ import buffer.variant.VariantRec;
  * @author brendan
  *
  */
-public class VCFLineParser {
+public class VCFLineParser implements VariantLineReader {
 
 		private File file;
 		private BufferedReader reader;
@@ -27,6 +28,7 @@ public class VCFLineParser {
 		private String[] lineToks = null;
 		private String[] formatToks = null; //Tokenized format string, produced as needed
 		private int gtCol = -1; //Format column which contains genotype info
+		private int gqCol = -1; //Format column which contains genotype quality info 
 				
 		private String sample = null; //Emit information for only this sample if specified (when not given, defaults to first sample)
 		private int sampleColumn = -1; //Column that stores information for the given sample
@@ -130,6 +132,7 @@ public class VCFLineParser {
 		public VariantRec toVariantRec() {
 			return toVariantRec(true);
 		}
+
 		
 		/**
 		 * Convert current line into a variant record
@@ -148,6 +151,11 @@ public class VCFLineParser {
 				Integer depth = getDepth();
 				if (depth != null)
 					rec.addProperty(VariantRec.DEPTH, new Double(getDepth()));
+				
+				Double genotypeQuality = getGenotypeQuality();
+				if (genotypeQuality != null) 
+					rec.addProperty(VariantRec.GENOTYPE_QUALITY, genotypeQuality);
+				
 				return rec;
 			}
 		}
@@ -196,6 +204,11 @@ public class VCFLineParser {
 				return -1;
 		}
 		
+		/**
+		 * Read depth from INFO column, tries to identify depth by looking for a DP string, then reading
+		 * the following number
+		 * @return
+		 */
 		public Integer getDepth() {
 			String info = lineToks[7];
 			
@@ -312,7 +325,6 @@ public class VCFLineParser {
 			else {
 				return false;
 			}
-			
 		}
 		
 		/**
@@ -343,7 +355,7 @@ public class VCFLineParser {
 				createFormatString();
 			}
 			
-			String[] formatValues = lineToks[sampleColumn].split("\t");
+			String[] formatValues = lineToks[sampleColumn].split(":");
 			String GTStr = formatValues[gtCol];
 			if (GTStr.charAt(2) == '1') {
 				return true;
@@ -353,13 +365,44 @@ public class VCFLineParser {
 			}
 		}
 		
+		/**
+		 * Obtain the genotype quality score for this variant
+		 * @return
+		 */
+		public Double getGenotypeQuality() {
+			if (formatToks == null) {
+				createFormatString();
+			}
+			
+			String[] formatValues = lineToks[sampleColumn].split(":");
+			String GQStr = formatValues[gqCol];
+			try {
+				Double gq = Double.parseDouble(GQStr);
+				return gq;
+			}
+			catch (NumberFormatException ex) {
+				System.err.println("Could not parse genotype quality from " + GQStr);
+				return null;
+			}
+			
+		}
+		
+		/**
+		 * Create the string array representing elements in the 'format' column, which
+		 * we assume is always column 8. Right now we use this info to figure out which portion
+		 * of the format string is the genotype and genotype quality part, and we ignore the
+		 * rest
+		 */
 		private void createFormatString() {
 			String formatStr = lineToks[8];
 			formatToks = formatStr.split(":");
 			for(int i=0; i<formatToks.length; i++) {
 				if (formatToks[i].equals("GT")) {
 					gtCol = i;
-					break;
+				}
+				
+				if (formatToks[i].equals("GQ")) {
+					gqCol = i;
 				}
 			}
 

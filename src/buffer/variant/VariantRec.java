@@ -88,6 +88,14 @@ public class VariantRec {
 		return props.keySet();
 	}
 	
+	/**
+	 * Collection of all keys used for annotations
+	 * @return
+	 */
+	public Collection<String> getAnnotationKeys() {
+		return annotations.keySet();
+	}
+	
 	public String getAnnotation(String key) {
 		return annotations.get(key);
 	}
@@ -191,13 +199,43 @@ public class VariantRec {
 		return contig + "\t" + start + "\t" + end + "\t" + gene + "\t" + variantType + "\t" + exFunc + "\t" + het ;  
 	}
 	
+	/**
+	 * Return a header row that describes the toSimpleString() columns
+	 * @return
+	 */
+	public static String getSimpleHeader() {
+		return "#contig	\t start \t end \t ref \t alt \t quality \t depth \t zygosity \t genotype.quality ";
+	}
+	
+	/**
+	 * Return a string with the following columns:
+	 * 1. Contig
+	 * 2. start
+	 * 3. end
+	 * 4. ref
+	 * 5. alt
+	 * 6. variant quality
+	 * 7. total read depth
+	 * 8. het / hom
+	 * 9. genotype quality
+	 * @return
+	 */
 	public String toSimpleString() {
 		String het = "het";
 		if (! isHetero())
 			het = "hom";
 		
-		return contig + "\t" + start + "\t" + end + "\t" + getRef() + "\t" + getAlt() + "\t" + getQuality() + "\t" + het ;  
-
+		Double depth = getProperty(VariantRec.DEPTH);
+		String depthStr = "-";
+		if (depth != null) 
+			depthStr = "" + depth;
+		
+		Double genotypeQual = getProperty(VariantRec.GENOTYPE_QUALITY);
+		String gqStr = "-";
+		if (genotypeQual != null)
+			gqStr = "" + genotypeQual;
+		
+		return contig + "\t" + start + "\t" + end + "\t" + getRef() + "\t" + getAlt() + "\t" + getQuality() + "\t" + depthStr + "\t" + het + "\t" + gqStr;  
 	}
 	
 	public String toString() {
@@ -308,7 +346,7 @@ public class VariantRec {
 	
 	
 	
-	//A few oft-used property keys
+	//A few oft-used property / annotation keys
 	public static final String POP_FREQUENCY = "pop.freq";
 	public static final String SIFT_SCORE = "sift.score";
 	public static final String POLYPHEN_SCORE = "pp.score";
@@ -333,6 +371,7 @@ public class VariantRec {
 	public static final String GO_FUNCTION = "go.function";
 	public static final String GO_PROCESS = "go.process";
 	public static final String GO_COMPONENT = "go.component";
+	public static final String GENOTYPE_QUALITY = "genotype.quality";
 	
 
 	
