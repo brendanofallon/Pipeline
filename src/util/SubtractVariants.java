@@ -12,7 +12,7 @@ import javax.swing.SwingWorker;
 import util.IntersectVCFs.ReadVariants;
 import buffer.CSVFile;
 import buffer.VCFFile;
-import buffer.variant.AbstractVariantPool;
+import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
 public class SubtractVariants {
@@ -20,7 +20,7 @@ public class SubtractVariants {
 	private File fileA;
 	private File fileB;
 	
-	private AbstractVariantPool remainder = null;
+	private VariantPool remainder = null;
 	
 	public SubtractVariants(File fileA, File fileB) {
 		this.fileA = fileA;
@@ -44,14 +44,14 @@ public class SubtractVariants {
 			done = varReaderA.isDone() && varReaderB.isDone();
 		}
 		
-		AbstractVariantPool variantsA = varReaderA.getVariantPool();
-		AbstractVariantPool variantsB = varReaderB.getVariantPool();
+		VariantPool variantsA = varReaderA.getVariantPool();
+		VariantPool variantsB = varReaderB.getVariantPool();
 		
 		variantsA.removeVariants(variantsB);
 		remainder = variantsA;
 	}
 	
-	public AbstractVariantPool getRemainder() {
+	public VariantPool getRemainder() {
 		return remainder;
 	}
 	
@@ -77,7 +77,7 @@ public class SubtractVariants {
 	
 		try {
 			PrintStream stream = new PrintStream(new FileOutputStream(output));
-			AbstractVariantPool intersection = subtractor.getRemainder();
+			VariantPool intersection = subtractor.getRemainder();
 			List<String> keys = new ArrayList<String>();
 			intersection.listAll(stream, keys);	
 		} catch (FileNotFoundException e) {
@@ -92,14 +92,14 @@ public class SubtractVariants {
 	class ReadVariants extends SwingWorker {
 		
 		private final File inputFile;
-		private AbstractVariantPool variants = null;
+		private VariantPool variants = null;
 		private boolean done = false;
 		
 		public ReadVariants(File inputFile) {
 			this.inputFile = inputFile;
 		}
 		
-		public AbstractVariantPool getVariantPool() {
+		public VariantPool getVariantPool() {
 			if (! isDone()) {
 				throw new IllegalArgumentException("Not done yet!");
 			}
@@ -110,10 +110,10 @@ public class SubtractVariants {
 		@Override
 		protected Object doInBackground() throws Exception {
 			if (inputFile.getName().endsWith(".csv")) {
-				variants = new AbstractVariantPool(new CSVFile(inputFile));	
+				variants = new VariantPool(new CSVFile(inputFile));	
 			} else {
 				if (inputFile.getName().endsWith(".vcf")) {
-					variants = new AbstractVariantPool(new VCFFile(inputFile));	
+					variants = new VariantPool(new VCFFile(inputFile));	
 				}
 				else {
 					throw new IllegalArgumentException("Unrecognized file suffix for input file: " + inputFile.getName());

@@ -13,7 +13,7 @@ import buffer.AnnovarInputFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
 import buffer.VCFFile;
-import buffer.variant.AbstractVariantPool;
+import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 import operator.IOOperator;
 import operator.OperationFailedException;
@@ -29,7 +29,7 @@ import util.VCFLineParser;
 public class MultiAnnotator extends IOOperator {
 
 	protected VCFFile vcfFile = null;
-	protected AbstractVariantPool variants = null;
+	protected VariantPool variants = null;
 	protected AnnovarInputFile annovarInputFile = null;
 	protected List<Annotator> annotators = new ArrayList<Annotator>();
 	
@@ -38,7 +38,7 @@ public class MultiAnnotator extends IOOperator {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		logger.info("Beginning multi-annotation operator " + getObjectLabel());
 		if (vcfFile != null && variants == null) {
-			variants = new AbstractVariantPool();
+			variants = new VariantPool();
 			try {
 				VCFLineParser vParser = new VCFLineParser(vcfFile);
 				while( vParser.advanceLine()) {
@@ -80,8 +80,8 @@ public class MultiAnnotator extends IOOperator {
 						if (obj instanceof VCFFile) {
 							vcfFile = (VCFFile)vcfFile;
 						}
-						if (obj instanceof AbstractVariantPool) {
-							variants = (AbstractVariantPool)obj;
+						if (obj instanceof VariantPool) {
+							variants = (VariantPool)obj;
 						}
 					}
 				}
@@ -94,8 +94,8 @@ public class MultiAnnotator extends IOOperator {
 				Node iChild = outputChilden.item(i);
 				if (iChild.getNodeType() == Node.ELEMENT_NODE) {
 					PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
-					if (obj instanceof AbstractVariantPool) {
-						AbstractVariantPool outputVariants = (AbstractVariantPool)obj;
+					if (obj instanceof VariantPool) {
+						VariantPool outputVariants = (VariantPool)obj;
 						if (variants != null && outputVariants != variants) {
 							throw new IllegalArgumentException("When input is a variant pool (not a vcf file), it's an error to specify a different variant pool as output");
 						}

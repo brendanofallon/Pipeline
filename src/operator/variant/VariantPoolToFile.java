@@ -16,69 +16,55 @@ import org.w3c.dom.NodeList;
 
 import pipeline.PipelineObject;
 import buffer.CSVFile;
-import buffer.variant.AbstractVariantPool;
+import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
 /**
- * Writes a variant pool to a CSV file. 
+ * Writes a variant pool to a CSV file, in the format expected by most
+ * of the tools used in Pipeline 
  * @author brendan
  *
  */
-public class VariantPoolToFile extends Operator {
+public class VariantPoolToFile extends VariantPoolWriter {
 
-	private AbstractVariantPool variants = null;
-	private CSVFile outputFile = null;
+
+	String[] toInclude = new String[]{VariantRec.GENE_NAME, VariantRec.VARIANT_TYPE, VariantRec.EXON_FUNCTION };
 	
 	@Override
-	public void performOperation() throws OperationFailedException {
-		if (variants == null) {
-			throw new OperationFailedException("Variant pool not specified", this);
+	public void writeHeader(PrintStream outputStream) {
+		outputStream.print("#contig \t start \t end \t ref \t alt \t quality \t depth \t zygosity \t genotype.quality ");
+		
+		for(int i=0; i<toInclude.length; i++) {
+			outputStream.print("\t" + toInclude[i]);
 		}
 		
-		try {
-			PrintStream outStream = new PrintStream(new FileOutputStream( outputFile.getFile()));
-			List<String> keys = variants.getPropertyKeys();
-			
-			System.out.println("Found following properties: ");
-			for(String key : keys)
-				System.out.println(key);
-			
-			
-			keys.add(VariantRec.RSNUM);
-			keys.add(VariantRec.OMIM_ID);
-			
-			variants.emitToTable(keys, outStream);
-			outStream.close();
-		} catch (FileNotFoundException e) {
-			throw new OperationFailedException("Could not write to file : " + outputFile.getFile().getAbsolutePath(), this);
-		}
-		
+		outputStream.println();
 	}
 
 	@Override
-	public void initialize(NodeList children) {
-		for(int i=0; i<children.getLength(); i++) {
-			Node child = children.item(i);
-			if (child.getNodeType() == Node.ELEMENT_NODE) {
-				Element el = (Element)child;
-				PipelineObject obj = getObjectFromHandler(el.getNodeName());
-				if (obj instanceof AbstractVariantPool) {
-					variants = (AbstractVariantPool)obj;
-				}
-				if (obj instanceof CSVFile) {
-					outputFile = (CSVFile)obj;
-				}
-
-			}
+	public void writeVariant(VariantRec rec, PrintStream outputStream) {
+		String depthStr = "-";
+		Double depth = rec.getProperty(VariantRec.DEPTH);
+		if (depth != null)
+			depthStr = "" + depth;
+		
+		String hetStr = "het";
+		if (! rec.isHetero())
+			hetStr = "hom";
+		
+		String gqStr = "-";
+		Double gq = rec.getProperty(VariantRec.GENOTYPE_QUALITY);
+		if (gq != null)
+			gqStr = "" + gq;
+		
+		outputStream.print(rec.getContig() + "\t" + rec.getStart() + "\t" + rec.getEnd() + "\t" + rec.getRef() + "\t" + rec.getAlt() + "\t" + rec.getQuality() + "\t" + depthStr + "\t" + hetStr + "\t" + gqStr);
+		
+		for(int i=0; i<toInclude.length; i++) {
+			String str = rec.getPropertyOrAnnotation(toInclude[i]);
+			outputStream.print("\t" + str);
 		}
 		
-		if (outputFile == null) {
-			throw new IllegalArgumentException("Output CSV file not specified");
-		}
-		
-		if (variants == null) {
-			throw new IllegalArgumentException("Variant pool not specified");
-		}
+		outputStream.println();
 	}
 
 }

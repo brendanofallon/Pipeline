@@ -7,8 +7,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.w3c.dom.NodeList;
 
@@ -26,6 +28,11 @@ public class GOTerms extends Operator {
 
 	public static final String GO_DIR = "goinfo.dir";
 	File baseDir = null;
+	
+	//Store all known terms for each group
+	Set<String> allProcesses = new HashSet<String>();
+	Set<String> allFunctions = new HashSet<String>();
+	Set<String> allComponents = new HashSet<String>();
 	
 	private Map<String, GeneInfo> goMap = new HashMap<String, GeneInfo>();
 
@@ -91,6 +98,22 @@ public class GOTerms extends Operator {
 			return comps;
 		}
 	}
+	
+	/**
+	 * Return set of all processes found in input files. 
+	 * @return
+	 */
+	public Set<String> getAllProcesses() {
+		return allProcesses;
+	}
+	
+	public Set<String> getAllFunctions() {
+		return allFunctions;
+	}
+	
+	public Set<String> getAllComponents() {
+		return allComponents;
+	}
 
 	private void readData() throws IOException {
 		File homosapiensFile = new File(baseDir.getAbsolutePath() + "/Homo_sapiens.gene_info");
@@ -143,18 +166,21 @@ public class GOTerms extends Operator {
 					if (info.functions == null)
 						info.functions = new ArrayList<String>(4);
 					info.functions.add(term );
+					allFunctions.add(term);
 				}
 				
 				if (category.equals("Process")) {
 					if (info.processes == null)
 						info.processes = new ArrayList<String>(4);
 					info.processes.add(term );
+					allProcesses.add(term);
 				}
 				
 				if (category.equals("Component")) {
 					if (info.components == null)
 						info.components = new ArrayList<String>(4);
 					info.components.add(term );
+					allComponents.add(term);
 				}
 			}
 			

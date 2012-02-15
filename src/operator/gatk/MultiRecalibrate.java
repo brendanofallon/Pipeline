@@ -186,7 +186,7 @@ public class MultiRecalibrate extends MultiOperator {
 		}
 		
 		
-		String covariateList = "-cov QualityScoreCovariate -cov CycleCovariate -cov DinucCovariate -cov MappingQualityCovariate -cov HomopolymerCovariate ";
+		String covariateList = "-cov QualityScoreCovariate -cov DinucCovariate -cov MappingQualityCovariate -cov HomopolymerCovariate ";
 		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + 
 				" -R " + reference + 

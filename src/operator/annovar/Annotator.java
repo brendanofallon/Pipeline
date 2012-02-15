@@ -11,7 +11,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import buffer.VCFFile;
-import buffer.variant.AbstractVariantPool;
+import buffer.variant.VariantPool;
 
 import pipeline.PipelineObject;
 
@@ -23,7 +23,7 @@ import pipeline.PipelineObject;
  */
 public abstract class Annotator extends Operator {
 
-	protected AbstractVariantPool variants = null;
+	protected VariantPool variants = null;
 	
 
 	@Override
@@ -33,8 +33,8 @@ public abstract class Annotator extends Operator {
 			if (child.getNodeType() == Node.ELEMENT_NODE) {
 				Element el = (Element)child;
 				PipelineObject obj = getObjectFromHandler(el.getNodeName());
-				if (obj instanceof AbstractVariantPool) {
-					variants = (AbstractVariantPool)obj;
+				if (obj instanceof VariantPool) {
+					variants = (VariantPool)obj;
 				}
 
 			}

@@ -53,6 +53,60 @@ public class VariantRec {
 		return ref;
 	}
 	
+	/**
+	 * Returns true if both the ref and alt allele have length 1
+	 * @return
+	 */
+	public boolean isSNP() {
+		return ref.length()==1 && alt.length()==1;
+	}
+	
+	public boolean isTransition() {
+		if (ref == null || alt == null)
+			throw new IllegalArgumentException("Ref or alt is null");
+		if (ref.equals("-") || alt.equals("-")) {
+			throw new IllegalArgumentException("Ref or alt not defined");
+		}
+		if (ref.equals(alt)) {
+			throw new IllegalArgumentException("Ref is equal to alt, not a variant");
+		}
+		
+		if ( (ref.equals("A") && alt.equals("G"))
+			  || (ref.equals("G") && alt.equals("A"))
+			  || (ref.equals("T") && alt.equals("C"))
+			  || (ref.equals("C") && alt.equals("T"))) {
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean isTransversion() {
+		if (ref == null || alt == null)
+			throw new IllegalArgumentException("Ref or alt is null");
+		if (ref.equals("-") || alt.equals("-")) {
+			throw new IllegalArgumentException("Ref or alt not defined");
+		}
+		if (ref.equals(alt)) {
+			throw new IllegalArgumentException("Ref is equal to alt, not a variant");
+		}
+		
+		if (ref.equals("A") || ref.equals("G")) {
+			if (alt.equals("C") || alt.equals("T"))
+				return true;
+			else
+				return false;			
+		}
+		
+		if (ref.equals("T") || ref.equals("C")) {
+			if (alt.equals("A") || alt.equals("G"))
+				return true;
+			else
+				return false;			
+		}
+		
+		return false;
+	}
+	
 	public String getAlt() {
 		return alt;
 	}

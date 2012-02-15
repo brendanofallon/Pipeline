@@ -2,12 +2,22 @@ package operator.annovar;
 
 import java.util.List;
 
+import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 import operator.OperationFailedException;
 
 public class GOAnnotator extends Annotator {
 
 	GOTerms goTerms = null;
+	
+	/**
+	 * Set the variant pool to be annotated
+	 * @param pool
+	 */
+	public void setVariantPool(VariantPool pool) {
+		this.variants = pool;
+	}
+	
 	
 	@Override
 	public void performOperation() throws OperationFailedException {

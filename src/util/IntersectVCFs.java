@@ -13,7 +13,7 @@ import java.util.List;
 import javax.swing.SwingWorker;
 
 import buffer.VCFFile;
-import buffer.variant.AbstractVariantPool;
+import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
 /**
@@ -26,7 +26,7 @@ public class IntersectVCFs {
 	private VCFFile fileA;
 	private VCFFile fileB;
 	
-	private AbstractVariantPool intersection = null;
+	private VariantPool intersection = null;
 	
 	public IntersectVCFs(File fileA, File fileB) {
 		this.fileA = new VCFFile(fileA);
@@ -50,13 +50,13 @@ public class IntersectVCFs {
 			done = varReaderA.isDone() && varReaderB.isDone();
 		}
 		
-		AbstractVariantPool variantsA = varReaderA.getVariantPool();
-		AbstractVariantPool variantsB = varReaderB.getVariantPool();
+		VariantPool variantsA = varReaderA.getVariantPool();
+		VariantPool variantsB = varReaderB.getVariantPool();
 		
-		intersection = (AbstractVariantPool) variantsA.intersect(variantsB);
+		intersection = (VariantPool) variantsA.intersect(variantsB);
 	}
 	
-	public AbstractVariantPool getIntersection() {
+	public VariantPool getIntersection() {
 		return intersection;
 	}
 	
@@ -82,7 +82,7 @@ public class IntersectVCFs {
 	
 		try {
 			PrintStream stream = new PrintStream(new FileOutputStream(intersectionFile));
-			AbstractVariantPool intersection = intersector.getIntersection();
+			VariantPool intersection = intersector.getIntersection();
 			List<String> keys = new ArrayList<String>();
 			keys.add(VariantRec.altB);
 			keys.add(VariantRec.zygosityB);
@@ -100,14 +100,14 @@ public class IntersectVCFs {
 	class ReadVariants extends SwingWorker {
 		
 		private final VCFFile inputFile;
-		private AbstractVariantPool variants = null;
+		private VariantPool variants = null;
 		private boolean done = false;
 		
 		public ReadVariants(VCFFile inputFile) {
 			this.inputFile = inputFile;
 		}
 		
-		public AbstractVariantPool getVariantPool() {
+		public VariantPool getVariantPool() {
 			if (! isDone()) {
 				throw new IllegalArgumentException("Not done yet!");
 			}
@@ -117,7 +117,7 @@ public class IntersectVCFs {
 		
 		@Override
 		protected Object doInBackground() throws Exception {
-			variants = new AbstractVariantPool(inputFile);
+			variants = new VariantPool(inputFile);
 			done = true;
 			return null;
 		}

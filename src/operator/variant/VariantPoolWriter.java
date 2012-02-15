@@ -19,19 +19,19 @@ import org.w3c.dom.NodeList;
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
 import buffer.CSVFile;
-import buffer.variant.AbstractVariantPool;
+import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
 /**
  * VariantPoolWriters write a list of variants to a file. Various subclasses
  * use different formatting schemes, and may expect various annotations to be
- * present in the variants
+ * present among the variants.
  * @author brendan
  *
  */
 public abstract class VariantPoolWriter extends Operator {
 	
-	private AbstractVariantPool variants = null;
+	private VariantPool variants = null;
 	private CSVFile outputFile = null;
 	
 	/**
@@ -99,8 +99,8 @@ public abstract class VariantPoolWriter extends Operator {
 			if (child.getNodeType() == Node.ELEMENT_NODE) {
 				Element el = (Element)child;
 				PipelineObject obj = getObjectFromHandler(el.getNodeName());
-				if (obj instanceof AbstractVariantPool) {
-					variants = (AbstractVariantPool)obj;
+				if (obj instanceof VariantPool) {
+					variants = (VariantPool)obj;
 				}
 				if (obj instanceof CSVFile) {
 					outputFile = (CSVFile)obj;

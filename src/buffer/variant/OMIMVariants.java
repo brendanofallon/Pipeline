@@ -14,7 +14,7 @@ import pipeline.Pipeline;
  * @author brendan
  *
  */
-public class OMIMVariants extends AbstractVariantPool {
+public class OMIMVariants extends VariantPool {
 
 	public static final String OMIM_DIR = "omim.dir";
 	File baseDir = null;

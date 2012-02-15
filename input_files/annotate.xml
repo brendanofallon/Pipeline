@@ -47,7 +47,7 @@
 	<VariantPool />	
 </PopFreqAnnotate>
 
-<ToFile class="operator.VariantPoolToFile">
+<ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />
 	<CSVFile class="buffer.CSVFile" filename="fancy_new_variants.csv" />
 </ToFile>

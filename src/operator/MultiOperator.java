@@ -41,7 +41,7 @@ public abstract class MultiOperator extends IOOperator {
 	public static final String checkcontigs = "checkcontigs";
 	
 	//If true, make sure that all contigs (except y) are present in input and output files
-	protected boolean checkContigs = true;
+	protected boolean checkContigs = false;
 	
 	public MultiOperator() {
 		
