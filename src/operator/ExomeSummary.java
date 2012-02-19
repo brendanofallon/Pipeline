@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import pipeline.Pipeline;
+import util.VCFLineParser;
 
 import buffer.BAMFile;
 import buffer.BEDFile;

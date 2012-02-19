@@ -37,10 +37,6 @@ public class SiftAnnotator extends AnnovarAnnotator {
 		} catch (IOException e) {
 			throw new OperationFailedException("Error occurred during sift annotation: " + e.getMessage(), this);
 		}
-		
-		List<String> keys = new ArrayList<String>();
-		keys.add(VariantRec.SIFT_SCORE);
-		variants.listAll(System.out, keys);
 	}
 	
 	

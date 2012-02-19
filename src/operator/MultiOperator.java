@@ -34,6 +34,14 @@ public abstract class MultiOperator extends IOOperator {
 	protected MultiFileBuffer outputFiles;
 	protected ReferenceFile reference;
 	protected ThreadPoolExecutor threadPool = null;
+
+	protected Integer userThreadCount = null;
+	
+	public static final String threads = "threads";
+	public static final String checkcontigs = "checkcontigs";
+	
+	//If true, make sure that all contigs (except y) are present in input and output files
+	protected boolean checkContigs = false;
 	
 	public MultiOperator() {
 		
@@ -43,24 +51,39 @@ public abstract class MultiOperator extends IOOperator {
 	 * Adds a new file to the list of output files. Under normal use getCommand() should call this
 	 * to add the appropriate file to the list of output files
 	 */
-	protected void addOutputFile(FileBuffer outputFile) {
+	protected synchronized void addOutputFile(FileBuffer outputFile) {
 		outputFiles.addFile(outputFile);
 	}
 	
 	protected abstract String[] getCommand(FileBuffer inputBuffer);
 	
 	/**
-	 * Return number of threads to use in pool. In general, this should not be greater than
-	 * Pipeline.getThreadCount(), but for some operations we may want it to be less...
+	 * Return number of threads to use in pool. This is Pipeline.getThreadCount()
+	 * unless the user has specified a threads="x" argument to this operator, in which
+	 * case it's x
 	 * @return
 	 */
 	public int getPreferredThreadCount() {
-		return Pipeline.getPipelineInstance().getThreadCount();
+		if (userThreadCount != null)
+			return userThreadCount;
+		else
+			return Pipeline.getPipelineInstance().getThreadCount();
 	}
+	
+	/**
+	 * Traverse through input files and see if we have all of the contigs (Y is optional) 
+	 */
+	protected void checkInputContigs() {
+		checkContigs(inputFiles);
+	}
+	
+	protected void checkOutputContigs() {
+		checkContigs(outputFiles);
+	}
+	
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
-		
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
 		
 		Date start = new Date();
@@ -69,6 +92,9 @@ public abstract class MultiOperator extends IOOperator {
 			throw new OperationFailedException("InputFiles buffer has not been initialized for MultiOperator " + getObjectLabel(), this);
 		}
 		logger.info("Beginning parallel multi-operation " + getObjectLabel() + " with " + inputFiles.getFileCount() + " input files");
+		if (inputFiles != null && checkContigs) {
+			checkInputContigs();
+		}
 		
 		List<TaskOperator> jobs = new ArrayList<TaskOperator>();
 		
@@ -102,7 +128,15 @@ public abstract class MultiOperator extends IOOperator {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	
+
+		
+		if (outputFiles != null && checkContigs) {
+			checkOutputContigs();
+		}
+		if (inputFiles != null && outputFiles != null && inputFiles.getFileCount() != outputFiles.getFileCount()) {
+			logger.severe("Uh oh, we didn't find the name number of input as output files! input files size: " + inputFiles.getFileCount() + " output files: " + outputFiles.getFileCount());
+		}
+		
 		Date end = new Date();
 		logger.info("Parallel multi-operation " + getObjectLabel() + " has completed (Total time " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()) + " )");
 
@@ -111,6 +145,19 @@ public abstract class MultiOperator extends IOOperator {
 	
 	@Override
 	public void initialize(NodeList children) {
+		String threadsStr = properties.get(threads);
+		if (threadsStr != null) {
+			int threads = Integer.parseInt(threadsStr);
+			userThreadCount = threads;
+		}
+		
+		String checkStr = properties.get(checkcontigs);
+		if (checkStr != null) {
+			Boolean check = Boolean.parseBoolean(checkStr);
+			checkContigs = check;
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Check contig is " + checkContigs + " for MultiOperator " + getObjectLabel());
+		}
+		
 		Element inputList = getChildForLabel("input", children);
 		Element outputList = getChildForLabel("output", children);
 		

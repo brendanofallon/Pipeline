@@ -31,7 +31,7 @@ import buffer.VCFFile;
  * @author brendan
  *
  */
-public class ParallelRealign extends IOOperator {
+public class ParallelRealign extends MultiOperator {
 
 	protected BAMFile inputBam;
 	protected ThreadPoolExecutor threadPool = null;
@@ -40,7 +40,6 @@ public class ParallelRealign extends IOOperator {
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
 	protected String jvmARGStr = "";
-	protected String referencePath = null;
 	protected String knownIndelsPath = null;
 	protected MultiFileBuffer multiBAM;
 	
@@ -48,12 +47,114 @@ public class ParallelRealign extends IOOperator {
 		
 	}
 	
+//	public void performOperation() throws OperationFailedException {
+//		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(Pipeline.getPipelineInstance().getThreadCount());
+//		
+//		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+//		logger.info("Beginning ParallelRealignment for operator " + getObjectLabel());
+//		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
+//		if (propsPath != null)
+//			gatkPath = propsPath.toString();
+//		
+//		String path = properties.get(PATH);
+//		if (path != null) {
+//			gatkPath = path;
+//		}
+//		
+//		
+//		
+//		referencePath = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
+//		inputBam = (BAMFile) getInputBufferForClass(BAMFile.class);	
+//		
+//		MultiFileBuffer multiFile = (MultiFileBuffer) getInputBufferForClass(MultiFileBuffer.class);
+//		checkContigs(multiFile);
+//		
+//		multiBAM = (MultiFileBuffer) getOutputBufferForClass(MultiFileBuffer.class);
+//		
+//		FileBuffer knownIndels = getInputBufferForClass(VCFFile.class);
+//		if (knownIndels != null) {
+//			knownIndelsPath = knownIndels.getAbsolutePath();
+//		}
+//		
+//		//Additional args for jvm
+//		String jvmARGStr = properties.get(JVM_ARGS);
+//		if (jvmARGStr == null || jvmARGStr.length()==0) {
+//			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+//		}
+//		//If it's still null then be sure to make it the empty string
+//		if (jvmARGStr == null || jvmARGStr.length()==0) {
+//			jvmARGStr = "";
+//		}
+//		
+//		//If we have an input MultiFile, then assume it's already broken up and submit each file individually
+//		if (multiFile != null) {
+//			logger.info("ParallelRealign: found multifile with " + multiFile.getFileCount() + " files");
+//			for(int i=0; i<multiFile.getFileCount(); i++) {
+//				String filePath = multiFile.getFile(i).getAbsolutePath(); 
+//				String contig = multiFile.getFile(i).getContig();
+//				if (contig == null) {
+//					int a = filePath.lastIndexOf("/");
+//					int b = filePath.lastIndexOf(".");
+//					contig = filePath.substring(a+1, b);
+//				}
+//				System.out.println("Contig name / file prefix is : " + contig);
+//				TargetAndRealign job = new TargetAndRealign(multiFile.getFile(i).getContig(), multiFile.getFile(i).getAbsolutePath(), logger, contig);
+//				threadPool.submit(job);
+//			}
+//		}
+//		
+//		try {
+//			threadPool.shutdown(); //No new tasks will be submitted,
+//			threadPool.awaitTermination(96, TimeUnit.HOURS);
+//			
+//			//See if any jobs encountered errors
+//			
+//		} catch (InterruptedException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//		
+//		checkContigs(multiBAM);
+//		logger.info("All contigs have completed realignment for ParallelRealign operator " + getObjectLabel() + ", done.");
+//	}
+//	
+//	protected void addOutputFile(String pathToFile, String contig) {
+//		FileBuffer buffer = new BAMFile(new File(pathToFile), contig);
+//		multiBAM.addFile(buffer);
+//	}
+
+//	protected void executeCommand(String command) throws OperationFailedException {
+//		Runtime r = Runtime.getRuntime();
+//		Process p;
+//
+//		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+//		logger.info("ParallelRealign is executing command : " + command + "\n Active tasks: " + threadPool.getActiveCount() + "\n Completed tasks: " + threadPool.getCompletedTaskCount() + "\n Pool size: " + threadPool.getCorePoolSize());
+//		try {
+//			p = r.exec(command);
+//			Thread errorHandler = new StringPipeHandler(p.getErrorStream(), System.err);
+//			errorHandler.start();
+//
+//			try {
+//				if (p.waitFor() != 0) {
+//					throw new OperationFailedException("Par. target realigner terminated with nonzero exit value : " + System.err.toString() + " command was: " + command, this);
+//				}
+//			} catch (InterruptedException e) {
+//				throw new OperationFailedException("Target realigner was interrupted : " + System.err.toString() + "\n" + e.getLocalizedMessage(), this);
+//			}
+//
+//		}
+//		catch (IOException e1) {
+//			throw new OperationFailedException("Target realigner encountered an IO exception : " + System.err.toString() + "\n" + e1.getLocalizedMessage(), this);
+//		}
+//	}
+	
+	public boolean requiresReference() {
+		return true;
+	}
+	
 	@Override
-	public void performOperation() throws OperationFailedException {
-		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(Pipeline.getPipelineInstance().getThreadCount());
-		
-		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		logger.info("Beginning ParallelRealignment for operator " + getObjectLabel());
+	protected String[] getCommand(FileBuffer inputBuffer) {
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
@@ -61,19 +162,6 @@ public class ParallelRealign extends IOOperator {
 		String path = properties.get(PATH);
 		if (path != null) {
 			gatkPath = path;
-		}
-		
-		
-		
-		referencePath = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
-		inputBam = (BAMFile) getInputBufferForClass(BAMFile.class);	
-		
-		MultiFileBuffer multiFile = (MultiFileBuffer) getInputBufferForClass(MultiFileBuffer.class);
-		multiBAM = (MultiFileBuffer) getOutputBufferForClass(MultiFileBuffer.class);
-		
-		FileBuffer knownIndels = getInputBufferForClass(VCFFile.class);
-		if (knownIndels != null) {
-			knownIndelsPath = knownIndels.getAbsolutePath();
 		}
 		
 		//Additional args for jvm
@@ -85,89 +173,49 @@ public class ParallelRealign extends IOOperator {
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
-	
-
-		//If there is an input BAM file, break up by normal human chromosomes and
-		//submit all jobs to the thread pool
-		if (inputBam != null) {
-			logger.info("ParallelRealign: found single input BAM file, submitting by contig");
-
-			for(int i=1; i<24; i++) {
-				String contig = "" + i;
-				if (i == 22)
-					contig = "X";
-				if (i==23)
-					contig = "Y";
-
-				TargetAndRealign job = new TargetAndRealign(contig, inputBam.getAbsolutePath(), logger, contig);
-				threadPool.submit(job);
-
-			}
+		
+		String inputPath = inputBuffer.getAbsolutePath();
+		String contig = inputBuffer.getContig();
+				
+		String rand = "" + (int)Math.round( 100000*Math.random() );
+		String targetsPath;
+		String realignedContigPath;
+		String pathPrefix = (String) Pipeline.getPropertyStatic(Pipeline.PROJECT_HOME);
+		if (pathPrefix == null)
+			pathPrefix = "";
+		
+		if (contig != null) {
+			targetsPath = pathPrefix + "targets_" + contig + "_" + rand + ".intervals";
+			realignedContigPath = pathPrefix + "contig_" + contig + ".realigned.bam";
+		}
+		else {
+			targetsPath = pathPrefix + "targets_" + rand + ".intervals";
+			realignedContigPath = pathPrefix + inputBuffer.getFilename().replace(".bam", "") + ".realigned.bam";
 		}
 		
 		
-		//If we have an input MultiFile, then assume it's already broken up and submit each file individually
-		if (multiFile != null) {
-			logger.info("ParallelRealign: found multifile with " + multiFile.getFileCount() + " files");
-			for(int i=1; i<multiFile.getFileCount(); i++) {
-				String filePath = multiFile.getFile(i).getAbsolutePath(); 
-				String contig = multiFile.getFile(i).getContig();
-				if (contig == null) {
-					int a = filePath.lastIndexOf("/");
-					int b = filePath.lastIndexOf(".");
-					contig = filePath.substring(a+1, b);
-				}
-				System.out.println("Contig name / file prefix is : " + contig);
-				TargetAndRealign job = new TargetAndRealign(multiFile.getFile(i).getContig(), multiFile.getFile(i).getAbsolutePath(), logger, contig);
-				threadPool.submit(job);
-
-			}
+		String command = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
+				" -R " + reference.getAbsolutePath() + 
+				" -I " + inputPath + 
+				" -T RealignerTargetCreator -o " + targetsPath;
+		if (contig != null)
+			command = command +	" -L " + contig;
+		if (knownIndelsPath != null) {
+			command = command + " --known " + knownIndelsPath;
 		}
 		
-		try {
-			threadPool.shutdown(); //No new tasks will be submitted,
-			threadPool.awaitTermination(96, TimeUnit.HOURS);
-			
-			//See if any jobs encountered errors
-			
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		String command2 = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
+				" -R " + reference.getAbsolutePath() + 
+				" -I " + inputPath + 
+				" -T IndelRealigner " + 
+				" -targetIntervals " + targetsPath + " -o " + realignedContigPath;
+		if (contig != null)
+				command2 = command2 +	" -L " + contig;
+		if (knownIndelsPath != null) {
+			command2 = command2 + " --known " + knownIndelsPath;
 		}
-		
-		
-		
-		logger.info("All contigs have completed realignment for ParallelRealign operator " + getObjectLabel() + ", done.");
-	}
-	
-	protected void addOutputFile(String pathToFile, String contig) {
-		FileBuffer buffer = new BAMFile(new File(pathToFile), contig);
-		multiBAM.addFile(buffer);
-	}
-
-	protected void executeCommand(String command) throws OperationFailedException {
-		Runtime r = Runtime.getRuntime();
-		Process p;
-
-		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		logger.info("ParallelRealign is executing command : " + command + "\n Active tasks: " + threadPool.getActiveCount() + "\n Completed tasks: " + threadPool.getCompletedTaskCount() + "\n Pool size: " + threadPool.getCorePoolSize());
-		try {
-			p = r.exec(command);
-			Thread errorHandler = new StringPipeHandler(p.getErrorStream(), System.err);
-			errorHandler.start();
-
-			try {
-				if (p.waitFor() != 0) {
-					throw new OperationFailedException("Par. target realigner terminated with nonzero exit value : " + System.err.toString() + " command was: " + command, this);
-				}
-			} catch (InterruptedException e) {
-				throw new OperationFailedException("Target realigner was interrupted : " + System.err.toString() + "\n" + e.getLocalizedMessage(), this);
-			}
-
-		}
-		catch (IOException e1) {
-			throw new OperationFailedException("Target realigner encountered an IO exception : " + System.err.toString() + "\n" + e1.getLocalizedMessage(), this);
-		}
+		outputFiles.addFile(new BAMFile(new File(realignedContigPath), contig));
+		return new String[]{command, command2};
 	}
 	
 	/**
@@ -175,103 +223,105 @@ public class ParallelRealign extends IOOperator {
 	 * @author brendan
 	 *
 	 */
-	class TargetAndRealign implements Runnable {
-
-		private boolean finished = false;
-		private boolean error = false;
-		private Exception errorException = null;
-		final String contig;
-		private Logger logger;
-		private final String inputPath;
-		private String filePrefix;
-		
-		public TargetAndRealign(String contig, String inputPath, Logger logger, String filePrefix) {
-			this.contig = contig;
-			this.logger = logger;
-			this.inputPath = inputPath;
-			this.filePrefix = filePrefix;
-		}
-		
-		@Override
-		public void run() {
-			finished = false;
-			logger.info("Beginning contig realignment for contig " + filePrefix);
-			String rand = "" + (int)Math.round( 100000*Math.random() );
-			String targetsPath;
-			Date begin = new Date();
-			String realignedContigPath;
-			String pathPrefix = (String) Pipeline.getPropertyStatic(Pipeline.PROJECT_HOME);
-			if (pathPrefix == null)
-				pathPrefix = "";
-			
-			if (contig != null) {
-				targetsPath = pathPrefix + "targets_" + contig + "_" + rand + ".intervals";
-				realignedContigPath = pathPrefix + "contig_" + contig + ".realigned.bam";
-			}
-			else {
-				targetsPath = pathPrefix + "targets_" + rand + ".intervals";
-				realignedContigPath = pathPrefix + filePrefix + ".realigned.bam";
-			}
-			
-			
-			String command = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
-					" -R " + referencePath + 
-					" -I " + inputPath + 
-					" -T RealignerTargetCreator -o " + targetsPath;
-			if (contig != null)
-				command = command +	" -L " + contig;
-			if (knownIndelsPath != null) {
-				command = command + " --known " + knownIndelsPath;
-			}
-			
-			String command2 = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
-					" -R " + referencePath + 
-					" -I " + inputPath + 
-					" -T IndelRealigner " + 
-					" -targetIntervals " + targetsPath + " -o " + realignedContigPath;
-			if (contig != null)
-					command2 = command2 +	" -L " + contig;
-			if (knownIndelsPath != null) {
-				command2 = command2 + " --known " + knownIndelsPath;
-			}
-
-			try {
-				executeCommand(command);
-				executeCommand(command2);
-				addOutputFile(realignedContigPath, contig);
-			}
-			catch (OperationFailedException e) {
-				error = true;
-				errorException = e;
-			}
-			
-			Date end = new Date();
-			logger.info("Completed realignment for contig " + filePrefix + "\n Elapsed time: " + ElapsedTimeFormatter.getElapsedTime(begin.getTime(), end.getTime()) + "\n Active tasks: " + threadPool.getActiveCount() + "\n Completed tasks: " + threadPool.getCompletedTaskCount() + "\n Pool size: " + threadPool.getCorePoolSize());
-			finished = true;
-		}
+//	class TargetAndRealign implements Runnable {
+//
+//		private boolean finished = false;
+//		private boolean error = false;
+//		private Exception errorException = null;
+//		final String contig;
+//		private Logger logger;
+//		private final String inputPath;
+//		private String filePrefix;
+//		
+//		public TargetAndRealign(String contig, String inputPath, Logger logger, String filePrefix) {
+//			this.contig = contig;
+//			this.logger = logger;
+//			this.inputPath = inputPath;
+//			this.filePrefix = filePrefix;
+//		}
+//		
+//		@Override
+//		public void run() {
+//			finished = false;
+//			logger.info("Beginning contig realignment for contig " + filePrefix);
+//			String rand = "" + (int)Math.round( 100000*Math.random() );
+//			String targetsPath;
+//			Date begin = new Date();
+//			String realignedContigPath;
+//			String pathPrefix = (String) Pipeline.getPropertyStatic(Pipeline.PROJECT_HOME);
+//			if (pathPrefix == null)
+//				pathPrefix = "";
+//			
+//			if (contig != null) {
+//				targetsPath = pathPrefix + "targets_" + contig + "_" + rand + ".intervals";
+//				realignedContigPath = pathPrefix + "contig_" + contig + ".realigned.bam";
+//			}
+//			else {
+//				targetsPath = pathPrefix + "targets_" + rand + ".intervals";
+//				realignedContigPath = pathPrefix + filePrefix + ".realigned.bam";
+//			}
+//			
+//			
+//			String command = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
+//					" -R " + referencePath + 
+//					" -I " + inputPath + 
+//					" -T RealignerTargetCreator -o " + targetsPath;
+//			if (contig != null)
+//				command = command +	" -L " + contig;
+//			if (knownIndelsPath != null) {
+//				command = command + " --known " + knownIndelsPath;
+//			}
+//			
+//			String command2 = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
+//					" -R " + referencePath + 
+//					" -I " + inputPath + 
+//					" -T IndelRealigner " + 
+//					" -targetIntervals " + targetsPath + " -o " + realignedContigPath;
+//			if (contig != null)
+//					command2 = command2 +	" -L " + contig;
+//			if (knownIndelsPath != null) {
+//				command2 = command2 + " --known " + knownIndelsPath;
+//			}
+//
+//			try {
+//				executeCommand(command);
+//				executeCommand(command2);
+//				addOutputFile(realignedContigPath, contig);
+//			}
+//			catch (OperationFailedException e) {
+//				error = true;
+//				errorException = e;
+//			}
+//			
+//			Date end = new Date();
+//			logger.info("Completed realignment for contig " + filePrefix + "\n Elapsed time: " + ElapsedTimeFormatter.getElapsedTime(begin.getTime(), end.getTime()) + "\n Active tasks: " + threadPool.getActiveCount() + "\n Completed tasks: " + threadPool.getCompletedTaskCount() + "\n Pool size: " + threadPool.getCorePoolSize());
+//			finished = true;
+//		}
 		
 		/**
 		 * Returns true if an exception was thrown during either command
 		 * @return
 		 */
-		public boolean isError() {
-			return error;
-		}
-		
-		public Exception getException() {
-			return errorException;
-		}
-		
-		/**
-		 * Returns true if this runnable has finished running
-		 * @return
-		 */
-		public boolean isFinished() {
-			return finished;
-		}
-		
-		
-	}
+//		public boolean isError() {
+//			return error;
+//		}
+//		
+//		public Exception getException() {
+//			return errorException;
+//		}
+//		
+//		/**
+//		 * Returns true if this runnable has finished running
+//		 * @return
+//		 */
+//		public boolean isFinished() {
+//			return finished;
+//		}
+//		
+//		
+//	}
+
+
 	
 
 }

@@ -139,6 +139,9 @@ public class ObjectHandler {
 					if (! preObj.getClass().getCanonicalName().equals(classStr)) {
 						throw new ObjectCreationException("Found two objects with label " + label + " but conflicting classes", el);
 					}
+					NamedNodeMap attrs = el.getAttributes();
+					if (attrs.getLength() != 0)
+						throw new ObjectCreationException("Found two objects with label " + label + ", but both have attributes specified. Attributes should only be specified on the first reference to the object", el);
 				}
 
 				Class<?> clz = loadClass(classStr);

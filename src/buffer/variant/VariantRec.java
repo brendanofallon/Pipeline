@@ -1,5 +1,6 @@
 package buffer.variant;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +19,6 @@ public class VariantRec {
 	String ref;
 	String alt;
 	Double qual;
-	boolean isExonic;
 	boolean isHetero;
 	private Map<String, Double> props = new HashMap<String, Double>();
 	private Map<String, String> annotations = new HashMap<String, String>();
@@ -29,7 +29,7 @@ public class VariantRec {
 							String ref, 
 							String alt, 
 							double qual, 
-							boolean isExon,
+							//boolean isExon, 
 							boolean isHetero) {
 		this.contig = contig;
 		this.start = start;
@@ -37,7 +37,7 @@ public class VariantRec {
 		this.ref = ref;
 		this.alt = alt;
 		this.qual = qual;
-		this.isExonic = isExon;
+		//this.isExonic = isExon;
 		this.isHetero = isHetero;
 	}
 	
@@ -49,8 +49,105 @@ public class VariantRec {
 		annotations.put(key, anno);
 	}
 	
+	public String getRef() {
+		return ref;
+	}
+	
+	/**
+	 * Returns true if both the ref and alt allele have length 1
+	 * @return
+	 */
+	public boolean isSNP() {
+		return ref.length()==1 && alt.length()==1;
+	}
+	
+	public boolean isTransition() {
+		if (ref == null || alt == null)
+			throw new IllegalArgumentException("Ref or alt is null");
+		if (ref.equals("-") || alt.equals("-")) {
+			throw new IllegalArgumentException("Ref or alt not defined");
+		}
+		if (ref.equals(alt)) {
+			throw new IllegalArgumentException("Ref is equal to alt, not a variant");
+		}
+		
+		if ( (ref.equals("A") && alt.equals("G"))
+			  || (ref.equals("G") && alt.equals("A"))
+			  || (ref.equals("T") && alt.equals("C"))
+			  || (ref.equals("C") && alt.equals("T"))) {
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean isTransversion() {
+		if (ref == null || alt == null)
+			throw new IllegalArgumentException("Ref or alt is null");
+		if (ref.equals("-") || alt.equals("-")) {
+			throw new IllegalArgumentException("Ref or alt not defined");
+		}
+		if (ref.equals(alt)) {
+			throw new IllegalArgumentException("Ref is equal to alt, not a variant");
+		}
+		
+		if (ref.equals("A") || ref.equals("G")) {
+			if (alt.equals("C") || alt.equals("T"))
+				return true;
+			else
+				return false;			
+		}
+		
+		if (ref.equals("T") || ref.equals("C")) {
+			if (alt.equals("A") || alt.equals("G"))
+				return true;
+			else
+				return false;			
+		}
+		
+		return false;
+	}
+	
+	public String getAlt() {
+		return alt;
+	}
+	
 	public Double getProperty(String key) {
 		return props.get(key);
+	}
+	
+	/**
+	 * Returns the property associated with the given key, but if there
+	 * is no such property, returns the annotation with the given key, and
+	 * if there's no annotation either returns "-";
+	 * @param key
+	 * @return
+	 */
+	public String getPropertyOrAnnotation(String key) {
+		Double val = getProperty(key);
+		if (val != null)
+			return "" + val;
+		
+		String anno = getAnnotation(key);
+		if (anno != null)
+			return anno;
+		
+		return "-";
+	}
+	
+	/**
+	 * Obtain a Collection containing all keys used to describe properties
+	 * @return
+	 */
+	public Collection<String> getPropertyKeys() {
+		return props.keySet();
+	}
+	
+	/**
+	 * Collection of all keys used for annotations
+	 * @return
+	 */
+	public Collection<String> getAnnotationKeys() {
+		return annotations.keySet();
 	}
 	
 	public String getAnnotation(String key) {
@@ -70,16 +167,22 @@ public class VariantRec {
 	public String getPropertyString(List<String> propKeys) {
 		StringBuffer buf = new StringBuffer();
 		for(String key : propKeys) {
-			Double val = props.get(key);
-			if (val != null)
-				buf.append("\t" + val);
-			else {
-				String anno = annotations.get(key);
-				if (anno != null)
-					buf.append("\t" + anno);
-				else
-					buf.append("\t NA");
-			}
+			buf.append("\t " + getPropertyOrAnnotation(key));
+//			Double val = props.get(key);
+//			if (val != null)
+//				buf.append("\t" + val);
+//			else {
+//				String anno = annotations.get(key);
+//				if (key == VariantRec.RSNUM && anno != null) {
+//					buf.append("\t =HYPERLINK(\"http://www.ncbi.nlm.nih.gov/snp/?term=" + anno + "\")");
+//				}
+//				else {
+//					if (anno != null)
+//						buf.append("\t" + anno);
+//					else
+//						buf.append("\t NA");
+//				}
+//			}
 		}
 		return buf.toString();
 	}
@@ -107,6 +210,86 @@ public class VariantRec {
 	
 	public static String getColumnHeaders() {
 		return "contig \t start \t end \t gene \t variant.type \t exon.func \t pop.freq \t het \t qual \t sift \t polyphen \t mt \t phylop";  
+	}
+	
+	/**
+	 * Obtain a header string for the column emitted by toBasicString
+	 * @return
+	 */
+	public static String getBasicHeader() {
+		return "#contig \tstart \tend \tgene \tvariant.type \texon.function \tzygosity";
+	}
+	
+	/**
+	 * Obtain a string containing the following information about this variant record:
+	 * 1. contig
+	 * 2. start
+	 * 3. end
+	 * 4. gene name
+	 * 5. variant type
+	 * 6. exon function (- if not an exon)
+	 * 7. hetero/homo
+	 * @return
+	 */
+	public String toBasicString() {
+		String gene = getAnnotation(VariantRec.GENE_NAME);
+		if (gene == null)
+			gene = "-";
+		
+		String variantType = "-";
+		String vType = getAnnotation(VariantRec.VARIANT_TYPE);
+		if (vType != null)
+			variantType = vType;
+
+		String exFunc = "-";
+		String exType = getAnnotation(VariantRec.EXON_FUNCTION);
+		if (exType != null)
+			exFunc = exType;
+		
+		String het = "het";
+		if (! isHetero())
+			het = "hom";
+		
+		return contig + "\t" + start + "\t" + end + "\t" + gene + "\t" + variantType + "\t" + exFunc + "\t" + het ;  
+	}
+	
+	/**
+	 * Return a header row that describes the toSimpleString() columns
+	 * @return
+	 */
+	public static String getSimpleHeader() {
+		return "#contig	\t start \t end \t ref \t alt \t quality \t depth \t zygosity \t genotype.quality ";
+	}
+	
+	/**
+	 * Return a string with the following columns:
+	 * 1. Contig
+	 * 2. start
+	 * 3. end
+	 * 4. ref
+	 * 5. alt
+	 * 6. variant quality
+	 * 7. total read depth
+	 * 8. het / hom
+	 * 9. genotype quality
+	 * @return
+	 */
+	public String toSimpleString() {
+		String het = "het";
+		if (! isHetero())
+			het = "hom";
+		
+		Double depth = getProperty(VariantRec.DEPTH);
+		String depthStr = "-";
+		if (depth != null) 
+			depthStr = "" + depth;
+		
+		Double genotypeQual = getProperty(VariantRec.GENOTYPE_QUALITY);
+		String gqStr = "-";
+		if (genotypeQual != null)
+			gqStr = "" + genotypeQual;
+		
+		return contig + "\t" + start + "\t" + end + "\t" + getRef() + "\t" + getAlt() + "\t" + getQuality() + "\t" + depthStr + "\t" + het + "\t" + gqStr;  
 	}
 	
 	public String toString() {
@@ -178,12 +361,12 @@ public class VariantRec {
 
 		@Override
 		public int compare(VariantRec o1, VariantRec o2) {
-				if (o1 == o2 || (o1.equals(o2))) {
-					return 0;
-				}
-				
-				return o1.start - o2.start;
+			if (o1 == o2 || (o1.equals(o2))) {
+				return 0;
 			}
+
+			return o1.start - o2.start;
+		}
 	}
 	
 	/**
@@ -217,24 +400,33 @@ public class VariantRec {
 	
 	
 	
-	//A few oft-used property keys
-	public static final String POP_FREQUENCY = "popfreq";
-	public static final String SIFT_SCORE = "siftscore";
-	public static final String POLYPHEN_SCORE = "ppscore";
-	public static final String MT_SCORE = "mtscore";
-	public static final String SIFT_QUARTILE = "siftquartile";
-	public static final String MT_QUARTILE = "mtquartile";
-	public static final String POLYPHEN_QUARTILE = "ppquartile";
-	public static final String PHYLOP_QUARTILE = "phylopquartile";
-	public static final String PHYLOP_SCORE = "phylopscore";
-	public static final String VARIANT_TYPE = "varianttype";
-	public static final String EXON_FUNCTION = "exonfunction";
-	public static final String NM_NUMBER = "nmnumber";
+	//A few oft-used property / annotation keys
+	public static final String POP_FREQUENCY = "pop.freq";
+	public static final String SIFT_SCORE = "sift.score";
+	public static final String POLYPHEN_SCORE = "pp.score";
+	public static final String MT_SCORE = "mt.score";
+	public static final String SIFT_QUARTILE = "sift.quartile";
+	public static final String MT_QUARTILE = "mt.quartile";
+	public static final String POLYPHEN_QUARTILE = "pp.quartile";
+	public static final String PHYLOP_QUARTILE = "phylop.quartile";
+	public static final String PHYLOP_SCORE = "phylop.score";
+	public static final String VARIANT_TYPE = "variant.type";
+	public static final String EXON_FUNCTION = "exon.function";
+	public static final String EXON_NUMBER = "exon.number";
+	public static final String NM_NUMBER = "nm.number";
 	public static final String GENE_NAME = "gene";
 	public static final String DEPTH = "depth";
 	public static final String CDOT = "cdot";
 	public static final String PDOT = "pdot";
-
+	public static final String zygosityB = "zygB"; //When performing intersections, zygosity of variant in other pool
+	public static final String altB = "altB"; //Alternate allele in other pool when performing intersections
+	public static final String RSNUM = "rsnum"; // rs# from dbSNP
+	public static final String OMIM_ID = "omim.id";
+	public static final String GO_FUNCTION = "go.function";
+	public static final String GO_PROCESS = "go.process";
+	public static final String GO_COMPONENT = "go.component";
+	public static final String GENOTYPE_QUALITY = "genotype.quality";
+	
 
 	
 }

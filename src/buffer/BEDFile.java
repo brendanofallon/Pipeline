@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import operator.VCFLineParser;
 import pipeline.Pipeline;
+import util.VCFLineParser;
 
 public class BEDFile extends FileBuffer {
 
@@ -66,13 +66,44 @@ public class BEDFile extends FileBuffer {
 				if (contigIntervals == null) {
 					contigIntervals = new ArrayList<Interval>(2048);
 					intervals.put(contig, contigIntervals);
-					System.out.println("BED file adding contig: " + contig);
+					//System.out.println("BED file adding contig: " + contig);
 				}
 				contigIntervals.add(interval);
 			}
 			line = reader.readLine();
 		}
+		
+		sortAllContigs();
+		
 		logger.info("Done building intervals map for " + getFilename());
+//		for(String contig : intervals.keySet()) {
+//			List<Interval> list = intervals.get(contig);
+//			int tot = countSize(list);
+//			System.out.println(contig + "\t :" + list.size() + "\t" + tot);
+//		}
+	}
+	
+	/**
+	 * Sort all intervals in all contigs by starting position
+	 */
+	private void sortAllContigs() {
+		for(String contig : intervals.keySet()) {
+			List<Interval> list = intervals.get(contig);
+			Collections.sort(list, new IntervalComparator());
+		}
+	}
+
+	/**
+	 * Count number of bases subtended by all intervals in the list
+	 * @param list
+	 * @return
+	 */
+	private static int countSize(List<Interval> list) {
+		int size = 0;
+		for(Interval inter : list) {
+			size += inter.end - inter.begin;
+		}
+		return size;
 	}
 	
 	/**
@@ -82,12 +113,17 @@ public class BEDFile extends FileBuffer {
 	public boolean isMapCreated() {
 		return intervals != null;
 	}
-	
+
 	public boolean contains(String contig, int pos) {
+		return contains(contig, pos, true);
+	}
+	
+	public boolean contains(String contig, int pos, boolean warn) {
 		List<Interval> cInts = intervals.get(contig);
 		Interval qInterval = new Interval(pos, pos);
 		if (cInts == null) {
-			//System.out.println("Contig " + contig + " is not in BED file!");
+			if (warn)
+				System.out.println("Contig " + contig + " is not in BED file!");
 			return false;
 		}
 		else {

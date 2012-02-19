@@ -1,4 +1,4 @@
-package operator;
+package operator.variant;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,17 +17,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import operator.IOOperator;
+import operator.OperationFailedException;
+
 import buffer.FileBuffer;
 import buffer.VCFFile;
-import buffer.variant.AbstractVariantPool;
+import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
 import pipeline.Pipeline;
+import util.VCFLineParser;
 
 public class CompareVCF extends IOOperator {
 
-	protected AbstractVariantPool variantsA = new AbstractVariantPool();
-	protected AbstractVariantPool variantsB = new AbstractVariantPool();
+	protected VariantPool variantsA = new VariantPool();
+	protected VariantPool variantsB = new VariantPool();
 	
 	public static Double parseValue(String line, String key) {
 		if (! key.endsWith("="))
@@ -53,11 +57,9 @@ public class CompareVCF extends IOOperator {
 		}
 	}
 	
-	private int buildVariantMap(VCFFile file, AbstractVariantPool vars) throws IOException {
-		//BufferedReader reader = new BufferedReader(new FileReader(file.getFile()));
+	private int buildVariantMap(VCFFile file, VariantPool vars) throws IOException {
 		VCFLineParser vParser = new VCFLineParser(file.getFile());
 		int totalVarsCounted = 0;
-		//skip initial comments, etc
 		
 		while(vParser.advanceLine()) {
 			vars.addRecord( vParser.toVariantRec() );
@@ -72,7 +74,7 @@ public class CompareVCF extends IOOperator {
 	 * @param vars
 	 * @return
 	 */
-	public static double meanQuality(AbstractVariantPool vars) {
+	public static double meanQuality(VariantPool vars) {
 		double sum = 0;
 		double count = 0;
 		for(String contig : vars.getContigs()) {
@@ -107,6 +109,82 @@ public class CompareVCF extends IOOperator {
 		return count;
 	}
 
+	public static void compareVars(VariantPool varsA, VariantPool varsB, PrintStream output) {
+		List<VarPair> perfectMatch = new ArrayList<VarPair>();
+		List<VarPair> difZygote = new ArrayList<VarPair>();
+		List<VarPair> difAlt = new ArrayList<VarPair>();
+		
+		
+		for(String contig : varsA.getContigs()) {
+			List<VariantRec> listA = varsA.getVariantsForContig(contig);
+			for(VariantRec rec : listA) {
+				VariantRec match = varsB.findRecordNoWarn(contig, rec.getStart());
+				if (match != null) {
+					VarPair pair = new VarPair();
+					pair.a = rec;
+					pair.b = match;
+					
+					if (rec.getAlt().equals(match.getAlt())) {
+						if (rec.isHetero() == match.isHetero()) {
+							perfectMatch.add(pair);							
+						}
+						else {
+							difZygote.add(pair); //Alt allele matches, but zygosity is different
+						}
+					}
+					else {
+						difAlt.add(pair); //Alt allele does not match
+					}
+					
+					
+				}
+			}
+		}
+		
+		DecimalFormat formatter = new DecimalFormat("0.000");
+		double overlapA = (double)perfectMatch.size() / (double)varsA.size();
+		double overlapB = (double)perfectMatch.size() / (double)varsB.size();
+		
+		output.println("Total number of perfect matches: " + perfectMatch.size());
+		output.println("\tFraction of perfect matches from A : " + formatter.format(overlapA));
+		output.println("\tFraction of perfect matches from B : " + formatter.format(overlapB));
+
+		
+		overlapA = (double)difZygote.size() / (double)varsA.size();
+		overlapB = (double)difZygote.size() / (double)varsB.size();
+
+		output.println("Same alt allele, but different zygosity : " + difZygote.size());
+		output.println("\tFraction of dif zygotes from A : " + formatter.format(overlapA));
+		output.println("\tFraction of dif zygotes from B : " + formatter.format(overlapB));
+
+		overlapA = (double)difAlt.size() / (double)varsA.size();
+		overlapB = (double)difAlt.size() / (double)varsB.size();
+		output.println("Different alt allele: " + difAlt.size());
+		output.println("\tFraction of dif alts from A : " + formatter.format(overlapA));
+		output.println("\tFraction of dif alts from B : " + formatter.format(overlapB));
+	
+	}
+	
+	/**
+	 * Returns average variant quality of first item in pair
+	 * @param recs
+	 * @return
+	 */
+	public static double meanQualityA(List<VarPair> recs) {
+		double sum =0;
+		for(VarPair pair : recs) {
+			sum += pair.a.getQuality();
+		}
+		return sum / (double)recs.size();
+	}
+	
+	public static double meanQualityB(List<VarPair> recs) {
+		double sum =0;
+		for(VarPair pair : recs) {
+			sum += pair.b.getQuality();
+		}
+		return sum / (double)recs.size();
+	}
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -116,18 +194,21 @@ public class CompareVCF extends IOOperator {
 		DecimalFormat formatter = new DecimalFormat("#0.00");
 		
 		try {
-			buildVariantMap( (VCFFile)fileA, variantsA);
-			buildVariantMap( (VCFFile)fileB, variantsB);
+			variantsA = new VariantPool( (VCFFile)fileA );
+			variantsB = new VariantPool( (VCFFile)fileB );
+			
 			
 			System.out.println("Total variants in " + fileA.getFile().getName() + " : " + variantsA.size());
 			System.out.println("Total variants in " + fileB.getFile().getName() + " : " + variantsB.size());
 			
-			AbstractVariantPool intersection = (AbstractVariantPool) variantsA.intersect(variantsB);
+			compareVars(variantsA, variantsB, System.out);
+			
+			VariantPool intersection = (VariantPool) variantsA.intersect(variantsB);
 	
 			
-			AbstractVariantPool uniqA = new AbstractVariantPool(variantsA);
+			VariantPool uniqA = new VariantPool(variantsA);
 			uniqA.removeVariants(intersection);
-			AbstractVariantPool uniqB = new AbstractVariantPool(variantsB);
+			VariantPool uniqB = new VariantPool(variantsB);
 			uniqB.removeVariants(intersection);
 			
 			
@@ -164,5 +245,9 @@ public class CompareVCF extends IOOperator {
 		
 	}
 
+	static class VarPair {
+		VariantRec a;
+		VariantRec b;
+	}
 	
 }

@@ -54,7 +54,7 @@ public class MultiFileBuffer extends FileBuffer {
 
 	@Override
 	public void initialize(NodeList children) {
-		boolean guessContig = false;
+		boolean guessContig = true;
 		String guessAttr = properties.get(GUESS_CONTIG);
 		if (guessAttr != null) {
 			guessContig = Boolean.parseBoolean(guessAttr);

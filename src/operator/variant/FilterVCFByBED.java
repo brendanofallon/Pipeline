@@ -1,13 +1,19 @@
-package operator;
+package operator.variant;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
+import operator.IOOperator;
+import operator.OperationFailedException;
+
 import pipeline.Pipeline;
+import util.VCFLineParser;
 
 import buffer.BEDFile;
 import buffer.FileBuffer;
@@ -49,9 +55,13 @@ public class FilterVCFByBED extends IOOperator {
 			}
 
 			VCFLineParser vParser = new VCFLineParser(inVCF.getFile());
+			int totVars = 0;
 			int varsFound = 0;
+			int varsNotFound = 0;
+			Map<String, Integer> counts = new HashMap<String, Integer>();
 			while( vParser.advanceLine()) {
-				String contig = vParser.getContig();
+				totVars++;
+				String contig = vParser.getContig().replace("chr", "")	;
 				int pos = vParser.getPosition();
 				//System.out.println("Searching for contig: " + contig + " pos: " + pos);
 				if (bedFile.contains(contig, pos)) {
@@ -64,6 +74,10 @@ public class FilterVCFByBED extends IOOperator {
 				}
 			}
 			writer.close();
+			
+			System.out.println("Total variants in vcf file: " + totVars);
+			System.out.println("Variants in bed: " + varsFound);
+			System.out.println("Variants not in bed: " + varsNotFound);
 		} catch (IOException e) {
 			throw new OperationFailedException("Could not read / write vcf file for filtration\n" + e.getMessage(), this);
 		}
