@@ -15,10 +15,13 @@ import operator.variant.CompoundHetFinder;
 import buffer.BEDFile;
 import buffer.CSVFile;
 import buffer.VCFFile;
+import buffer.variant.SimpleLineReader;
+import buffer.variant.VariantFilter;
 import buffer.variant.VariantPool;
 import buffer.variant.GenePool;
 import buffer.variant.VarFilterUtils;
 import buffer.variant.VariantRec;
+import buffer.variant.VariantRec.PositionComparator;
 
 public class VarUtils {
 
@@ -119,6 +122,18 @@ public class VarUtils {
 		return variants;
 	}
 	
+	/**
+	 * Obtain an VariantPool from a CSV using a 'SimpleLineReader', which only
+	 * 
+	 * @param inputFile
+	 * @return
+	 * @throws IOException
+	 */
+	public static VariantPool getSPool(File inputFile) throws IOException {
+		VariantPool variants = new VariantPool(new SimpleLineReader(inputFile));	
+		return variants;
+	}
+	
 	public static void main(String[] args) {
 		
 		//args = new String[]{"subtract", "/media/DATA/whitney_genome/52Kid2/contig_22.realigned.sorted.recal.vcf", "/media/DATA/whitney_genome/52Kid3/contig_22.realigned.sorted.recal.vcf"};
@@ -129,6 +144,177 @@ public class VarUtils {
 		}
 		
 		String firstArg = args[0];
+		
+		if (firstArg.equals("wcompare")) {
+			if (args.length != 3) {
+				System.out.println("Enter the names of the truemuts.csv file and a vcf file to compare");
+				return;
+			}
+			
+			try {
+				File fileA = new File(args[1]);
+				File fileB = new File(args[2]);
+				
+				SimpleLineReader tParser = new SimpleLineReader(fileA);
+				VCFLineParser vParser = new VCFLineParser(new VCFFile(fileB));
+				
+				VariantRec trueVar = tParser.toVariantRec();
+				//trueVar.rotateIndel();
+				VariantRec qVar = vParser.toVariantRec();
+				//qVar.rotateIndel();
+				
+				PositionComparator pComp = VariantRec.getPositionComparator();
+				while (trueVar != null && qVar != null) {
+					int dif = pComp.compare(trueVar, qVar);
+					
+					//Variants are at same position
+					if (dif == 0) {
+						int result;
+						if (trueVar.getAlt().equals(qVar.getAlt()))
+							result = 0;
+						else
+							result = 1;
+						System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t " + result);
+						tParser.advanceLine();
+						vParser.advanceLine();
+					}
+
+					if (dif < 0) {
+						System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t -1");
+						tParser.advanceLine();
+					}
+					if (dif > 0) {
+						System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t -2");
+						vParser.advanceLine();
+					}
+					
+					trueVar = tParser.toVariantRec();
+//					if (trueVar != null)
+//						trueVar.rotateIndel();
+					qVar = vParser.toVariantRec();
+//					if (qVar != null)
+//						qVar.rotateIndel();
+
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return;
+		}
+		
+		//Compare 'truemuts'-style csv to a vcf 
+		if (firstArg.equals("scompare")) {
+			if (args.length != 3) {
+				System.out.println("Enter the names of the truemuts.csv file and a vcf file to compare");
+				return;
+			}
+			
+			try {
+				File fileA = new File(args[1]);
+				File fileB = new File(args[2]);
+				DecimalFormat formatter = new DecimalFormat("#0.000");
+				
+				VariantPool trueVars = getSPool(new File(args[1]));
+			//	trueVars.rotateIndels();
+				VariantPool queryVars = getPool(new File(args[2]));
+			//	queryVars.rotateIndels();
+				
+				System.out.println("Total true variants " + fileA.getName() + " : " + trueVars.size() );
+				System.out.println("Total inferred variants " + fileB.getName() + " : " + queryVars.size() + " mean quality: " + formatter.format(queryVars.meanQuality()));
+				
+				CompareVCF.compareVars(trueVars, queryVars, System.out);
+				
+					
+				
+								
+				VariantPool trueSNPs = new VariantPool(trueVars.filterPool(new VariantFilter() {
+					public boolean passes(VariantRec rec) {
+						return rec.isSNP();
+					}
+				}));
+				
+				VariantPool qSNPs = new VariantPool(queryVars.filterPool(new VariantFilter() {
+					public boolean passes(VariantRec rec) {
+						return rec.isSNP();
+					}
+				}));
+				
+				System.out.println("*** SNPs Only Comparison ********");
+				System.out.println("True number of SNPs : " + trueSNPs.size());
+				System.out.println("Inferred number of SNPs : " + qSNPs.size());
+				CompareVCF.compareVars(trueSNPs, qSNPs, System.out);
+				
+				VariantPool trueInsertions = new VariantPool(trueVars.filterPool(new VariantFilter() {
+					public boolean passes(VariantRec rec) {
+						return rec.isInsertion();
+					}
+				}));
+				
+				VariantPool qInserts = new VariantPool(queryVars.filterPool(new VariantFilter() {
+					public boolean passes(VariantRec rec) {
+						return rec.isInsertion();
+					}
+				}));
+				
+				System.out.println("*** Insertions only Comparison ********");
+				System.out.println("True number of insertions : " + trueInsertions.size());
+				System.out.println("Inferred number of insertions : " + qInserts.size());
+				CompareVCF.compareVars(trueInsertions, qInserts, System.out);
+				
+				
+				VariantPool trueDeletions = new VariantPool(trueVars.filterPool(new VariantFilter() {
+					public boolean passes(VariantRec rec) {
+						return rec.isDeletion();
+					}
+				}));
+				
+				VariantPool qDeletes = new VariantPool(queryVars.filterPool(new VariantFilter() {
+					public boolean passes(VariantRec rec) {
+						return rec.isDeletion();
+					}
+				}));
+				
+				System.out.println("*** Deletions only Comparison ********");
+				System.out.println("True number of deletions : " + trueDeletions.size());
+				System.out.println("Inferred number of deletions : " + qDeletes.size());
+				
+				CompareVCF.compareVars(trueDeletions, qDeletes, System.out);
+				
+				
+				System.out.println(" (finding intersection, this may take a minute..)");
+				VariantPool intersection = (VariantPool) trueVars.intersect(queryVars);
+	
+				VariantPool uniqA = new VariantPool(trueVars);
+				uniqA.removeVariants(intersection);
+				VariantPool uniqB = new VariantPool(queryVars);
+				uniqB.removeVariants(intersection);
+				
+				System.out.println("Total mumber true vars not found (false negatives) : " + uniqA.size());
+				System.out.println("Total number false positives : " + uniqB.size());
+				
+				int hetsA = trueVars.countHeteros();
+				int hetsB = queryVars.countHeteros();
+				System.out.println("Heterozyotes in " + fileA.getName() + " : " + hetsA + " ( " + formatter.format(100.0*(double)hetsA/(double)trueVars.size()) + " % )");
+				System.out.println("Heterozyotes in " + fileB.getName() + " : " + hetsB +  " ( " + formatter.format(100.0*(double)hetsB/(double)queryVars.size()) + " % )");
+				
+
+				System.out.println("Total intersection size: " + intersection.size());
+				System.out.println("%Intersection in " + fileA.getName() + " : " + formatter.format( (double)intersection.size() / (double)trueVars.size()));
+				System.out.println("%Intersection in " + fileB.getName() + " : " + formatter.format( (double)intersection.size() / (double)queryVars.size()));
+				
+				
+				System.out.println("Mean quality of sites in intersection: " + formatter.format(intersection.meanQuality()));
+				System.out.println("Mean quality of sites in A but not in intersection: " + formatter.format(uniqA.meanQuality()));
+				System.out.println("Mean quality of sites in B but not in intersection: " + formatter.format(uniqB.meanQuality()));
+
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			return;
+		}
 		
 		if (firstArg.equals("compare")) {
 			if (args.length != 3) {
@@ -260,7 +446,7 @@ public class VarUtils {
 			
 			try {
 				VariantPool varsA = getPool(new File(args[1]));
-				List<VariantRec> homos = varsA.filterPool(VarFilterUtils.getHomoFilter());
+				VariantPool homos = new VariantPool(varsA.filterPool(VarFilterUtils.getHomoFilter()));
 				File outputFile = null;
 				if (args.length==3) {
 					outputFile = new File(args[2]);
@@ -270,11 +456,7 @@ public class VarUtils {
 				if (outputFile != null) {
 					outputStream = new PrintStream(new FileOutputStream(outputFile));
 				}
-				
-				outputStream.println( VariantRec.getSimpleHeader() );
-				for(VariantRec rec : homos) {
-					outputStream.println(rec.toSimpleString());
-				}
+				homos.listAll(outputStream);
 				outputStream.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -305,7 +487,6 @@ public class VarUtils {
 				if (outputFile != null) {
 					outputStream = new PrintStream(new FileOutputStream(outputFile));
 				}
-				
 				filteredVars.listAll(outputStream);
 				outputStream.close();
 			} catch (IOException e) {
@@ -323,7 +504,7 @@ public class VarUtils {
 			
 			try {
 				VariantPool varsA = getPool(new File(args[1]));
-				List<VariantRec> homos = varsA.filterPool(VarFilterUtils.getHeteroFilter());
+				VariantPool homos = new VariantPool(varsA.filterPool(VarFilterUtils.getHeteroFilter()));
 				File outputFile = null;
 				if (args.length==3) {
 					outputFile = new File(args[2]);
@@ -333,10 +514,7 @@ public class VarUtils {
 				if (outputFile != null) {
 					outputStream = new PrintStream(new FileOutputStream(outputFile));
 				}
-				outputStream.println( VariantRec.getSimpleHeader() );
-				for(VariantRec rec : homos) {
-					outputStream.println(rec.toSimpleString());
-				}
+				homos.listAll(outputStream);
 				outputStream.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block

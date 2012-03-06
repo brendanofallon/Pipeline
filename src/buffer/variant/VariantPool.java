@@ -41,6 +41,32 @@ import util.VCFLineParser;
 public class VariantPool extends Operator  {
 
 	protected Map<String, List<VariantRec>>  vars = new HashMap<String, List<VariantRec>>();
+	private VariantRec qRec = new VariantRec("?", 0, 0, "x", "x", 0, false); 
+	/**
+	 * Build a new variant pool from the given list of variants
+	 * @param varList
+	 */
+	public VariantPool(List<VariantRec> varList) {
+		for(VariantRec v : varList) {
+			List<VariantRec> contig = vars.get(v.getContig());
+			if (contig == null) {
+				contig = new ArrayList<VariantRec>(512);
+				vars.put(v.getContig(), contig);
+			}
+			contig.add(v);
+		}
+	}
+	
+	/**
+	 * Construct a new variant pool with variants from the given file using the
+	 * provided CSVLineReader to interpret variants from the file
+	 * @param file
+	 * @param reader
+	 * @throws IOException
+	 */
+	public VariantPool(CSVLineReader reader) throws IOException {
+		importFromCSV(reader);
+	}
 
 	/**
 	 * Read a variant pool from a CSV-formatted file, the first 9 columns are assumed to be:
@@ -62,6 +88,7 @@ public class VariantPool extends Operator  {
 	 * @param file
 	 * @throws IOException if file cannot be read
 	 */
+	
 	public VariantPool(CSVFile file) throws IOException {
 		importFromCSV(file);
 	}
@@ -85,17 +112,23 @@ public class VariantPool extends Operator  {
 	 */
 	private void importFromCSV(CSVFile file) throws IOException {
 		CSVLineReader reader = new CSVLineReader(file.getFile());
-		//CSVLineReader reader = new GeneLineReader(file.getFile());
-		
-		
+		importFromCSV(reader);
+	}
+
+	/**
+	 * Import from the given CSV file using the given reader
+	 * @param file
+	 * @param reader
+	 * @throws IOException
+	 */
+	private void importFromCSV(CSVLineReader reader) throws IOException {
 		do {
 			VariantRec rec = reader.toVariantRec();
 			addRecordNoSort(rec);
 		} while(reader.advanceLine());
 
-		sortAllContigs();
+		sortAllContigs();		
 	}
-		
 	/**
 	 * Import all variants from the given vcf file
 	 * @param file
@@ -145,6 +178,8 @@ public class VariantPool extends Operator  {
 		//blank on purpose
 	}
 	
+	
+
 	/**
 	 * Search the 'vars' field for a VariantRec at the given contig and position
 	 * @param contig
@@ -158,7 +193,7 @@ public class VariantPool extends Operator  {
 			return null;
 		}
 		
-		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false);
+		qRec.setPosition(contig, pos, pos);
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {
@@ -173,7 +208,6 @@ public class VariantPool extends Operator  {
 		}
 		
 		return varList.get(index);
-		
 	}
 	
 	/**
@@ -259,7 +293,8 @@ public class VariantPool extends Operator  {
 			System.err.println("Contig: " + contig + " not found");
 			return null;
 		}
-		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false);
+		
+		qRec.setPosition(contig, pos, pos);
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {
@@ -384,8 +419,8 @@ public class VariantPool extends Operator  {
 		for(String contig : getContigs()) {
 			for(VariantRec rec : getVariantsForContig(contig)) {
 				count++;
-//				if (count % 5000 == 0)
-//					System.out.println("Finding variant " + count + " of " + size);
+				if (count % 5000 == 0)
+					System.out.println("Finding variant " + count + " of " + size);
 				VariantRec recB = varsB.findRecordNoWarn(rec.getContig(), rec.getStart());
 				if (recB != null && rec.getAlt().equals(recB.getAlt())) {
 					rec.addAnnotation(VariantRec.altB, recB.getAlt());
@@ -401,6 +436,28 @@ public class VariantPool extends Operator  {
 		}
 		return intersect;
 	}
+	
+	/**
+	 * Adjusts all indel variants in the following manner: Any indel that begins and ends with the same
+	 * base, the first base is moved to the last position and 1 is subtracted from the start and end position
+	 * So		: 117  - ACGTA
+	 * Becomes 	: 116  - CGTAA
+	 * 
+	 * That's because there's ambiguity in how such indels are written (the two above forms are indistinguishable)
+	 * and the GATK emits variants in the second way
+	 * 
+	 */
+//	public void rotateIndels() {
+//		for(String contig : getContigs()) {
+//			for(VariantRec rec : getVariantsForContig(contig)) {
+//				if (rec.isIndel())
+//					rec.rotateIndel();
+//			}
+//		}
+//		
+//		sortAllContigs();
+//	}
+	
 	
 	/**
 	 * Remove from this variant pool the variant at the given contig and pos whose ALT allele matches
@@ -484,8 +541,59 @@ public class VariantPool extends Operator  {
 		}
 
 		return count;
-
 	}
+	
+	/**
+	 * Return total number of SNPs, in which both ref and alt have length = 1
+	 * @return
+	 */
+	public int countSNPs() {
+		int count = 0;
+		for(String contig : vars.keySet()) {
+			Collection<VariantRec> varRecs = this.getVariantsForContig(contig);
+			for(VariantRec rec : varRecs) {
+				if (rec.isSNP()) 
+					count++;
+			}
+		}
+
+		return count;		
+	}
+	
+	/**
+	 * Return total number of deletions
+	 * @return
+	 */
+	public int countDeletions() {
+		int count = 0;
+		for(String contig : vars.keySet()) {
+			Collection<VariantRec> varRecs = this.getVariantsForContig(contig);
+			for(VariantRec rec : varRecs) {
+				if (rec.isDeletion()) 
+					count++;
+			}
+		}
+
+		return count;
+	}
+	
+	/**
+	 * Return total number of insertions
+	 * @return
+	 */
+	public int countInsertions() {
+		int count = 0;
+		for(String contig : vars.keySet()) {
+			Collection<VariantRec> varRecs = this.getVariantsForContig(contig);
+			for(VariantRec rec : varRecs) {
+				if (rec.isInsertion()) 
+					count++;
+			}
+		}
+
+		return count;
+	}
+	
 	
 	public boolean removeRecordAtPos(String contig, int pos) {
 		List<VariantRec> varList = vars.get(contig);
@@ -714,6 +822,7 @@ public class VariantPool extends Operator  {
 		if (inputVariants instanceof CSVFile) {
 			try {
 				importFromCSV( (CSVFile)inputVariants );
+				//importFromCSV( new SimpleLineReader(inputVariants.getFile()));
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new OperationFailedException("IO error reading file: " + inputVariants.getAbsolutePath(), this);

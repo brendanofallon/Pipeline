@@ -147,7 +147,30 @@ public class VCFLineParser implements VariantLineReader {
 				if (stripChr)
 					contig = contig.replace("chr", "");
 				//System.out.println(currentLine);
-				VariantRec rec = new VariantRec(contig, getStart(), getStart()+1,  getRef(), getAlt(), getQuality(), isHetero() );
+				String ref = getRef();
+				String alt = getAlt();
+				int start = getStart();
+				int end = ref.length();
+				
+				if (alt.length() != ref.length()) {
+					//Remove initial characters if they are equal and add one to start position
+					if (alt.charAt(0) == ref.charAt(0)) {
+						alt = alt.substring(1);
+						ref = ref.substring(1);
+						if (alt.length()==0)
+							alt = "-";
+						if (ref.length()==0)
+							ref = "-";
+						start++;
+					}
+					
+					if (ref.equals("-"))
+						end = start;
+					else
+						end = start + ref.length();
+				}
+				
+				VariantRec rec = new VariantRec(contig, start, end,  ref, alt, getQuality(), isHetero() );
 				Integer depth = getDepth();
 				if (depth != null)
 					rec.addProperty(VariantRec.DEPTH, new Double(getDepth()));

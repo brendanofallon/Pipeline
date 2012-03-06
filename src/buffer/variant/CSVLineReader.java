@@ -39,6 +39,9 @@ public class CSVLineReader implements VariantLineReader {
 	@Override
 	public boolean advanceLine() throws IOException {
 		currentLine = reader.readLine();
+		//Skip zero-length lines
+		while (currentLine != null && currentLine.length()==0)
+			currentLine = reader.readLine();
 		return currentLine != null;
 	}
 
@@ -58,6 +61,25 @@ public class CSVLineReader implements VariantLineReader {
 		Double depth = getDepth(toks); 
 		boolean isHet = getHet(toks);
 		Double genoQual = getGenotypeQuality(toks);
+		
+		
+		if (alt.length() != ref.length()) {
+			//Remove initial characters if they are equal and add one to start position
+			if (alt.charAt(0) == ref.charAt(0)) {
+				alt = alt.substring(1);
+				ref = ref.substring(1);
+				if (alt.length()==0)
+					alt = "-";
+				if (ref.length()==0)
+					ref = "-";
+				start++;
+			}
+			
+			if (ref.equals("-"))
+				end = start;
+			else
+				end = start + ref.length();
+		}
 		
 		VariantRec rec = new VariantRec(contig, start, start+ref.length(), ref, alt, qual, isHet);
 		rec.addProperty(VariantRec.DEPTH, depth);

@@ -11,6 +11,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import buffer.FastQFile;
 import buffer.FileBuffer;
 import buffer.MultiFileBuffer;
 import buffer.ReferenceFile;
@@ -23,13 +24,34 @@ import pipeline.PipelineXMLConstants;
 import util.ElapsedTimeFormatter;
 import util.StringOutputStream;
 
+/**
+ * A class that uses BWA to align fastq files to a reference, where the fastq files may be paired-end reads
+ * from multiple lanes. If so, corresponding pairs are come appear in separate multi-file-buffers and are
+ * assumed to appear in the same lexicographical order, so that 
+ * 
+ * MultiBufferOne:
+ * 	 reads_X_1.fq
+ *   reads_Y_1.fq
+ * 
+ * MultiBufferTwo:
+ * 	  reads_Y_2.fq
+ *    reads_X_2.fq
+ *    
+ * will assume that reads_X_1.fq and reads_X_2.fq are opposing pairs of a paired-end read job
+ * 
+ * @author brendan
+ *
+ */
 public class MultiLaneAligner extends PipedCommandOp {
 
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
 	public static final String SKIPSAI = "skipsai";
+	public static final String SINGLE_END = "single";
+	
 	protected String pathToBWA = "bwa";
 	protected int defaultThreads = 4;
+	protected boolean pairedEnd = true; //By default, assume paired ends. SINGLE_END property is queried to set this to false
 	protected int threads = defaultThreads;
 	protected String referencePath = null;
 	protected StringOutputStream errStream = new StringOutputStream();
@@ -62,7 +84,17 @@ public class MultiLaneAligner extends PipedCommandOp {
 		if (threadsAttr != null) {
 			threads = Integer.parseInt(threadsAttr);
 		}
-			
+		
+		String singleEndAttr = properties.get(SINGLE_END);
+		if (singleEndAttr != null) {
+			pairedEnd = ! Boolean.parseBoolean(singleEndAttr);
+		}
+		if (pairedEnd)
+			logger.info("Multi-lane aligner is using PAIRED-END mode");
+		else
+			logger.info("Multi-lane aligner is using SINGLE-END mode");
+		
+		
 		FileBuffer reference = getInputBufferForClass(ReferenceFile.class);
 		if (reference == null) {
 			throw new OperationFailedException("No reference provided for MultiLaneAligner " + getObjectLabel(), this);
@@ -77,28 +109,40 @@ public class MultiLaneAligner extends PipedCommandOp {
 		}
 		
 		List<FileBuffer> files = this.getAllInputBuffersForClass(MultiFileBuffer.class);
-		if (files.size() != 2) {
-			throw new OperationFailedException("Need exactly two input files of type MultiFileBuffer", this);
+		if (files.size() != 1 && (!pairedEnd)) {
+			throw new OperationFailedException("Need exactly one input files of type MultiFileBuffer for single-end mode", this);
+		}
+		if (files.size() != 2 && pairedEnd) {
+			throw new OperationFailedException("Need exactly two input files of type MultiFileBuffer for paired-end mode", this);
 		}
 		
 		MultiFileBuffer files1 = (MultiFileBuffer) files.get(0);
-		MultiFileBuffer files2 = (MultiFileBuffer) files.get(1);
+		MultiFileBuffer files2 = null; //Will be non-null only in case of paired-end mode
 		
-		FilenameSorter sorter = new FilenameSorter();
-		Collections.sort(files1.getFiles(), sorter);
-		Collections.sort(files2.getFiles(), sorter);
-		
-		StringBuffer buff = new StringBuffer();
-		for(int i=0; i<files1.getFileCount(); i++) {
-			buff.append(files1.getFile(i).getFilename() + "\t" + files2.getFile(i).getFilename() + "\n");
-		}
-		logger.info("Following files are assumed to be paired-end reads: \n" + buff.toString());
-		
-		if (files1.getFileCount() != files2.getFileCount()) {
-			throw new OperationFailedException("Multi-file sizes are not the same, one is " + files1.getFileCount() + " but the other is :" + files2.getFileCount(), this);
+		//Initialize paired-end mode & perform some paired-end specific verification and logging
+		if (pairedEnd) {
+			files2 = (MultiFileBuffer) files.get(1);
+
+			FilenameSorter sorter = new FilenameSorter();
+			Collections.sort(files1.getFiles(), sorter);
+			Collections.sort(files2.getFiles(), sorter);
+
+			StringBuffer buff = new StringBuffer();
+			System.out.println("Got " + files1.getFileCount() + " files in buffer 1, " + files2.getFileCount() + " files in buffer 2");
+			for(int i=0; i<files1.getFileCount(); i++) {
+				System.out.println("File " + i + " buf 1 : \t" + files1.getFile(i));
+				System.out.println("File " + i + " buf 2 : \t" + files2.getFile(i));
+				buff.append(files1.getFile(i).getFilename() + "\t" + files2.getFile(i).getFilename() + "\n");
+			}
+			logger.info("Following files are assumed to be paired-end reads: \n" + buff.toString());
+
+			if (files1.getFileCount() != files2.getFileCount()) {
+				throw new OperationFailedException("Multi-file sizes are not the same, one is " + files1.getFileCount() + " but the other is :" + files2.getFileCount(), this);
+			}
 		}
 		
 		FileBuffer outputBuffer = outputBuffers.get(0);
+		
 		if (outputBuffer instanceof MultiFileBuffer) {
 			outputSAMs = (MultiFileBuffer) outputBuffer;
 		}
@@ -108,25 +152,15 @@ public class MultiLaneAligner extends PipedCommandOp {
 		
 		logger.info("Beginning multi-lane alignment with " + files1.getFileCount() + " read pairs");
 		
-		//These are done in serial since bwa can parallelize itself
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( Math.max(1, getPreferredThreadCount()/threads) );
-		for(int i=0; i<files1.getFileCount(); i++) {
-			FileBuffer reads1 = files1.getFile(i);
-			FileBuffer reads2 = files2.getFile(i);
-			
-			if (!skipSAIGen) {
-				AlignerJob task1 = new AlignerJob(reads1);
-				threadPool.submit(task1);
-				AlignerJob task2 = new AlignerJob(reads2);
-				threadPool.submit(task2);
-			}
-			StringPair outputNames = new StringPair();
-			outputNames.readsOne = reads1.getAbsolutePath(); 
-			outputNames.readsTwo = reads2.getAbsolutePath();
-			outputNames.saiOne = reads1.getAbsolutePath() + ".sai";
-			outputNames.saiTwo = reads2.getAbsolutePath() + ".sai";
-			saiFileNames.add(outputNames);
+		
+		if (pairedEnd) {
+			runPairedEndAlignment(files1, files2, skipSAIGen);
 		}
+		else {
+			runSingleEndAlignment(files1, skipSAIGen);
+		}
+		
 		
 		try {
 			logger.info("All alignment jobs have been submitted to MultiLaneAligner, " + getObjectLabel() + ", now awaiting termination");
@@ -141,7 +175,13 @@ public class MultiLaneAligner extends PipedCommandOp {
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
 		//Now build sam files in parallel since we can do that and bwa can't
 		for(StringPair saiFiles : saiFileNames) {
-			SamBuilderJob makeSam = new SamBuilderJob(saiFiles.readsOne, saiFiles.readsTwo, saiFiles.saiOne, saiFiles.saiTwo);
+			SamBuilderJob makeSam = null;
+			if (pairedEnd) {
+				makeSam = new SamBuilderJob(saiFiles.readsOne, saiFiles.readsTwo, saiFiles.saiOne, saiFiles.saiTwo);
+			}
+			else {
+				makeSam = new SamBuilderJob(saiFiles.readsOne, saiFiles.saiOne);
+			}
 			threadPool.submit(makeSam);
 		}
 		
@@ -160,27 +200,61 @@ public class MultiLaneAligner extends PipedCommandOp {
 
 	}
 	
+	/**
+	 * Submit all jobs for a single-end alignment. This assumes that all files in the MultiFileBuffer are
+	 * FastQFiles
+	 * @param files
+	 * @param skipSAIGen
+	 */
+	protected void runSingleEndAlignment(MultiFileBuffer files, boolean skipSAIGen) {
+		for(int i=0; i<files.getFileCount(); i++) {
+			FileBuffer reads1 = files.getFile(i);
+			
+			if (!skipSAIGen) {
+				submitAlignmentJob((FastQFile)reads1);
+			}
+			StringPair outputNames = new StringPair();
+			outputNames.readsOne = reads1.getAbsolutePath(); 
+			outputNames.readsTwo = null;
+			outputNames.saiOne = reads1.getAbsolutePath() + ".sai";
+			outputNames.saiTwo = null;
+			saiFileNames.add(outputNames);
+		}
+	}
 	
-//	protected void align(FileBuffer reads1, FileBuffer reads2) throws OperationFailedException {
-//		String command = pathToBWA + " aln -t " + threads + " " + referencePath + " " + reads1.getAbsolutePath();
-//
-//		runAndCaptureOutput(command, Logger.getLogger(Pipeline.primaryLoggerName), new SAIFile(new File(reads1.getAbsolutePath() + ".sai")));
-//		
-//		command = pathToBWA + " aln -t " + threads + " " + referencePath + " " + reads2.getAbsolutePath();
-//
-//		runAndCaptureOutput(command, Logger.getLogger(Pipeline.primaryLoggerName), new SAIFile(new File(reads2.getAbsolutePath() + ".sai")));
-//		
-//		StringPair outputNames = new StringPair();
-//		outputNames.readsOne = reads1.getAbsolutePath(); 
-//		outputNames.readsTwo = reads2.getAbsolutePath();
-//		outputNames.saiOne = reads1.getAbsolutePath() + ".sai";
-//		outputNames.saiTwo = reads2.getAbsolutePath() + ".sai";
-//		saiFileNames.add(outputNames);
-//		System.out.println("Adding filename quad: " + outputNames.readsOne + ", " + outputNames.readsTwo + ", " + outputNames.saiOne + ", " + outputNames.readsTwo);
-//	}
+	/**
+	 * Submit all jobs for a paired-end alignment. This runs bwa aln as usual, but stores 
+	 * @param files1
+	 * @param files2
+	 * @param skipSAIGen
+	 */
+	protected void runPairedEndAlignment(MultiFileBuffer files1, MultiFileBuffer files2, boolean skipSAIGen) {
+		for(int i=0; i<files1.getFileCount(); i++) {
+			FileBuffer reads1 = files1.getFile(i);
+			FileBuffer reads2 = files2.getFile(i);
+			
+			if (!skipSAIGen) {
+				submitAlignmentJob((FastQFile)reads1);
+				submitAlignmentJob((FastQFile)reads2);
+			}
+			StringPair outputNames = new StringPair();
+			outputNames.readsOne = reads1.getAbsolutePath(); 
+			outputNames.readsTwo = reads2.getAbsolutePath();
+			outputNames.saiOne = reads1.getAbsolutePath() + ".sai";
+			outputNames.saiTwo = reads2.getAbsolutePath() + ".sai";
+			saiFileNames.add(outputNames);
+		}
+	}
 	
+	/**
+	 * Create a new AlignerJob and submit it to the threadPool. This returns immediately
+	 * @param reads
+	 */
+	private void submitAlignmentJob(FastQFile reads) {
+		AlignerJob task = new AlignerJob(reads);
+		threadPool.submit(task);
+	}
 	
-
 	@Override
 	protected String getCommand() throws OperationFailedException {
 		//No need to return a command here since we've overridden performOperation to use multiple commands
@@ -231,9 +305,27 @@ public class MultiLaneAligner extends PipedCommandOp {
 		protected String defaultRG = "@RG\\tID:unknown\\tSM:unknown\\tPL:ILLUMINA";
 		final String command;
 		String baseFilename;
+		
+		/**
+		 * Constructor for paired-end reads jobs, take two fastq and sai files and make one SAM file
+		 * @param readsOne
+		 * @param readsTwo
+		 * @param saiFileOne
+		 * @param saiFileTwo
+		 */
 		public SamBuilderJob(String readsOne, String readsTwo, String saiFileOne, String saiFileTwo) {
 			baseFilename = readsOne;
 			command = pathToBWA + " sampe -r " + defaultRG + " " + referencePath + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo;
+		}
+		
+		/**
+		 * Constructor for SINGLE-END reads, takes one sai file and one fastq file
+		 * @param readsOne
+		 * @param saiFileOne
+		 */
+		public SamBuilderJob(String readsOne, String saiFileOne) {
+			baseFilename = readsOne;
+			command = pathToBWA + " samse -r " + defaultRG + " " + referencePath + " " + saiFileOne + " " + readsOne;
 		}
 		
 		@Override

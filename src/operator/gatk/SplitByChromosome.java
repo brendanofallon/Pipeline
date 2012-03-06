@@ -94,7 +94,7 @@ public class SplitByChromosome extends IOOperator {
 			e.printStackTrace();
 		}
 
-		checkContigs(outputFiles); //Ensure all contigs have been created
+		checkContigs(outputFiles.getFileList()); //Ensure all contigs have been created
 		logger.info("Done with splitting operator " + getObjectLabel());		
 	}
 	

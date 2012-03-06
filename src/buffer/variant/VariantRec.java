@@ -37,7 +37,6 @@ public class VariantRec {
 		this.ref = ref;
 		this.alt = alt;
 		this.qual = qual;
-		//this.isExonic = isExon;
 		this.isHetero = isHetero;
 	}
 	
@@ -54,11 +53,46 @@ public class VariantRec {
 	}
 	
 	/**
+	 * Set the start and end positions for this variant
+	 * @param start
+	 * @param end
+	 */
+	public void setPosition(String contig, int start, int end) {
+		this.contig = contig;
+		this.start = start;
+		this.end = end;
+	}
+	
+	/**
 	 * Returns true if both the ref and alt allele have length 1
 	 * @return
 	 */
 	public boolean isSNP() {
-		return ref.length()==1 && alt.length()==1;
+		return (ref.length()==1 && alt.length()==1 && ref.charAt(0) != '-' && alt.charAt(0) != '-');
+	}
+	
+	/**
+	 * Returns true if ref and alt are different lengths
+	 * @return
+	 */
+	public boolean isIndel() {
+		return ref.length() != alt.length();
+	}
+	
+	/**
+	 * True if the ref length is 1 and the alt length is strictly greater than one
+	 * @return
+	 */
+	public boolean isInsertion() {
+		return ref.length()==1 && ref.charAt(0) == '-' && alt.length() > 1;
+	}
+	
+	/**
+	 * True if ref length > 1 and alt length is equal to 1
+	 * @return
+	 */
+	public boolean isDeletion() {
+		return ref.length() > 1 && alt.length()==1 && alt.charAt(0) == '-';
 	}
 	
 	public boolean isTransition() {
@@ -292,6 +326,34 @@ public class VariantRec {
 		return contig + "\t" + start + "\t" + end + "\t" + getRef() + "\t" + getAlt() + "\t" + getQuality() + "\t" + depthStr + "\t" + het + "\t" + gqStr;  
 	}
 	
+	/**
+	 * Adjusts all indel variants in the following manner: Any indel that begins and ends with the same
+	 * base, the first base is moved to the last position and 1 is subtracted from the start and end position
+	 * So		: 117  - ACGTA
+	 * Becomes 	: 116  - CGTAA
+	 */
+//	public void rotateIndel() {
+//		if (isInsertion()) {
+//			int count = 0;
+//			while (count < 20 && alt.charAt(0) == alt.charAt(alt.length()-1)) {
+//				alt = alt.substring(1) + alt.charAt(0);
+//				start--;
+//				end--;
+//				count++;
+//			}
+//		}
+//		
+//		if (isDeletion()) {
+//			int count = 0;
+//			while (count < 20 && ref.charAt(0) == ref.charAt(ref.length()-1)) {
+//				ref = ref.substring(1) + ref.charAt(0);
+//				start--;
+//				end--;
+//				count++;
+//			}
+//		}
+//	}
+	
 	public String toString() {
 		String variantType = "-";
 		String vType = getAnnotation(VariantRec.VARIANT_TYPE);
@@ -336,7 +398,8 @@ public class VariantRec {
 		if (gene == null)
 			gene = "-";
 		
-		return contig + "\t" + start + "\t" + end + "\t" + gene + "\t" + variantType + "\t" + exFunc + "\t" + freq + "\t" + het + "\t" + qual + "\t" + sift + "\t" + polyphen + "\t" + mt + "\t" + phylopStr;  
+		return contig + "\t" + start + "\t" + end + "\t" + ref + "\t" + alt;
+		//return contig + "\t" + start + "\t" + end + "\t" + gene + "\t" + variantType + "\t" + exFunc + "\t" + freq + "\t" + het + "\t" + qual + "\t" + sift + "\t" + polyphen + "\t" + mt + "\t" + phylopStr;  
 	}
 	
 	/**
@@ -344,7 +407,7 @@ public class VariantRec {
 	 * @return
 	 */
 	public static PositionComparator getPositionComparator() {
-		return new PositionComparator();
+		return posComparator;
 	}
 	
 	/**
@@ -357,7 +420,7 @@ public class VariantRec {
 	}
 	
 	
-	static class PositionComparator implements Comparator<VariantRec> {
+	public static class PositionComparator implements Comparator<VariantRec> {
 
 		@Override
 		public int compare(VariantRec o1, VariantRec o2) {
@@ -398,7 +461,7 @@ public class VariantRec {
 		
 	}
 	
-	
+	private static final PositionComparator posComparator =  new PositionComparator();
 	
 	//A few oft-used property / annotation keys
 	public static final String POP_FREQUENCY = "pop.freq";
@@ -426,6 +489,8 @@ public class VariantRec {
 	public static final String GO_PROCESS = "go.process";
 	public static final String GO_COMPONENT = "go.component";
 	public static final String GENOTYPE_QUALITY = "genotype.quality";
+
+	
 	
 
 	

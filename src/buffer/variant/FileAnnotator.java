@@ -52,9 +52,12 @@ public class FileAnnotator extends PipelineObject {
 				//to something like :      pos: 6 ref: CT alt: -
 				//so we won't be able to find the record since its position will have changed. 
 				//Below is a kludgy workaround that subtracts one from the position if a deletion is detected
-				if (toks[6].trim().equals("-")) {
-					pos--;
-				}
+				
+				//This shouldn't be used now since the new policy is to always remove identical leading
+				//bases from all variant records
+//				if (toks[6].trim().equals("-")) {
+//					pos--;
+//				}
 				
 				VariantRec rec = variants.findRecord(contig, pos);
 				if (rec != null) {

@@ -48,6 +48,7 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			String variantType = toks[0];
 			String gene = toks[1];
 			String contig = toks[2];
+			
 			int pos = Integer.parseInt(toks[3]);
 			
 			//Unfortunately, annovar likes to strip the leading base from deletion sequences, converting
@@ -55,9 +56,11 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			//to something like :      pos: 6 ref: CT alt: -
 			//so we won't be able to find the record since its position will have changed. 
 			//Below is a kludgy workaround that subtracts one from the position if a deletion is detected
-			if (toks[6].trim().equals("-")) {
-				pos--;
-			}
+
+			//Don't use anymore... always remove identical leading bases on indels before making a variantrec
+//			if (toks[6].trim().equals("-")) {
+//				pos--;
+//			}
 
 			//System.out.println("Modified pos is: " + pos);
 			
@@ -105,9 +108,10 @@ public class GeneAnnotator extends AnnovarAnnotator {
 				int pos = Integer.parseInt( toks[4] );
 				
 				//Same workaround as above...
-				if (toks[7].trim().equals("-")) {
-					pos--;
-				}
+				//Don't use anymore... always remove identical leading bases on indels before making a variantrec
+//				if (toks[7].trim().equals("-")) {
+//					pos--;
+//				}
 				
 				VariantRec rec = variants.findRecord(contig, pos);
 				if (rec != null)

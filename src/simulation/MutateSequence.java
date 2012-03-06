@@ -17,6 +17,10 @@ import java.util.Set;
 
 import javax.swing.SwingWorker;
 
+import util.VCFLineParser;
+
+import buffer.VCFFile;
+
 import cern.jet.random.Exponential;
 import cern.jet.random.Poisson;
 import cern.jet.random.engine.MersenneTwister;
@@ -33,25 +37,114 @@ public class MutateSequence {
 	static Poisson poisGen; 
 	static Exponential expGen;
 	
+	//Base frequencies from which new mutations are drawn, this is a cumulative distro
+	//Order is A, G, T (all others are C)
+	static final double[] baseFreqs = new double[]{0.3, 0.55, 0.78};
+	
 	public static char pickChar(char curChar) {
 		curChar = Character.toUpperCase(curChar); 
 		char c = curChar;
 		while (c == curChar) {
 			double r = Math.random();
-			if (r< 0.25)
+			if (r< baseFreqs[0])
 				c = 'A';
-			else if (r<0.5)
+			else if (r<baseFreqs[1])
 				c = 'G';
-			else if (r< 0.75)
+			else if (r < baseFreqs[2])
 				c = 'T';
 			else 
 				c = 'C';
 		}
 		return c;
 	}
+
+	/**
+	 * Takes mutations found in the given file and applies them to the this sequence
+	 * @param seq
+	 * @param variants
+	 * @throws IOException 
+	 */
+	public static List<MutRec> applyMutantsFromFile(String contig, StringBuilder seq, VCFFile variants, boolean firstStrand) throws IOException {
+		VCFLineParser reader = new VCFLineParser(variants);
+		List<MutRec> muts = new ArrayList<MutRec>();
+		int count = 0;
+		
+		int n = 0;
+		while(seq.charAt(n) == 'N') {
+			n++;
+		}
+		System.out.println("Sequence starts with " + n + "  n's");
+		
+		int OFFSET =0;
+		
+		do {
+			if (! contig.equals( reader.getContig() )) 
+				continue;
+			
+			Integer pos = reader.getStart();
+			if (pos < OFFSET)
+				continue;
+			if (reader.getRef().length()==1 && reader.getAlt().length()==1 && (!reader.getAlt().equals("."))) {
+				//If we doing strand 1, only write if first is alt
+				if (firstStrand && reader.firstIsAlt()) {
+					if (seq.length()>(pos+2)) {
+						MutRec rec = new MutRec();
+						rec.ref = "" + seq.charAt(pos-1-OFFSET); // 
+						
+						if (! reader.getRef().equalsIgnoreCase(rec.ref)) {
+							System.err.println("Uh-oh, reference from VCF does not match reference sequence at pos " + pos);
+							System.err.println("VCF ref: " + reader.getRef() + " actual seq:" + rec.ref + " pos on seq:" + (pos+1-OFFSET) );
+						}
+						
+						rec.alt = reader.getAlt();
+						rec.pos = pos;
+						if (count % 100 == 0)
+							System.out.println("Applied: " + count + " mutations,... mutating " + pos + " from " + rec.ref + " to " + rec.alt);
+						count++;
+
+						seq.replace(pos-1, pos, reader.getAlt());
+						muts.add(rec);
+					}
+					else { 
+						System.err.println("Warning, file includes variant at site " + (pos+1) + " but seq is only " + seq.length() + " bases long");
+						break;
+					}
+					
+				}
+				
+				//If we're doing strand two, only write if second is alt
+				if ((!firstStrand) && (reader.secondIsAlt())) {
+					if (seq.length()>(pos+2)) {
+						MutRec rec = new MutRec();
+						rec.ref = "" + seq.charAt(pos-1-OFFSET); // 
+						rec.alt = reader.getAlt();
+						rec.pos = pos;
+						
+						if (! reader.getRef().equalsIgnoreCase(rec.ref)) {
+							System.err.println("Uh-oh, reference from VCF does not match reference sequence at pos " + pos);
+							System.err.println("VCF ref: " + reader.getRef() + " actual seq:" + rec.ref + " pos on seq:" + (pos+1-OFFSET) );
+						}
+						
+						if (count % 100 == 0)
+							System.out.println("Applied: " + count + " mutations,... mutating " + pos + " from " + rec.ref + " to " + rec.alt);
+						count++;
+						
+						seq.replace(pos-1, pos, reader.getAlt());
+						muts.add(rec);
+					}
+					else {
+						System.err.println("Warning, file includes variant at site " + (pos+1) + " but seq is only " + seq.length() + " bases long");
+					}
+				}
+
+			}
+			
+		} while(reader.advanceLine());
+		
+		return muts;
+	}
 	
 	public static StringBuilder addSNPs(StringBuilder seq, int numSNPs) {
-		
 		int totalSites = seq.length();
 		for(int i=0; i<numSNPs; i++) {
 			int site = (int)Math.round( (double)totalSites * Math.random() );
@@ -126,13 +219,14 @@ public class MutateSequence {
 	public static List<MutRec> generateIndels(StringBuilder ref, double indelRate, double indelMeanSize) {
 		List<MutRec> indels = new ArrayList<MutRec>(2048);
 		int site = 0;
+		expGen = new Exponential(indelRate, rng);
 		site += expGen.nextInt();
 		
 		while (site < ref.length()) {
 			MutRec rec = new MutRec();
 			
-			boolean isInsertion = Math.random() < 0.50;
-			int size = (int)Math.ceil( expGen.nextDouble(1.0/indelMeanSize) );
+			boolean isInsertion = Math.random() < 0.00;
+			int size = 4; //(int)Math.ceil( expGen.nextDouble(1.0/indelMeanSize) );
 			if (isInsertion) {
 				rec.pos = site;
 				rec.ref = "-";
@@ -141,14 +235,16 @@ public class MutateSequence {
 			}
 			else {
 				rec.pos = site;
-				rec.ref = ref.substring(site, site+size);
+				int start = rec.pos-1;
+				int end = rec.pos-1+size;
+				rec.ref = ref.substring(start, end);
 				rec.alt = "-";
 			}
 			
 
 			indels.add(rec);
-			System.out.println(rec);
-			site += expGen.nextInt();
+			//System.out.println(rec);
+			site += size+expGen.nextInt();
 		}
 		
 		return indels;
@@ -157,15 +253,26 @@ public class MutateSequence {
 	public static void applyIndels(StringBuilder ref, List<MutRec> indels) {
 		//Important that we traverse in reverse order (from bottom backward) so 
 		//we don't mess up indexing as we add / remove bits
+		int prevpos = (int)(1e12); 
 		for(int i=indels.size()-1; i>=0; i--) {
 			MutRec rec = indels.get(i);
+			if (rec.pos >= prevpos) {
+				throw new IllegalArgumentException("Indels aren't in sorted order");
+			}
+			prevpos = rec.pos;
 			if (rec.ref == "-") { 
 				//indel is an insertion
-				ref.replace(rec.pos, rec.pos, rec.alt);
+				ref.replace(rec.pos-1, rec.pos-1, rec.alt);
 			}
 			else {
 				//indel is a deletion
-				ref.replace(rec.pos, rec.pos+rec.ref.length(), "");
+				int start = rec.pos-1;
+				int end = rec.pos-1+rec.ref.length();
+				String compRef = ref.substring(start, end);
+				if (! compRef.equals(rec.ref)) {
+					throw new IllegalArgumentException("reference sequences have changed! old ref:" + rec.ref + " new ref: " + compRef);
+				}
+				ref.replace(start, end, "");
 			}
 		}
 		
@@ -199,11 +306,12 @@ public class MutateSequence {
 	public static List<MutRec> generateSNPs(StringBuilder ref, Double mutRate) {
 		List<MutRec> snps = new ArrayList<MutRec>(2048);
 		int site = 0;
+		expGen = new Exponential(mutRate, rng);
 		site += expGen.nextInt();
 		
 		while (site < ref.length()) {
 			MutRec rec = new MutRec();
-			char r = ref.charAt(site);
+			char r = Character.toUpperCase(ref.charAt(site-1));
 			rec.ref = String.valueOf(r);
 			char newBase = 'X';
 			if (r == 'N') 
@@ -213,7 +321,7 @@ public class MutateSequence {
 			rec.alt = String.valueOf(newBase);
 			rec.pos = site;
 			snps.add(rec);
-			System.out.println(rec);
+			//System.out.println(rec);
 			site += expGen.nextInt();
 		}
 		
@@ -227,7 +335,7 @@ public class MutateSequence {
 		int lengthBefore = ref.length();
 		int count = 0;
 		for(MutRec rec : snps) {
-			ref.replace(rec.pos, rec.pos+1, rec.alt);
+			ref.replace(rec.pos-1, rec.pos, rec.alt);
 			count++;
 			if (count % 1000 == 0){
 				System.out.println("On base " + count + " out of " + snps.size());
@@ -259,7 +367,7 @@ public class MutateSequence {
 	public static void main(String[] args) {
 		
 		
-		if (args.length != 5) {
+		if (args.length != 5 && args.length != 6) {
 			usage();
 			return;
 		}
@@ -270,8 +378,12 @@ public class MutateSequence {
 		Double indelMeanSize = Double.parseDouble(args[3]);
 		File outputFile = new File(args[4]);
 		
-		poisGen = new Poisson(mutRate, rng);
-		expGen = new Exponential(mutRate, rng);
+		File vcfMuts = null;
+		if (args.length==6)
+			vcfMuts = new File(args[5]);
+		
+		
+
 		
 		try {
 			//Read the WHOLE REFERENCE INTO MEMORY! 
@@ -281,13 +393,15 @@ public class MutateSequence {
 				line = reader.readLine();
 			}
 
-			String header = line + "[mutated]";
 			Map<String, StringBuilder> contigs = new HashMap<String, StringBuilder>();
 			StringBuilder seq = new StringBuilder();
 			String contig = null;
 			
 			
+			
 			contig = line.replace(">", "").trim();
+			line = reader.readLine();
+			
 			
 			while (line != null) {
 				seq.append(line.trim());
@@ -315,28 +429,40 @@ public class MutateSequence {
 				StringBuilder contSeq = contigs.get(key);
 				System.err.println("Contig " + key + " length: " + contSeq.length());
 
+				List<MutRec> mutants = new ArrayList<MutRec>(1024);
+				if (vcfMuts != null) {
+					System.err.println("Applying mutants from file : " + vcfMuts.getName());
+					VCFFile mutFile = new VCFFile(vcfMuts);
+					List<MutRec> fileMuts = applyMutantsFromFile(key, contSeq, mutFile, false);
+					mutants.addAll(fileMuts);
+					System.err.println("Added " + fileMuts.size() + " variants from file");
+				}
 				
-				System.err.println("Generating snps..");
-				List<MutRec> snps = generateSNPs(contSeq, mutRate);
-				System.err.println("Applying " + snps.size() + " snps..");
-				applySNPs(contSeq, snps);
+				if (mutRate > 0) {
+					System.err.println("Generating snps..");
+					List<MutRec> snps = generateSNPs(contSeq, mutRate);
+					System.err.println("Applying " + snps.size() + " snps..");
+					applySNPs(contSeq, snps);
+					mutants.addAll(snps);
+				}
 				
-				System.err.println("Generating indels..");
-				List<MutRec> indels = generateIndels(contSeq, indelRate, indelMeanSize);
-				System.err.println("Applying " + indels.size() + " indels ");
-				applyIndels(contSeq, indels);
+				if (indelRate > 0) {
+					System.err.println("Generating indels..");
+					List<MutRec> indels = generateIndels(contSeq, indelRate, indelMeanSize);
+					System.err.println("Applying " + indels.size() + " indels ");
+					applyIndels(contSeq, indels);
+					mutants.addAll(indels);
+				}
+				
+				Collections.sort(mutants);
 				
 				System.err.println("Final contig length : " + contSeq.length());
-				snps.addAll(indels);
-				Collections.sort(snps);
-				
-				System.err.println("Final contig length : " + contSeq.length());
-				for(MutRec snp : snps) {
-					System.out.println(key + "\t" + snp);
+				for(MutRec snp : mutants) {
+					//System.out.println(key + "\t" + snp);
 					trueMutsWriter.write(key + "\t" + snp + "\n");
 				}
 				
-				writeContig(key, contSeq, writer);
+				
 			}
 			
 			for(String key : contigs.keySet()) {
@@ -357,12 +483,15 @@ public class MutateSequence {
 
 	
 	public static class MutRec implements Comparable<MutRec> {
-		int pos;
+		int pos; 
 		String ref;
 		String alt;
 		
+		/**
+		 * Emits position in vcf-like, 1-indexed format
+		 */
 		public String toString() {
-			return (pos+1) + "\t" + ref + "\t" + alt;
+			return pos + "\t" + ref + "\t" + alt;
 		}
 
 		@Override

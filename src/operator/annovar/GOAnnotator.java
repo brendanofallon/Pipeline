@@ -31,6 +31,9 @@ public class GOAnnotator extends Annotator {
 			List<VariantRec> vars = variants.getVariantsForContig(contig);
 			for(VariantRec rec : vars) {
 				String gene = rec.getAnnotation(VariantRec.GENE_NAME);
+				if (gene == null) {
+					continue;
+				}
 				List<String> functions = goTerms.getFunctionsForGene(gene);
 				String funcStr = combineStrings(functions);
 				rec.addAnnotation(VariantRec.GO_FUNCTION, funcStr);

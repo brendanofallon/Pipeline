@@ -12,9 +12,11 @@ import buffer.variant.VariantRec;
 public class ExcelWriter extends VariantPoolWriter {
 
 	String[] keys = new String[]{VariantRec.GENE_NAME,
+								 VariantRec.NM_NUMBER,
+								 VariantRec.EXON_NUMBER,
 								 VariantRec.DEPTH,
 								 VariantRec.VARIANT_TYPE, 
-								 VariantRec.EXON_FUNCTION, 
+								 VariantRec.EXON_FUNCTION,
 								 VariantRec.RSNUM, 
 								 VariantRec.POP_FREQUENCY, 
 								 VariantRec.OMIM_ID, 
