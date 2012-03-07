@@ -19,6 +19,13 @@ public class VarFilterUtils {
 		return new HomFilter();
 	}
 
+	public static VariantFilter getPopFreqFilter(double maxFreq) {
+		return new PopFreqFilter(maxFreq);
+	}
+
+	public static VariantFilter getNonSynFilter() {
+		return new NonSynFilter();
+	}
 	
 	static class QualFilter implements VariantFilter {
 
@@ -35,6 +42,22 @@ public class VarFilterUtils {
 		
 	}
 
+
+	static class PopFreqFilter implements VariantFilter {
+
+		final double maxFreq;
+		
+		public PopFreqFilter(double maxFreq) {
+			this.maxFreq = maxFreq;
+		}
+		
+		@Override
+		public boolean passes(VariantRec rec) {
+			Double freq = rec.getProperty(VariantRec.POP_FREQUENCY);
+			return freq == null || freq < maxFreq;
+		}
+		
+	}
 	
 	static class HomFilter implements VariantFilter {
 
@@ -45,6 +68,15 @@ public class VarFilterUtils {
 		
 	}
 
+	static class NonSynFilter implements VariantFilter {
+
+		@Override
+		public boolean passes(VariantRec rec) {
+			String func = rec.getAnnotation(VariantRec.EXON_FUNCTION);
+			return func.contains("nonsyn") || func.contains("delet") || func.contains("insert") || func.contains("frame") || func.contains("splice");
+		}
+		
+	}
 	
 	static class HetFilter implements VariantFilter {
 

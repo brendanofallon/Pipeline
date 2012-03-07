@@ -489,6 +489,7 @@ public class VariantRec {
 	public static final String GO_PROCESS = "go.process";
 	public static final String GO_COMPONENT = "go.component";
 	public static final String GENOTYPE_QUALITY = "genotype.quality";
+	public static final String SOURCE = "source.file";
 
 	
 	

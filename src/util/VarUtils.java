@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.SwingWorker;
@@ -15,6 +16,7 @@ import operator.variant.CompoundHetFinder;
 import buffer.BEDFile;
 import buffer.CSVFile;
 import buffer.VCFFile;
+import buffer.variant.GeneLineReader;
 import buffer.variant.SimpleLineReader;
 import buffer.variant.VariantFilter;
 import buffer.variant.VariantPool;
@@ -99,6 +101,30 @@ public class VarUtils {
 		
 	}
 	
+	/**
+	 * Identify genes which have common mutations among the given input variant files.
+	 * Synonymous and intergenic variants are ignored, as well as those with a population frequency
+	 * greater than popFreqCutoff
+	 * @param pools
+	 * @throws IOException 
+	 */
+	public static void compareGeneSets(List<File> variantFiles) throws IOException {
+		double popFreqCutoff = 0.01;
+		
+		GenePool genePool = new GenePool();
+		for(File file : variantFiles) {
+			VariantPool vPool = new VariantPool(new GeneLineReader(file));
+
+			VariantPool lowFreqVars = new VariantPool(vPool.filterPool(VarFilterUtils.getPopFreqFilter(popFreqCutoff)));
+			VariantPool interestingVars = new VariantPool( lowFreqVars.filterPool(VarFilterUtils.getNonSynFilter()));
+
+			genePool.addPool(interestingVars);
+
+		}
+		
+		genePool.listAll(System.out);
+		
+	}
 
 	
 	/**
@@ -561,6 +587,26 @@ public class VarUtils {
 			return;
 		}
 
+		
+		if (firstArg.equals("geneComp")) {
+			if (args.length < 2) {
+				System.out.println("Enter the names of one or more variant (vcf or csv) files for which to build the pool");
+				return;
+			}
+			
+			List<File> varFiles = new ArrayList<File>();
+			for(int i=1; i<args.length; i++) {
+				varFiles.add(new File(args[i]));
+			}
+			
+			try {
+				compareGeneSets(varFiles);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return;
+		}
 		
 		System.out.println("Unrecognized command : " + args[0]);
 		emitUsage();

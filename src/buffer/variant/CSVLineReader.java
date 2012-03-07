@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Reads a CSV file and produces VariantRecords from it, typically one variant per line
@@ -17,6 +19,8 @@ public class CSVLineReader implements VariantLineReader {
 	protected BufferedReader reader;
 	protected String currentLine = null;
 	protected String[] headerToks = null;
+	//Contains a map for a column header to a column index
+	private Map<String, Integer> headerMap = new HashMap<String, Integer>();
 	
 	
 	public CSVLineReader(File csvFile) throws IOException {
@@ -24,8 +28,37 @@ public class CSVLineReader implements VariantLineReader {
 		currentLine = reader.readLine();
 		if (currentLine.startsWith("#")) {
 			headerToks = currentLine.split("\t");
+			for(int i=0; i<headerToks.length; i++)
+				headerMap.put(headerToks[i].trim(), i);
 			currentLine = reader.readLine();
 		}
+	}
+	
+	/**
+	 * Returns true if there is a column header that matches the given String 
+	 * @param colHeader
+	 * @return
+	 */
+	public boolean hasHeaderCol(String colHeader) {
+		return headerMap.get(colHeader) != null;
+	}
+	
+	/**
+	 * Returns the column index associated with the given header 
+	 * @param colHeader
+	 * @return
+	 */
+	public int getIndexForHeader(String colHeader) {
+		if (!hasHeader())
+			throw new IllegalArgumentException("No header was found for this file");
+		return headerMap.get(colHeader);
+	}
+	
+	
+	public String getValueForHeader(String colHeader, String[] toks) {
+		if (!hasHeader())
+			throw new IllegalArgumentException("No header was found for this file");
+		return toks[headerMap.get(colHeader)];
 	}
 	
 	/**

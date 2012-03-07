@@ -5,11 +5,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A GenePool contains a bunch of variant records but organizes them by
@@ -19,7 +22,7 @@ import java.util.Map;
  */
 public class GenePool {
 
-	//Map is keyed by gene and values are a (possibly empty) list of variant records
+	//Map is keyed by gene and values are a (possibly empty, but non-null) list of variant records
 	Map<String, List<VariantRec>> pool = new HashMap<String, List<VariantRec>>();
 	
 	public GenePool() {
@@ -111,6 +114,24 @@ public class GenePool {
 	}
 	
 	/**
+	 * Add all variants in the given pool to this gene pool, but don't warn if some variants
+	 * aren't in a gene. Returns total number of variants successfully added
+	 * @param pool
+	 * @return
+	 */
+	public int addPool(VariantPool pool) {
+		int count = 0;
+		for(String contig : pool.getContigs()) {
+			for(VariantRec var : pool.getVariantsForContig(contig)) {
+				boolean added = addRecordNoWarn(var);
+				if (added)
+					count++;
+			}
+		}
+		return count;
+	}
+	
+	/**
 	 * Attempt to add the given record to this pool, but don't warn
 	 * if the record does not contain the GENE_NAME annotation
 	 * returns true if the record was added.
@@ -118,14 +139,13 @@ public class GenePool {
 	 */
 	public boolean addRecordNoWarn(VariantRec rec) {
 		String variantType = rec.getAnnotation(VariantRec.VARIANT_TYPE);
-		
-		//Skip these - there's often a few with no variant type annotation
-		if (variantType == null) {
+
+		if (variantType == null || variantType.equals("-")) {
 			return false;
 		}
 		
 		//Ignore everything except exonic 
-		if ( !variantType.contains("exonic")) {
+		if (!variantType.contains("exonic")) {
 			return false;
 		}
 		
@@ -141,6 +161,37 @@ public class GenePool {
 			return true;
 		}
 		return false;
+	}
+	
+	/**
+	 * Counts the number of UNIQUE 'sources' (from VariantRec.SOURCE) found among
+	 * all variants associated with the given gene
+	 * @param gene
+	 * @return
+	 */
+	public int countSources(String gene) {
+		List<VariantRec> vars = pool.get(gene);
+		Set<String> sources = new HashSet<String>();
+		for(VariantRec var : vars) {
+			sources.add(var.getAnnotation(VariantRec.SOURCE));
+		}
+		return sources.size();
+	}
+	
+	
+	public void listAll(PrintStream out) {
+		for(String key : pool.keySet()) {
+			List<VariantRec> vars = pool.get(key);
+			int sourceCount =  countSources(key);
+			if (sourceCount > 2 && vars.size() < 15) {
+				out.println(key + " : " + vars.size() + "\t" + sourceCount);
+				for(VariantRec var : vars) {
+					out.println("\t" + var.getAnnotation(VariantRec.SOURCE) + "\t " + var.toSimpleString() + "\t" + var.getAnnotation(VariantRec.EXON_FUNCTION) + "\t" + var.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + var.getAnnotation(VariantRec.CDOT) + "\t" + var.getAnnotation(VariantRec.PDOT));
+				}
+
+				out.println();
+			}
+		}
 	}
 	
 }
