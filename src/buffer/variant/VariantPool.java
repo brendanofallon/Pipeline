@@ -197,12 +197,14 @@ public class VariantPool extends Operator  {
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {
-			System.out.println("Could not find variant at contig: " + contig + " pos:" + pos + " index is : " + index);
-			index *= -1;
-			index = Math.max(0, index-5);
-			for(int i=0; i<10; i++) {
-				System.out.println(varList.get(index+i));
-			}
+//			System.out.println("Could not find variant at contig: " + contig + " pos:" + pos + " index is : " + index);
+//			index *= -1;
+//			index = Math.max(0, index-5);
+//			for(int i=0; i<10; i++) {
+//				if ((index+i)==varList.size())
+//					break;
+//				System.out.println(varList.get(index+i));
+//			}
 			
 			return null;
 		}
@@ -221,7 +223,7 @@ public class VariantPool extends Operator  {
 		double transversions = 0;
 		for(String contig : getContigs()) {
 			for(VariantRec rec : getVariantsForContig(contig)) {
-				if (rec.getRef().length()==1 && rec.getAlt().length()==1) {
+				if (rec.isSNP()) {
 					if (rec.isTransition())
 						transitions++;
 					if (rec.isTransversion())

@@ -51,7 +51,13 @@ public class VarUtils {
 
 		System.out.println(" java -jar varUtils.jar compoundHet kidVars.csv parent1.csv parent2.csv");
 		System.out.println("			Write genes which have two heterozygotes in kid, with one from each parent");
+		
+		System.out.println(" java -jar varUtils.jar geneComp vars1.csv vars2.csv ...");
+		System.out.println("			Perform gene-intersection and emit genes with multiple nonsynonymous hits.");
+		System.out.println("			** VARIANTS MUST HAVE GENE ANNOTATIONS **");
 
+		System.out.println(" java -jar varUtils.jar summary vars.csv");
+		System.out.println("			Emit summary information for the variants");
 	}
 	
 	
@@ -185,10 +191,27 @@ public class VarUtils {
 				VCFLineParser vParser = new VCFLineParser(new VCFFile(fileB));
 				
 				VariantRec trueVar = tParser.toVariantRec();
-				//trueVar.rotateIndel();
 				VariantRec qVar = vParser.toVariantRec();
-				//qVar.rotateIndel();
+				int totalTrueVars = 0;
+				int totalFoundVars = 0;
 				
+				VariantPool perfSNPs = new VariantPool();
+				VariantPool falsePosSNPs = new VariantPool();
+				VariantPool falseNegSNPs = new VariantPool();
+				VariantPool falsePosIndels = new VariantPool();
+				VariantPool falseNegIndels = new VariantPool();
+				VariantPool perfIndels = new VariantPool();
+				VariantPool closeIndels = new VariantPool();
+				VariantPool notSoCloseIndels = new VariantPool();
+				
+				//WHAT THE CODES MEAN:
+				//0 : A perfect match
+				//1 : Variant at same position, but different alt allele
+				//-1: True variant not found, a false negative
+				//-2: Query variant not in reference, a false positive
+				//-3: Indels in different spots but exact same sequences
+				//-4: Indels in different spots with different sequences, but same length
+				//-5: Indels in different spots with different sequences of different lengths
 				PositionComparator pComp = VariantRec.getPositionComparator();
 				while (trueVar != null && qVar != null) {
 					int dif = pComp.compare(trueVar, qVar);
@@ -203,29 +226,87 @@ public class VarUtils {
 						System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t " + result);
 						tParser.advanceLine();
 						vParser.advanceLine();
+						
+						if (qVar.isIndel()) {
+							perfIndels.addRecord(qVar);
+						}
+						else
+							perfSNPs.addRecord(qVar);
+						totalTrueVars++;
+						totalFoundVars++;
 					}
 
-					if (dif < 0) {
-						System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t -1");
+					//A bit of fuzzy-matching for insertions and deletions...
+					if (dif != 0 && ((qVar.isInsertion() && trueVar.isInsertion()) || (qVar.isDeletion() && trueVar.isDeletion()))) {
+
+						if ( qVar.getAlt().equals(trueVar.getAlt()) && qVar.getRef().equals(trueVar.getRef())) {
+							System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t " + -3);
+							closeIndels.addRecord(trueVar);
+						} else {
+							if (qVar.getIndelLength() == trueVar.getIndelLength()) {
+								System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t " + -4);
+								closeIndels.addRecord(trueVar);
+							}
+							else {
+								System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t " + -5);
+								System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t " + -5);
+								notSoCloseIndels.addRecord(trueVar);
+							}
+						}
 						tParser.advanceLine();
-					}
-					if (dif > 0) {
-						System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t -2");
 						vParser.advanceLine();
+						totalTrueVars++;
+						totalFoundVars++;
 					}
-					
+					else {
+						if (dif < 0) {
+							System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t -1");
+							tParser.advanceLine();
+							totalTrueVars++;
+							if (trueVar.isIndel()) {
+								falseNegIndels.addRecord(trueVar);
+							}
+							else {
+								falseNegSNPs.addRecord(trueVar);
+							}
+						}
+						if (dif > 0) {
+							System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t -2");
+							vParser.advanceLine();
+							totalFoundVars++;
+							if (qVar.isIndel())
+								falsePosIndels.addRecord(qVar);
+							else
+								falsePosSNPs.addRecord(qVar);
+						}
+					}
 					trueVar = tParser.toVariantRec();
-//					if (trueVar != null)
-//						trueVar.rotateIndel();
 					qVar = vParser.toVariantRec();
-//					if (qVar != null)
-//						qVar.rotateIndel();
 
 				}
+				
+				System.err.println("Total true variants: " + totalTrueVars);
+				System.err.println("Total found variants: " + totalFoundVars);
+				System.err.println("Total perfect matches: " + (perfSNPs.size() + perfIndels.size()) );
+				System.err.println("Total perfect SNP matches: " + perfSNPs.size() );
+				System.err.println("Total SNP false positives : "+ falsePosSNPs.size());
+				System.err.println("Total SNP false negatives : "+ falseNegSNPs.size());
+				
+				System.err.println("Total perfect indel matches: " + perfIndels.size() );
+				System.err.println("Total indel false positives : "+ falsePosIndels.size());
+				System.err.println("Total indel false negatives : "+ falseNegIndels.size());
+				
+				System.err.println("Total indel near-misses : "+ closeIndels.size());
+				System.err.println("Total indel sort-of-near-misses : "+ notSoCloseIndels.size());
+				
+				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
+			
+			
 			return;
 		}
 		
@@ -607,6 +688,37 @@ public class VarUtils {
 			}
 			return;
 		}
+	
+		if (firstArg.equals("summary") || firstArg.equals("sum")) {
+			if (args.length < 2) {
+				System.out.println("Enter the names of one or more variant (vcf or csv) files to examine");
+				return;
+			}
+			
+			for(int i=1; i<args.length; i++) {
+				try {
+					if (i>1)
+						System.out.println("\n\n");
+					VariantPool pool = getPool(new File(args[i]));
+					System.out.println("Summary for file : " + args[i]);
+					System.out.println("Total variants : " + pool.size());
+					System.out.println("Total SNPs : " + pool.countSNPs());
+					System.out.println("Total indels: " + (pool.countInsertions() + pool.countDeletions()));
+					System.out.println("\t insertions: " + pool.countInsertions());
+					System.out.println("\t deletions: " + pool.countDeletions());
+					System.out.println(" Ts / Tv ratio: " + pool.computeTTRatio());
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				
+			}
+			
+			
+			return;
+		}
+	
 		
 		System.out.println("Unrecognized command : " + args[0]);
 		emitUsage();

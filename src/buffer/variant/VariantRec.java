@@ -80,11 +80,24 @@ public class VariantRec {
 	}
 	
 	/**
+	 * Returns the length of the insertion / deletion, or 0 if this
+	 * is not an insertion or deletion
+	 * @return
+	 */
+	public int getIndelLength() {
+		if (isInsertion())
+			return alt.length();
+		if (isDeletion())
+			return ref.length();
+		return 0;
+	}
+	
+	/**
 	 * True if the ref length is 1 and the alt length is strictly greater than one
 	 * @return
 	 */
 	public boolean isInsertion() {
-		return ref.length()==1 && ref.charAt(0) == '-' && alt.length() > 1;
+		return ref.length()==1 && ref.charAt(0) == '-' && alt.length() >= 1;
 	}
 	
 	/**
@@ -92,7 +105,7 @@ public class VariantRec {
 	 * @return
 	 */
 	public boolean isDeletion() {
-		return ref.length() > 1 && alt.length()==1 && alt.charAt(0) == '-';
+		return ref.length() >= 1 && alt.length()==1 && alt.charAt(0) == '-';
 	}
 	
 	public boolean isTransition() {

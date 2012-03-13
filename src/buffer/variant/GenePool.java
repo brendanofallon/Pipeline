@@ -183,8 +183,8 @@ public class GenePool {
 		for(String key : pool.keySet()) {
 			List<VariantRec> vars = pool.get(key);
 			int sourceCount =  countSources(key);
-			if (sourceCount > 2 && vars.size() < 15) {
-				out.println(key + " : " + vars.size() + "\t" + sourceCount);
+			if (sourceCount > 1 && vars.size() < 15) {
+				out.println("GENE:" + key + " : " + vars.size() + "\t" + sourceCount);
 				for(VariantRec var : vars) {
 					out.println("\t" + var.getAnnotation(VariantRec.SOURCE) + "\t " + var.toSimpleString() + "\t" + var.getAnnotation(VariantRec.EXON_FUNCTION) + "\t" + var.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + var.getAnnotation(VariantRec.CDOT) + "\t" + var.getAnnotation(VariantRec.PDOT));
 				}
