@@ -204,6 +204,10 @@ public class VarUtils {
 				VariantPool closeIndels = new VariantPool();
 				VariantPool notSoCloseIndels = new VariantPool();
 				
+				Histogram trueIndelHisto = new Histogram(0, 100, 100);
+				Histogram foundIndelHisto = new Histogram(0, 100, 100);
+				Histogram notFoundIndelHisto = new Histogram(0, 100, 100);
+				
 				//WHAT THE CODES MEAN:
 				//0 : A perfect match
 				//1 : Variant at same position, but different alt allele
@@ -213,7 +217,7 @@ public class VarUtils {
 				//-4: Indels in different spots with different sequences, but same length
 				//-5: Indels in different spots with different sequences of different lengths
 				PositionComparator pComp = VariantRec.getPositionComparator();
-				while (trueVar != null && qVar != null) {
+				while (trueVar != null && qVar != null) {		
 					int dif = pComp.compare(trueVar, qVar);
 					
 					//Variants are at same position
@@ -223,9 +227,13 @@ public class VarUtils {
 							result = 0;
 						else
 							result = 1;
+						
+						if (trueVar.isIndel())
+						
 						System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t " + result);
 						tParser.advanceLine();
 						vParser.advanceLine();
+						
 						
 						if (qVar.isIndel()) {
 							perfIndels.addRecord(qVar);
@@ -280,9 +288,9 @@ public class VarUtils {
 								falsePosSNPs.addRecord(qVar);
 						}
 					}
+					
 					trueVar = tParser.toVariantRec();
 					qVar = vParser.toVariantRec();
-
 				}
 				
 				System.err.println("Total true variants: " + totalTrueVars);
@@ -299,6 +307,24 @@ public class VarUtils {
 				System.err.println("Total indel near-misses : "+ closeIndels.size());
 				System.err.println("Total indel sort-of-near-misses : "+ notSoCloseIndels.size());
 				
+
+				System.err.println("Histogram of true indel sizes: ");
+				System.err.println(trueIndelHisto.toString());
+				System.err.println("Histo size: " + trueIndelHisto.getCount());
+				
+				for(String contig : falseNegIndels.getContigs()) {
+					List<VariantRec> recs = falseNegIndels.getVariantsForContig(contig);
+					for(VariantRec rec : recs) 
+						notFoundIndelHisto.addValue(rec.getIndelLength());
+				}
+
+				System.err.println("Histogram of not found indels sizes: ");
+				System.err.println(notFoundIndelHisto.toString());
+				System.err.println("Histo size: " + notFoundIndelHisto.getCount());
+				
+				System.err.println("Histogram of all indels found (regardless of correctness): ");
+				System.err.println(foundIndelHisto.toString());
+				System.err.println("Histo size: " + foundIndelHisto.getCount());
 				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -323,9 +349,7 @@ public class VarUtils {
 				DecimalFormat formatter = new DecimalFormat("#0.000");
 				
 				VariantPool trueVars = getSPool(new File(args[1]));
-			//	trueVars.rotateIndels();
 				VariantPool queryVars = getPool(new File(args[2]));
-			//	queryVars.rotateIndels();
 				
 				System.out.println("Total true variants " + fileA.getName() + " : " + trueVars.size() );
 				System.out.println("Total inferred variants " + fileB.getName() + " : " + queryVars.size() + " mean quality: " + formatter.format(queryVars.meanQuality()));

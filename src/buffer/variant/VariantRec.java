@@ -76,7 +76,7 @@ public class VariantRec {
 	 * @return
 	 */
 	public boolean isIndel() {
-		return ref.length() != alt.length();
+		return isInsertion() || isDeletion();
 	}
 	
 	/**

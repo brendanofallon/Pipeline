@@ -53,6 +53,10 @@ public class BEDFile extends FileBuffer {
 		String line = reader.readLine();
 		intervals = new HashMap<String, List<Interval>>();
 		while (line != null) {
+			if (line.startsWith("#")) {
+				line = reader.readLine();
+				continue;
+			}
 			if (line.length()>0) {
 				String[] toks = line.split("\\s");
 				String contig = toks[0];
