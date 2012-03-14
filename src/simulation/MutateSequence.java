@@ -41,21 +41,58 @@ public class MutateSequence {
 	//Order is A, G, T (all others are C)
 	static final double[] baseFreqs = new double[]{0.3, 0.55, 0.78};
 	
+	//Probability that new mutation is a transition, ttRatio is x/(1-x) 
+	static final double transitionProb = 0.65;
+	
 	public static char pickChar(char curChar) {
-		curChar = Character.toUpperCase(curChar); 
-		char c = curChar;
-		while (c == curChar) {
-			double r = Math.random();
-			if (r< baseFreqs[0])
-				c = 'A';
-			else if (r<baseFreqs[1])
-				c = 'G';
-			else if (r < baseFreqs[2])
-				c = 'T';
-			else 
-				c = 'C';
+		curChar = Character.toUpperCase(curChar);
+		if (curChar == 'N')
+			return 'N';
+		boolean transition = rng.nextDouble() < transitionProb;
+		
+		if (curChar == 'A') {
+			if (transition)
+				return 'G';
+			else {
+				if (rng.nextDouble() < 0.5)
+					return 'C';
+				else
+					return 'G';
+			}
 		}
-		return c;
+		if (curChar == 'G') {
+			if (transition)
+				return 'A';
+			else {
+				if (rng.nextDouble() < 0.5)
+					return 'C';
+				else
+					return 'T';
+			}
+		}
+		if (curChar == 'C') {
+			if (transition)
+				return 'T';
+			else {
+				if (rng.nextDouble() < 0.5)
+					return 'A';
+				else
+					return 'G';
+			}
+		}
+		if (curChar == 'T') {
+			if (transition)
+				return 'C';
+			else {
+				if (rng.nextDouble() < 0.5)
+					return 'A';
+				else
+					return 'G';
+			}
+		}
+		
+		//we should never get here
+		throw new IllegalArgumentException("Unknown base found : " + curChar);
 	}
 
 	/**
@@ -225,8 +262,8 @@ public class MutateSequence {
 		while (site < ref.length()) {
 			MutRec rec = new MutRec();
 			
-			boolean isInsertion = Math.random() < 0.00;
-			int size = 4; //(int)Math.ceil( expGen.nextDouble(1.0/indelMeanSize) );
+			boolean isInsertion = Math.random() < 0.50;
+			int size = (int)Math.ceil( expGen.nextDouble(1.0/indelMeanSize) );
 			if (isInsertion) {
 				rec.pos = site;
 				rec.ref = "-";

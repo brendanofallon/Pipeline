@@ -97,7 +97,7 @@ public class VariantRec {
 	 * @return
 	 */
 	public boolean isInsertion() {
-		return ref.length()==1 && ref.charAt(0) == '-' && alt.length() >= 1;
+		return ref.equals("-") && (!alt.equals("-"));
 	}
 	
 	/**
@@ -105,7 +105,7 @@ public class VariantRec {
 	 * @return
 	 */
 	public boolean isDeletion() {
-		return ref.length() >= 1 && alt.length()==1 && alt.charAt(0) == '-';
+		return alt.equals("-") && (!ref.equals("-"));
 	}
 	
 	public boolean isTransition() {

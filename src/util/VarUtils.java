@@ -132,6 +132,215 @@ public class VarUtils {
 		
 	}
 
+	/**
+	 * Compare the variants in the given files and emit a bunch of info describing their 
+	 * differences
+	 * @param trueMutsFile
+	 * @param inferredMutsFile
+	 * @throws IOException
+	 */
+	public static void compareAndEmitVars(File trueMutsFile, File inferredMutsFile) throws IOException {
+		SimpleLineReader tParser = new SimpleLineReader(trueMutsFile);
+		VCFLineParser vParser = new VCFLineParser(new VCFFile(inferredMutsFile));
+		
+		VariantRec trueVar = tParser.toVariantRec();
+		VariantRec qVar = vParser.toVariantRec();
+		int totalTrueVars = 0;
+		int totalFoundVars = 0;
+		
+		VariantPool perfSNPs = new VariantPool();
+		VariantPool falsePosSNPs = new VariantPool();
+		VariantPool falseNegSNPs = new VariantPool();
+		VariantPool falsePosIndels = new VariantPool();
+		VariantPool falseNegIndels = new VariantPool();
+		VariantPool perfIndels = new VariantPool();
+		VariantPool closeIndels = new VariantPool();
+		VariantPool notSoCloseIndels = new VariantPool();
+		
+		Histogram trueIndelHisto = new Histogram(0, 100, 100);
+		Histogram foundIndelHisto = new Histogram(0, 100, 100);
+		Histogram notFoundIndelHisto = new Histogram(0, 100, 100);
+		
+		//WHAT THE CODES MEAN:
+		//0 : A perfect match
+		//1 : Variant at same position, but different alt allele
+		//-1: True variant not found, a false negative
+		//-2: Query variant not in reference, a false positive
+		//-3: Indels in different spots but exact same sequences
+		//-4: Indels in different spots with different sequences, but same length
+		//-5: Indels in different spots with different sequences of different lengths
+		PositionComparator pComp = VariantRec.getPositionComparator();
+		while (trueVar != null && qVar != null) {		
+			int dif = pComp.compare(trueVar, qVar);
+			
+			//Variants are at same position
+			if (dif == 0) {
+				int result;
+				if (trueVar.getRef().equals(qVar.getRef()) && trueVar.getAlt().equals(qVar.getAlt())) {
+					result = 0; //Perfect match
+					
+				}
+				else {
+					result = 1;
+				}
+				
+				if (trueVar.isIndel()) {
+					trueIndelHisto.addValue(trueVar.getIndelLength());
+				}
+				if (qVar.isIndel()) {
+					foundIndelHisto.addValue(qVar.getIndelLength());
+				}
+				
+				System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t " + result);
+				tParser.advanceLine();
+				vParser.advanceLine();
+				
+				
+				if (qVar.isIndel()) {
+					perfIndels.addRecord(qVar);
+				}
+				else
+					perfSNPs.addRecord(qVar);
+				totalTrueVars++;
+				totalFoundVars++;
+			}
+
+			//A bit of fuzzy-matching for insertions and deletions...
+			if (dif != 0 && ((qVar.isInsertion() && trueVar.isInsertion()) || (qVar.isDeletion() && trueVar.isDeletion()))) {
+
+				if ( qVar.getAlt().equals(trueVar.getAlt()) && qVar.getRef().equals(trueVar.getRef())) {
+					System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t " + -3);
+					closeIndels.addRecordNoSort(trueVar);
+				} else {
+					if (qVar.getIndelLength() == trueVar.getIndelLength()) {
+						System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t " + -4);
+						closeIndels.addRecordNoSort(trueVar);
+					}
+					else {
+						System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t " + -5);
+						System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t " + -5);
+						notSoCloseIndels.addRecordNoSort(trueVar);
+					}
+				}
+				
+				if (trueVar.isIndel()) {
+					trueIndelHisto.addValue(trueVar.getIndelLength());			
+				}
+				if (qVar.isIndel()) {
+					foundIndelHisto.addValue(qVar.getIndelLength());
+				}
+				
+				tParser.advanceLine();
+				vParser.advanceLine();
+				totalTrueVars++;
+				totalFoundVars++;
+			}
+			else {
+				if (dif < 0) {
+					//TrueVar exists, but no matching qvar
+					System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t -1");
+					tParser.advanceLine();
+					totalTrueVars++;
+					if (trueVar.isIndel()) {
+						falseNegIndels.addRecordNoSort(trueVar);
+						trueIndelHisto.addValue(trueVar.getIndelLength());
+					}
+					else {
+						falseNegSNPs.addRecordNoSort(trueVar);
+					}
+				}
+				if (dif > 0) {
+					//QVar exists, no matching true var
+					System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t -2");
+					vParser.advanceLine();
+					totalFoundVars++;
+					if (qVar.isIndel()) {
+						falsePosIndels.addRecordNoSort(qVar);
+						foundIndelHisto.addValue(qVar.getIndelLength());
+					}
+					else
+						falsePosSNPs.addRecordNoSort(qVar);
+				}
+			}
+			
+			trueVar = tParser.toVariantRec();
+			qVar = vParser.toVariantRec();
+		}
+		
+		while(trueVar != null) {
+			System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t -1");
+			tParser.advanceLine();
+			totalTrueVars++;
+			if (trueVar.isIndel()) {
+				falseNegIndels.addRecordNoSort(trueVar);
+				trueIndelHisto.addValue(trueVar.getIndelLength());
+			}
+			else {
+				falseNegSNPs.addRecordNoSort(trueVar);
+			}
+			
+			tParser.advanceLine();
+			trueVar = tParser.toVariantRec();
+		}
+		
+		while (qVar != null) {
+			totalFoundVars++;
+			if (qVar.isIndel()) {
+				falsePosIndels.addRecordNoSort(qVar);
+				foundIndelHisto.addValue(qVar.getIndelLength());
+			}
+			else
+				falsePosSNPs.addRecordNoSort(qVar);
+			
+			vParser.advanceLine();
+			qVar = vParser.toVariantRec();
+		}
+		
+		System.err.println("Total true variants: " + totalTrueVars);
+		System.err.println("Total found variants: " + totalFoundVars);
+		System.err.println("Total perfect matches: " + (perfSNPs.size() + perfIndels.size()) );
+		System.err.println("Total perfect SNP matches: " + perfSNPs.size() );
+		System.err.println("Total SNP false positives : "+ falsePosSNPs.size());
+		System.err.println("Total SNP false negatives : "+ falseNegSNPs.size());
+		
+		System.err.println("Total perfect indel matches: " + perfIndels.size() );
+		System.err.println("Total indel false positives : "+ falsePosIndels.size());
+		System.err.println("Total indel false negatives : "+ falseNegIndels.size());
+		
+		System.err.println("Total indel near-misses : "+ closeIndels.size());
+		System.err.println("Total indel sort-of-near-misses : "+ notSoCloseIndels.size());
+		
+
+		System.err.println("Histogram of true indel sizes: ");
+		System.err.println(trueIndelHisto.toString());
+		System.err.println("Histo size: " + trueIndelHisto.getCount());
+		
+		for(String contig : falseNegIndels.getContigs()) {
+			List<VariantRec> recs = falseNegIndels.getVariantsForContig(contig);
+			for(VariantRec rec : recs) 
+				notFoundIndelHisto.addValue(rec.getIndelLength());
+		}
+
+		System.err.println("Histogram of not found (false neg) indels sizes: ");
+		System.err.println(notFoundIndelHisto.toString());
+		System.err.println("Histo size: " + notFoundIndelHisto.getCount());
+		
+		Histogram falsePosIndelHisto = new Histogram(0, 100, 100);
+		for(String contig : falsePosIndels.getContigs()) {
+			List<VariantRec> recs = falsePosIndels.getVariantsForContig(contig);
+			for(VariantRec rec : recs) 
+				falsePosIndelHisto.addValue(rec.getIndelLength());
+		}
+
+		System.err.println("Histogram of false pos indel sizes: ");
+		System.err.println(falsePosIndelHisto.toString());
+		System.err.println("Histo size: " + falsePosIndelHisto.getCount());
+				
+		
+		System.err.println("Histogram of all indels found (regardless of correctness): ");
+		System.err.println(foundIndelHisto.toString());
+		System.err.println("Histo size: " + foundIndelHisto.getCount());
+	}
 	
 	/**
 	 * Obtain an AbstractVariantPool from a file
@@ -187,151 +396,12 @@ public class VarUtils {
 				File fileA = new File(args[1]);
 				File fileB = new File(args[2]);
 				
-				SimpleLineReader tParser = new SimpleLineReader(fileA);
-				VCFLineParser vParser = new VCFLineParser(new VCFFile(fileB));
-				
-				VariantRec trueVar = tParser.toVariantRec();
-				VariantRec qVar = vParser.toVariantRec();
-				int totalTrueVars = 0;
-				int totalFoundVars = 0;
-				
-				VariantPool perfSNPs = new VariantPool();
-				VariantPool falsePosSNPs = new VariantPool();
-				VariantPool falseNegSNPs = new VariantPool();
-				VariantPool falsePosIndels = new VariantPool();
-				VariantPool falseNegIndels = new VariantPool();
-				VariantPool perfIndels = new VariantPool();
-				VariantPool closeIndels = new VariantPool();
-				VariantPool notSoCloseIndels = new VariantPool();
-				
-				Histogram trueIndelHisto = new Histogram(0, 100, 100);
-				Histogram foundIndelHisto = new Histogram(0, 100, 100);
-				Histogram notFoundIndelHisto = new Histogram(0, 100, 100);
-				
-				//WHAT THE CODES MEAN:
-				//0 : A perfect match
-				//1 : Variant at same position, but different alt allele
-				//-1: True variant not found, a false negative
-				//-2: Query variant not in reference, a false positive
-				//-3: Indels in different spots but exact same sequences
-				//-4: Indels in different spots with different sequences, but same length
-				//-5: Indels in different spots with different sequences of different lengths
-				PositionComparator pComp = VariantRec.getPositionComparator();
-				while (trueVar != null && qVar != null) {		
-					int dif = pComp.compare(trueVar, qVar);
-					
-					//Variants are at same position
-					if (dif == 0) {
-						int result;
-						if (trueVar.getAlt().equals(qVar.getAlt()))
-							result = 0;
-						else
-							result = 1;
-						
-						if (trueVar.isIndel())
-						
-						System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t " + result);
-						tParser.advanceLine();
-						vParser.advanceLine();
-						
-						
-						if (qVar.isIndel()) {
-							perfIndels.addRecord(qVar);
-						}
-						else
-							perfSNPs.addRecord(qVar);
-						totalTrueVars++;
-						totalFoundVars++;
-					}
-
-					//A bit of fuzzy-matching for insertions and deletions...
-					if (dif != 0 && ((qVar.isInsertion() && trueVar.isInsertion()) || (qVar.isDeletion() && trueVar.isDeletion()))) {
-
-						if ( qVar.getAlt().equals(trueVar.getAlt()) && qVar.getRef().equals(trueVar.getRef())) {
-							System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t " + -3);
-							closeIndels.addRecord(trueVar);
-						} else {
-							if (qVar.getIndelLength() == trueVar.getIndelLength()) {
-								System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t " + -4);
-								closeIndels.addRecord(trueVar);
-							}
-							else {
-								System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t " + -5);
-								System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t " + -5);
-								notSoCloseIndels.addRecord(trueVar);
-							}
-						}
-						tParser.advanceLine();
-						vParser.advanceLine();
-						totalTrueVars++;
-						totalFoundVars++;
-					}
-					else {
-						if (dif < 0) {
-							System.out.println(trueVar.getContig() + "\t" + trueVar.getStart() + "\t" + trueVar.getRef() + "\t" + trueVar.getAlt() + "\t -1");
-							tParser.advanceLine();
-							totalTrueVars++;
-							if (trueVar.isIndel()) {
-								falseNegIndels.addRecord(trueVar);
-							}
-							else {
-								falseNegSNPs.addRecord(trueVar);
-							}
-						}
-						if (dif > 0) {
-							System.out.println(qVar.getContig() + "\t" + qVar.getStart() + "\t" + qVar.getRef() + "\t" + qVar.getAlt() + "\t -2");
-							vParser.advanceLine();
-							totalFoundVars++;
-							if (qVar.isIndel())
-								falsePosIndels.addRecord(qVar);
-							else
-								falsePosSNPs.addRecord(qVar);
-						}
-					}
-					
-					trueVar = tParser.toVariantRec();
-					qVar = vParser.toVariantRec();
-				}
-				
-				System.err.println("Total true variants: " + totalTrueVars);
-				System.err.println("Total found variants: " + totalFoundVars);
-				System.err.println("Total perfect matches: " + (perfSNPs.size() + perfIndels.size()) );
-				System.err.println("Total perfect SNP matches: " + perfSNPs.size() );
-				System.err.println("Total SNP false positives : "+ falsePosSNPs.size());
-				System.err.println("Total SNP false negatives : "+ falseNegSNPs.size());
-				
-				System.err.println("Total perfect indel matches: " + perfIndels.size() );
-				System.err.println("Total indel false positives : "+ falsePosIndels.size());
-				System.err.println("Total indel false negatives : "+ falseNegIndels.size());
-				
-				System.err.println("Total indel near-misses : "+ closeIndels.size());
-				System.err.println("Total indel sort-of-near-misses : "+ notSoCloseIndels.size());
-				
-
-				System.err.println("Histogram of true indel sizes: ");
-				System.err.println(trueIndelHisto.toString());
-				System.err.println("Histo size: " + trueIndelHisto.getCount());
-				
-				for(String contig : falseNegIndels.getContigs()) {
-					List<VariantRec> recs = falseNegIndels.getVariantsForContig(contig);
-					for(VariantRec rec : recs) 
-						notFoundIndelHisto.addValue(rec.getIndelLength());
-				}
-
-				System.err.println("Histogram of not found indels sizes: ");
-				System.err.println(notFoundIndelHisto.toString());
-				System.err.println("Histo size: " + notFoundIndelHisto.getCount());
-				
-				System.err.println("Histogram of all indels found (regardless of correctness): ");
-				System.err.println(foundIndelHisto.toString());
-				System.err.println("Histo size: " + foundIndelHisto.getCount());
+				compareAndEmitVars(fileA, fileB);
 				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-			
 			
 			return;
 		}
