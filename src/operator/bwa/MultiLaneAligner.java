@@ -49,6 +49,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 	public static final String SKIPSAI = "skipsai";
 	public static final String SINGLE_END = "single";
 	
+	protected String maxEditDist = "3"; //Maximum edit distance for alignment
 	protected String pathToBWA = "bwa";
 	protected int defaultThreads = 4;
 	protected boolean pairedEnd = true; //By default, assume paired ends. SINGLE_END property is queried to set this to false
@@ -130,8 +131,11 @@ public class MultiLaneAligner extends PipedCommandOp {
 			StringBuffer buff = new StringBuffer();
 			System.out.println("Got " + files1.getFileCount() + " files in buffer 1, " + files2.getFileCount() + " files in buffer 2");
 			for(int i=0; i<files1.getFileCount(); i++) {
-				System.out.println("File " + i + " buf 1 : \t" + files1.getFile(i));
-				System.out.println("File " + i + " buf 2 : \t" + files2.getFile(i));
+				System.out.println("File " + i + " buf 1 : \t" + files1.getFile(i).getFile().getAbsolutePath());
+				System.out.println("File " + i + " buf 2 : \t" + files2.getFile(i).getFile().getAbsolutePath());
+				if (files1.getFile(i).getFile().getAbsolutePath().equals(files2.getFile(i).getFile().getAbsolutePath())) {
+					throw new OperationFailedException("Paired files are the same file! File is : " + files1.getAbsolutePath(), this);
+				}
 				buff.append(files1.getFile(i).getFilename() + "\t" + files2.getFile(i).getFilename() + "\n");
 			}
 			logger.info("Following files are assumed to be paired-end reads: \n" + buff.toString());
@@ -274,7 +278,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 		
 		public AlignerJob(FileBuffer inputFile) {
 			baseFilename = inputFile.getAbsolutePath();
-			command = pathToBWA + " aln -t " + threads + " " + referencePath + " " + inputFile.getAbsolutePath();
+			command = pathToBWA + " aln -n " + maxEditDist + " -t " + threads + " " + referencePath + " " + inputFile.getAbsolutePath();
 		}
 		
 		@Override

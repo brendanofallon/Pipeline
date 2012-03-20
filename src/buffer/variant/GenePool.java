@@ -64,10 +64,17 @@ public class GenePool {
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 		String line = reader.readLine();
 		while (line != null) {
+			if (line.startsWith("#")) {
+				line = reader.readLine();
+				continue;
+			}
 			String[] toks = line.split("\t");
-			String geneName = toks[0];
-			System.out.println("Adding gene " + geneName);
-			addGene(geneName);
+			String geneName = toks[0].trim();
+			if (geneName.length()>0) {
+				System.out.println("Adding gene " + geneName);
+				addGene(geneName);
+			}
+			line = reader.readLine();
 		}
 	}
 
@@ -87,6 +94,16 @@ public class GenePool {
 	 */
 	public Collection<String> getGenes() {
 		return pool.keySet();
+	}
+	
+	/**
+	 * Returns true if there is an entry for the given gene in this gene pool (even
+	 * if the list of variants associated with the gene is empty)
+	 * @param geneName
+	 * @return
+	 */
+	public boolean containsGene(String geneName) {
+		return pool.containsKey(geneName);
 	}
 	
 	public void removeVariant(VariantRec variant) {

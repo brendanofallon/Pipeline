@@ -121,7 +121,7 @@ public class CSVLineReader implements VariantLineReader {
 		//Parse additional annotations / properties from header
 		if (hasHeader() && toks.length > 8) {
 			for(int i=9; i<toks.length; i++) {
-				String key = headerToks[i];
+				String key = headerToks[i].trim();
 				if (toks[i].equals("-") || toks[i].equals("NA") || toks[i].equals("?"))
 					continue; 
 				

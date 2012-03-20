@@ -39,7 +39,7 @@ public class MultiRemoveDuplicates extends MultiOperator {
 		if (inputPath.endsWith("sam"))
 			fileIsSam = " -S ";
 		
-		String command = samtoolsPath + " rmdup " + fileIsSam + inputPath + " " + outputPath;
+		String command = samtoolsPath + " rmdup -S " + fileIsSam + inputPath + " " + outputPath;
 		return new String[]{command};
 	}
 

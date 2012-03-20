@@ -58,6 +58,11 @@ public class VarUtils {
 
 		System.out.println(" java -jar varUtils.jar summary vars.csv");
 		System.out.println("			Emit summary information for the variants");
+		
+		System.out.println(" java -jar varUtils.jar filterGene vars.csv genelistfile.txt");
+		System.out.println("			Emit only those variants in genes given in genelistfile.txt");
+		System.out.println("			** VARIANTS MUST HAVE GENE ANNOTATIONS **");
+
 	}
 	
 	
@@ -106,6 +111,37 @@ public class VarUtils {
 
 		
 	}
+
+	/**
+	 * Emit only those variants that have a GENE_NAME annotation that matches
+	 * a gene name in the given gene pool
+	 * @param vars
+	 * @param genes
+	 * @return
+	 */
+	public static VariantPool filterByGene(VariantPool vars, GenePool genes) {
+		VariantPool geneVars = new VariantPool();
+		int total = 0;
+		int noAnno = 0;
+		for(String contig : vars.getContigs()) {
+			for(VariantRec var : vars.getVariantsForContig(contig)) {
+				total++;
+				String geneName = var.getAnnotation(VariantRec.GENE_NAME);
+				if (geneName == null) {
+					System.err.println("Variant " + var + " does not have gene name annotation!");
+					noAnno++;
+				}
+				if (genes.containsGene(geneName)) {
+					geneVars.addRecord(var);
+				}
+			}
+		}
+		int dif = total - noAnno;
+		System.err.println("No gene annotation found for " + dif + " of " + total + " variants examined");
+		return geneVars;
+	}
+
+	
 	
 	/**
 	 * Identify genes which have common mutations among the given input variant files.
@@ -385,6 +421,31 @@ public class VarUtils {
 		}
 		
 		String firstArg = args[0];
+		
+		if (firstArg.equals("filterGene")) {
+			if (args.length != 3) {
+				System.out.println("Enter the names input variants file and a file containing gene names to filter on");
+				return;
+			}
+			try {
+				VariantPool vars = getPool(new File(args[1]));
+				GenePool genes = new GenePool(new File(args[2]));
+				
+				VariantPool geneVars = filterByGene(vars, genes);
+				List<String> annos = new ArrayList<String>();
+				annos.add(VariantRec.GENE_NAME);
+				annos.add(VariantRec.EXON_FUNCTION);
+				annos.add(VariantRec.VARIANT_TYPE);
+				annos.add(VariantRec.POP_FREQUENCY);
+				annos.add(VariantRec.RSNUM);
+				geneVars.listAll(System.out, annos);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			return;
+		}
 		
 		if (firstArg.equals("wcompare")) {
 			if (args.length != 3) {

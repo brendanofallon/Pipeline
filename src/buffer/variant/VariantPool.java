@@ -401,6 +401,10 @@ public class VariantPool extends Operator  {
 	 * @param out
 	 */
 	public void listAll(PrintStream out, List<String> keys) {
+		StringBuilder header = new StringBuilder( VariantRec.getSimpleHeader() );
+		for(String key : keys) 
+			header.append("\t" + key);
+		out.println( header );
 		for(String contig : getContigs() ) {
 			for(VariantRec rec : this.getVariantsForContig(contig)) {		
 				out.println(rec.toSimpleString() + rec.getPropertyString(keys));
