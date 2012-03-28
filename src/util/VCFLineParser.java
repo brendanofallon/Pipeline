@@ -29,6 +29,7 @@ public class VCFLineParser implements VariantLineReader {
 		private String[] formatToks = null; //Tokenized format string, produced as needed
 		private int gtCol = -1; //Format column which contains genotype info
 		private int gqCol = -1; //Format column which contains genotype quality info 
+		private int adCol = -1; //Format column which contains genotype quality info 
 				
 		private String sample = null; //Emit information for only this sample if specified (when not given, defaults to first sample)
 		private int sampleColumn = -1; //Column that stores information for the given sample
@@ -173,7 +174,12 @@ public class VCFLineParser implements VariantLineReader {
 				VariantRec rec = new VariantRec(contig, start, end,  ref, alt, getQuality(), isHetero() );
 				Integer depth = getDepth();
 				if (depth != null)
-					rec.addProperty(VariantRec.DEPTH, new Double(getDepth()));
+					rec.addProperty(VariantRec.DEPTH, new Double(depth));
+				
+				Integer altDepth = getVariantDepth();
+				if (altDepth != null) {
+					rec.addProperty(VariantRec.VAR_DEPTH, new Double(altDepth));
+				}
 				
 				Double genotypeQuality = getGenotypeQuality();
 				if (genotypeQuality != null) 
@@ -251,6 +257,8 @@ public class VCFLineParser implements VariantLineReader {
 			}
 			return null;
 		}
+		
+
 		
 		public int getStart() {
 			return getPosition();
@@ -411,6 +419,30 @@ public class VCFLineParser implements VariantLineReader {
 		}
 		
 		/**
+		 * Returns the depth of the variant allele, as parsed from the INFO string for this sample
+		 * @return
+		 */
+		public Integer getVariantDepth() {
+			if (formatToks == null) {
+				createFormatString();
+			}
+			
+			String[] formatValues = lineToks[sampleColumn].split(":");
+			String adStr = formatValues[adCol];
+			try {
+				String[] depths = adStr.split(",");
+				if (depths.length==1)
+					return 0;
+				Integer altReadDepth = Integer.parseInt(depths[1]);
+				return altReadDepth;
+			}
+			catch (NumberFormatException ex) {
+				System.err.println("Could not parse alt depth from " + adStr);
+				return null;
+			}
+		}
+		
+		/**
 		 * Create the string array representing elements in the 'format' column, which
 		 * we assume is always column 8. Right now we use this info to figure out which portion
 		 * of the format string is the genotype and genotype quality part, and we ignore the
@@ -426,6 +458,10 @@ public class VCFLineParser implements VariantLineReader {
 				
 				if (formatToks[i].equals("GQ")) {
 					gqCol = i;
+				}
+				
+				if (formatToks[i].equals("AD")) {
+					adCol = i;
 				}
 			}
 

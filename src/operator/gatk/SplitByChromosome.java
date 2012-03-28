@@ -55,6 +55,9 @@ public class SplitByChromosome extends IOOperator {
 		referencePath = ((ReferenceFile) getInputBufferForClass(ReferenceFile.class)).getAbsolutePath();
 		inputBam = (BAMFile) getInputBufferForClass(BAMFile.class);
 		
+		if (inputBam == null)
+			throw new OperationFailedException("No input BAM file found", this);
+		
 		outputFiles = (MultiFileBuffer) getOutputBufferForClass(MultiFileBuffer.class);
 		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
@@ -85,6 +88,7 @@ public class SplitByChromosome extends IOOperator {
 
 		//Submit all jobs to the thread pool
 		for(int i=0; i<chromsToMake.length; i++) {
+			System.out.println("Creating split job for contig "+ chromsToMake[i]);
 			String contig = chromsToMake[i];
 			Split job = new Split(contig);
 			threadPool.submit(job);
@@ -169,7 +173,11 @@ public class SplitByChromosome extends IOOperator {
 		
 		@Override
 		public void run() {
-			
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Split operator is splitting contig " + contig );		
+
+			Logger.getLogger(Pipeline.primaryLoggerName).info("input BAM is : " + inputBam);		
+			Logger.getLogger(Pipeline.primaryLoggerName).info("input BAM is : " + inputBam.getAbsolutePath());		
+
 			String inputPath = inputBam.getAbsolutePath();
 			int index = inputPath.lastIndexOf(".");
 			String prefix = inputPath;
@@ -183,12 +191,19 @@ public class SplitByChromosome extends IOOperator {
 					" -T PrintReads " +
 					" -o " + outputPath +
 					" -L " + contig;
-			
+
+			System.out.println("Full command is: " + command);
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Full command is : " + command);		
+
 			try {
 				Logger.getLogger(Pipeline.primaryLoggerName).info("Split operator is executing command " + command);		
 
 				executeCommand(command);
+
+				System.out.println("Done executing command: " + command);
 				addOutputFile(new BAMFile(new File(outputPath), contig));
+
+				System.out.println("done adding output file");
 			} catch (OperationFailedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

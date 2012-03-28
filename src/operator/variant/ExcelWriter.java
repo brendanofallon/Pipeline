@@ -33,7 +33,7 @@ public class ExcelWriter extends VariantPoolWriter {
 	@Override
 	public void writeHeader(PrintStream outputStream) {
 		StringBuilder builder = new StringBuilder();
-		builder.append("#contig \t start \t end \t ref \t alt \t quality \t read.depth \t zygosity \t geno.qual");
+		builder.append(VariantRec.getSimpleHeader());
 		for(int i=0; i<keys.length; i++) {
 			builder.append("\t " + keys[i]);
 		}

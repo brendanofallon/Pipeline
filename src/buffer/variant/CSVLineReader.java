@@ -4,7 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,9 +29,15 @@ public class CSVLineReader implements VariantLineReader {
 		reader = new BufferedReader(new FileReader(csvFile));
 		currentLine = reader.readLine();
 		if (currentLine.startsWith("#")) {
-			headerToks = currentLine.split("\t");
-			for(int i=0; i<headerToks.length; i++)
-				headerMap.put(headerToks[i].trim(), i);
+			String[] rawToks = currentLine.split("\t");
+			List<String> tokList = new ArrayList<String>();
+			for(int i=0; i<rawToks.length; i++)
+				if (rawToks[i].trim().length()>0) {
+					tokList.add(rawToks[i].trim());
+				}
+			headerToks = tokList.toArray(new String[]{});
+			for(int i=0; i<tokList.size(); i++)
+				headerMap.put(tokList.get(i).trim(), i);
 			currentLine = reader.readLine();
 		}
 	}
@@ -113,15 +121,23 @@ public class CSVLineReader implements VariantLineReader {
 			else
 				end = start + ref.length();
 		}
-		
+				
 		VariantRec rec = new VariantRec(contig, start, start+ref.length(), ref, alt, qual, isHet);
 		rec.addProperty(VariantRec.DEPTH, depth);
 		rec.addProperty(VariantRec.GENOTYPE_QUALITY, genoQual);
 
 		//Parse additional annotations / properties from header
 		if (hasHeader() && toks.length > 8) {
+			if (toks.length != headerToks.length) {
+				for(int i=0; i<toks.length; i++) {
+					System.out.println(i + "\t" + headerToks[i] + " : " + toks[i]);
+				}
+				throw new IllegalArgumentException("Incorrect number of columns for variant, header shows " + headerToks.length + ", but this variant has: " + toks.length + "\n" + currentLine);
+				
+			}
 			for(int i=9; i<toks.length; i++) {
 				String key = headerToks[i].trim();
+				//System.out.println("Adding annotation for key: " + key + " value:" + toks[i]);
 				if (toks[i].equals("-") || toks[i].equals("NA") || toks[i].equals("?"))
 					continue; 
 				
@@ -146,11 +162,11 @@ public class CSVLineReader implements VariantLineReader {
 	}
 	
 	protected Integer getStart(String[] toks) {
-		return Integer.parseInt(toks[1]);
+		return Integer.parseInt(toks[1].trim());
 	}
 	
 	protected Integer getEnd(String[] toks) {
-		return Integer.parseInt(toks[2]);
+		return Integer.parseInt(toks[2].trim());
 	}
 	
 	protected String getRef(String[] toks) {
@@ -162,11 +178,23 @@ public class CSVLineReader implements VariantLineReader {
 	}
 	
 	protected Double getQuality(String[] toks) {
-		return Double.parseDouble(toks[5]);
+		if (toks.length < 6)
+			return 0.0;
+		String trimmed = toks[5].trim();
+		if (trimmed.length()>0)
+			return Double.parseDouble(trimmed);
+		else
+			return 0.0;
 	}
 	
 	protected Double getDepth(String[] toks) {
-		return Double.parseDouble(toks[6]);
+		if (toks.length < 7)
+			return 0.0;
+		String trimmed = toks[6].trim();
+		if (trimmed.length()>0)
+			return Double.parseDouble(trimmed);
+		else
+			return 0.0;
 	}
 	
 	protected Boolean getHet(String[] toks) {
@@ -174,7 +202,13 @@ public class CSVLineReader implements VariantLineReader {
 	}
 	
 	protected Double getGenotypeQuality(String[] toks) {
-		return Double.parseDouble(toks[8]);
+		if (toks.length < 8)
+			return 0.0;
+		String trimmed = toks[8].trim();
+		if (trimmed.length()>0)
+			return Double.parseDouble(trimmed);
+		else
+			return 0.0;
 	}
 	
 }

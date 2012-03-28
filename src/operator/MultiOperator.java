@@ -91,6 +91,10 @@ public abstract class MultiOperator extends IOOperator {
 		if (inputFiles == null) {
 			throw new OperationFailedException("InputFiles buffer has not been initialized for MultiOperator " + getObjectLabel(), this);
 		}
+		if (inputFiles.getFileCount()==0) {
+			throw new OperationFailedException("No input files specified to operator " + getObjectLabel() + ", aborting. ", this);
+		}
+		
 		logger.info("Beginning parallel multi-operation " + getObjectLabel() + " with " + inputFiles.getFileCount() + " input files");
 		if (inputFiles != null && checkContigs) {
 			checkInputContigs();

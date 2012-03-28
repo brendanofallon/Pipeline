@@ -109,6 +109,14 @@ public class Pipeline {
 	}
 	
 	/**
+	 * Get the input file from which the pipeline was 
+	 * @return
+	 */
+	public File getSourceFile() {
+		return source;
+	}
+	
+	/**
 	 * Obtain the value of the property associated with the given key, or null
 	 * if no such property exists or if the properties were not successfully loaded
 	 * (for instance, if no properties file was found)
@@ -202,9 +210,6 @@ public class Pipeline {
 			primaryLogger.info("Setting PROJECT_HOME to " + pHome);
 			props.setProperty(PROJECT_HOME, pHome);
 		}
-		
-		
-		
 	}
 
 	/**
@@ -285,6 +290,11 @@ public class Pipeline {
 			}
 		}
 				
+		if (props.getProperty(PipelineXMLConstants.MAIL_RECIPIENT) != null) {
+			String mailRecipient = props.getProperty(PipelineXMLConstants.MAIL_RECIPIENT);
+			
+		}
+		
 		if (xmlDoc == null) {
 			primaryLogger.severe(" ERROR : XML document not found / defined, aborting run ");
 			throw new IllegalStateException("XMLDoc not defined");

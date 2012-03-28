@@ -64,7 +64,7 @@ public class VariantRec {
 	}
 	
 	/**
-	 * Returns true if both the ref and alt allele have length 1
+	 * Returns true if both the ref and alt allele have length 1 and neither is '-'
 	 * @return
 	 */
 	public boolean isSNP() {
@@ -115,7 +115,9 @@ public class VariantRec {
 			throw new IllegalArgumentException("Ref or alt not defined");
 		}
 		if (ref.equals(alt)) {
-			throw new IllegalArgumentException("Ref is equal to alt, not a variant");
+			System.err.println("WARNING : ref is equal to alt, not a variant");
+			return false;
+			//throw new IllegalArgumentException("Ref is equal to alt, not a variant");
 		}
 		
 		if ( (ref.equals("A") && alt.equals("G"))
@@ -134,7 +136,9 @@ public class VariantRec {
 			throw new IllegalArgumentException("Ref or alt not defined");
 		}
 		if (ref.equals(alt)) {
-			throw new IllegalArgumentException("Ref is equal to alt, not a variant");
+			System.err.println("WARNING : ref is equal to alt, not a variant");
+			return false;
+			//throw new IllegalArgumentException("Ref is equal to alt, not a variant");
 		}
 		
 		if (ref.equals("A") || ref.equals("G")) {
@@ -152,6 +156,14 @@ public class VariantRec {
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Returns true if alt is not equal in value to ref
+	 * @return
+	 */
+	public boolean isVariant() {
+		return !getAlt().equals(getRef());
 	}
 	
 	public String getAlt() {
@@ -305,7 +317,7 @@ public class VariantRec {
 	 * @return
 	 */
 	public static String getSimpleHeader() {
-		return "#contig	\t start \t end \t ref \t alt \t quality \t depth \t zygosity \t genotype.quality ";
+		return "#contig	\t start \t end \t ref \t alt \t quality \t depth \t zygosity \t genotype.quality \t " + VariantRec.VAR_DEPTH;
 	}
 	
 	/**
@@ -317,8 +329,9 @@ public class VariantRec {
 	 * 5. alt
 	 * 6. variant quality
 	 * 7. total read depth
-	 * 8. het / hom
-	 * 9. genotype quality
+	 * 8. variant read depth
+	 * 9. het / hom
+	 * 10. genotype quality
 	 * @return
 	 */
 	public String toSimpleString() {
@@ -336,7 +349,12 @@ public class VariantRec {
 		if (genotypeQual != null)
 			gqStr = "" + genotypeQual;
 		
-		return contig + "\t" + start + "\t" + end + "\t" + getRef() + "\t" + getAlt() + "\t" + getQuality() + "\t" + depthStr + "\t" + het + "\t" + gqStr;  
+		Double varDepth = getProperty(VariantRec.VAR_DEPTH);
+		String varDepthStr = "-";
+		if (varDepth != null)
+			varDepthStr = varDepth + "";
+		
+		return contig + "\t" + start + "\t" + end + "\t" + getRef() + "\t" + getAlt() + "\t" + getQuality() + "\t" + depthStr + "\t" + het + "\t" + gqStr + "\t" + varDepthStr;  
 	}
 	
 	/**
@@ -503,6 +521,7 @@ public class VariantRec {
 	public static final String GO_COMPONENT = "go.component";
 	public static final String GENOTYPE_QUALITY = "genotype.quality";
 	public static final String SOURCE = "source.file";
+	public static final String VAR_DEPTH = "var.depth";
 
 	
 	

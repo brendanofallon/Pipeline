@@ -8,12 +8,12 @@ import java.util.logging.Logger;
 
 import pipeline.Pipeline;
 
+import math.Histogram;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMFileWriterFactory;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMFileReader.ValidationStringency;
-import util.Histogram;
 import buffer.BAMFile;
 import buffer.FileBuffer;
 import buffer.TextBuffer;
@@ -110,7 +110,9 @@ public class BamMetrics extends IOOperator {
 		sum.append("Number of low vendor quality reads : " + metrics.duplicateReads + " ( " + formatter.format(100.0*metrics.lowVendorQualityReads / metrics.totalReads) + "% )" + lineSep);
 		sum.append(" Distribution of insert sizes : " + lineSep);
 		sum.append(metrics.insertSizeHistogram.toString() + lineSep);
-		
+		sum.append(" Mean insert size:" + formatter.format(metrics.insertSizeHistogram.getMean()) + lineSep);		
+		sum.append(" Stdev insert size:" + formatter.format(metrics.insertSizeHistogram.getStdev()) + lineSep );
+		sum.append(" Insert size range: " + metrics.insertSizeHistogram.getMinValueAdded() + " - " + metrics.insertSizeHistogram.getMaxValueAdded() + lineSep );
 		return sum.toString();
 	}
 	

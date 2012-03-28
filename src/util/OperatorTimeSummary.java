@@ -75,4 +75,10 @@ public class OperatorTimeSummary implements PipelineListener {
 		Logger.getLogger(Pipeline.primaryLoggerName).info( getSummary() );
 		System.out.println( getSummary() );
 	}
+
+	@Override
+	public void errorEncountered(Operator op) {
+		// TODO Auto-generated method stub
+		
+	}
 }

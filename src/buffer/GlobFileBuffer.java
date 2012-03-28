@@ -22,19 +22,19 @@ import pipeline.PipelineObject;
  */
 public class GlobFileBuffer extends MultiFileBuffer {
 
-	@Override
-	public void initialize(NodeList children) {
-		boolean guessContig = false;
-		String guessAttr = properties.get(GUESS_CONTIG);
-		if (guessAttr != null) {
-			guessContig = Boolean.parseBoolean(guessAttr);
-		}
-		
-		final String pattern = properties.get(FILENAME_ATTR);
+	private boolean guessContig = true; //Attempt to associate contig numbers with input files
+	private FileMatcher fileMatcher = null; //Object that will look for files matching the pattern provided
+	
+	
+	/**
+	 * During initialization we determine the file pattern to be matched, but we only
+	 * actually look for files when this method gets called..
+	 */
+	public void findFiles() {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		
+
 		String projHome = System.getProperty("user.dir");
-		if (! pattern.startsWith("/")) {
+		if (! fileMatcher.inputPattern.startsWith("/")) {
 			String projHomeAttr = properties.get(Pipeline.PROJECT_HOME);
 			if (projHomeAttr != null) {
 				projHome = projHomeAttr;
@@ -42,32 +42,44 @@ public class GlobFileBuffer extends MultiFileBuffer {
 		}
 		
 		File projDir = new File(projHome);
-		System.out.println("pattern is: " + pattern);
-		FileMatcher fileMatcher = new FileMatcher( Pattern.compile(pattern));
 		File[] listing = projDir.listFiles(fileMatcher);
-	
+		
 		if (listing.length == 0) {
-			logger.severe("GlobFileBuffer with pattern " + pattern + " matched zero files!");
-			throw new IllegalArgumentException("Glob file buffer did not match any files, this is probably an error");
+			logger.severe("GlobFileBuffer with pattern " + fileMatcher.inputPattern + " matched zero files!");
+		//	throw new IllegalArgumentException("Glob file buffer did not match any files, this is probably an error");
 		}
 		
 		for(int i=0; i<listing.length; i++) {
 			FileBuffer buffer = FileTypeGuesser.GuessFileType( listing[i]);
-			System.out.println("Glob buffer is adding : " + listing[i].getAbsolutePath());
 			if (guessContig) {
 				String contig = guessContig(buffer);
 				buffer.setContig(contig);
 			}
 			addFile( buffer );
 		}
-		
 	}
 	
+	@Override
+	public void initialize(NodeList children) {
+		String guessAttr = properties.get(GUESS_CONTIG);
+		if (guessAttr != null) {
+			guessContig = Boolean.parseBoolean(guessAttr);
+		}
+		
+		final String pattern = properties.get(FILENAME_ATTR);
+
+		System.out.println("pattern is: " + pattern);
+		fileMatcher = new FileMatcher(pattern, Pattern.compile(pattern));
+		findFiles();
+	}
+
 	
 	public class FileMatcher implements FilenameFilter {
 		
 		Pattern pattern;
-		public FileMatcher(Pattern pattern) {
+		String inputPattern;
+		public FileMatcher(String inputString, Pattern pattern) {
+			this.inputPattern = inputString;
 			this.pattern = pattern;
 		}
 		

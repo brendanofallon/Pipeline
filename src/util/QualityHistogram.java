@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
+import math.Histogram;
+
 public class QualityHistogram {
 
 	public static void main(String[] args) {

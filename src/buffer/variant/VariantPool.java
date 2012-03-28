@@ -230,9 +230,11 @@ public class VariantPool extends Operator  {
 						transversions++;
 					
 					if (! (rec.isTransition() || rec.isTransversion())) {
-						System.out.println("Variant is neither a transition or transversion!" + rec.toSimpleString());
+						System.err.println("Variant is neither a transition or transversion!" + rec.toSimpleString());
 					}
-					total++;
+					else {
+						total++;
+					}
 				}
 			}
 		}
@@ -243,7 +245,7 @@ public class VariantPool extends Operator  {
 		int transitions = 0;
 		for(String contig : getContigs()) {
 			for(VariantRec rec : getVariantsForContig(contig)) {
-				if (rec.getRef().length()==1 && rec.getAlt().length()==1) {
+				if (rec.isSNP()) {
 					if (rec.isTransition())
 						transitions++;
 					
@@ -257,7 +259,7 @@ public class VariantPool extends Operator  {
 		int transversions = 0;
 		for(String contig : getContigs()) {
 			for(VariantRec rec : getVariantsForContig(contig)) {
-				if (rec.getRef().length()==1 && rec.getAlt().length()==1) {
+				if (rec.isSNP()) {
 					if (rec.isTransversion())
 						transversions++;
 					
@@ -292,7 +294,7 @@ public class VariantPool extends Operator  {
 	public VariantRec findRecordNoWarn(String contig, int pos) {
 		List<VariantRec> varList = vars.get(contig);
 		if (varList == null) {
-			System.err.println("Contig: " + contig + " not found");
+			System.err.println("Contig " + contig + " not found");
 			return null;
 		}
 		
@@ -306,6 +308,26 @@ public class VariantPool extends Operator  {
 		return varList.get(index);		
 	}
 	
+	/**
+	 * Returns the result of binary search for a record at the given position. If the 
+	 * record is found the result will be the index of the found record. If no record is
+	 * found the result is -1*insertionPoint -1 (ala Collectionc.binarySearch), where
+	 * insertionPoint is where the record would be inserted if it was added 
+	 * @param contig
+	 * @param pos
+	 * @return
+	 */
+	public int findInsertionPosition(String contig, int pos) {
+		List<VariantRec> varList = vars.get(contig);
+		if (varList == null) {
+			throw new IllegalArgumentException("No contig with name " + contig + " found");
+		}
+		
+		qRec.setPosition(contig, pos, pos);
+		
+		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
+		return index;
+	}
 	
 	/**
 	 * Add all variants from source to this pool
@@ -346,6 +368,43 @@ public class VariantPool extends Operator  {
 			count += this.getVariantsForContig(contig).size();
 		}
 		return count;
+	}
+	
+	/**
+	 * Returns the next variant in the list after the variant at the given variants
+	 * @param pos
+	 * @return
+	 */
+	public VariantRec nextVariant(VariantRec pos) {
+		List<VariantRec> vars = getVariantsForContig(pos.getContig());
+		if (vars == null) {
+			return null;
+		}
+		
+		
+		int index = this.findInsertionPosition(pos.getContig(), pos.getStart());
+		
+		//Record found, but points to last variant in the list
+		if (index == (vars.size()-1))
+			return null;
+		
+		//Record found and is not last variant, so return next one
+		if (index>=0) {
+			int start = index+1;
+			while (start < vars.size() && vars.get(start).getStart() == pos.getStart())
+				start++;
+			return vars.get(start);
+		}
+		
+		index = -1*index-1;
+		
+		//Not found, but after last item in list, return null
+		if (index > (vars.size()-2))
+			return null;
+		
+		//Not found, but not after last item, return next record
+		return vars.get(index);
+		
 	}
 	
 	/**

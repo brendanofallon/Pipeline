@@ -1,6 +1,7 @@
 package operator.gatk;
 
 import java.io.File;
+import java.util.logging.Logger;
 
 import operator.MultiOperator;
 import pipeline.Pipeline;
@@ -24,6 +25,10 @@ public class MultiGenotype extends MultiOperator {
 	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
+	public static final String CALL_CONF = "call_conf";
+	public static final String EMIT_CONF = "emit_conf";
+	protected double emitConf = 10.0;
+	protected double callConf = 30.0;
 	
 	
 	public int getPreferredThreadCount() {
@@ -38,7 +43,7 @@ public class MultiGenotype extends MultiOperator {
 	
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
-		
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
@@ -57,6 +62,22 @@ public class MultiGenotype extends MultiOperator {
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
+		
+		String callConfStr = properties.get(CALL_CONF);
+		if (callConfStr != null) {
+			callConf = Double.parseDouble(callConfStr);
+			System.out.println("Setting call threshold to : " + emitConf);
+			logger.info( "Setting call threshold to : " + emitConf );
+		}
+		
+		String emitConfStr = properties.get(EMIT_CONF);
+		if (emitConfStr != null) {
+			emitConf = Double.parseDouble(emitConfStr);
+			System.out.println("Setting emit threshold to : " + emitConf);
+			logger.info( "Setting emit threshold to : " + emitConf );
+		}
+		
+		
 		
 		String inputPath = inputBuffer.getAbsolutePath();
 		FileBuffer dbsnpFile = getInputBufferForClass(VCFFile.class);
@@ -83,8 +104,8 @@ public class MultiGenotype extends MultiOperator {
 		if (dbsnpFile != null)
 			command = command + " --dbsnp " + dbsnpFile.getAbsolutePath();
 		command = command + " -glm BOTH";
-		command = command + " -stand_call_conf 30.0";
-		command = command + " -stand_emit_conf 10.0";
+		command = command + " -stand_call_conf " + callConf + " ";
+		command = command + " -stand_emit_conf " + emitConf + " ";
 		if (inputBuffer.getContig() != null) {
 			command = command + " -L " + inputBuffer.getContig() + " ";
 		}

@@ -1,4 +1,4 @@
-package util;
+package math;
 
 /********************************************************************
 *
@@ -288,6 +288,24 @@ public class Histogram {
 			}
 			str.append(" > " + maxValue + " : " + formatter.format((double)moreThanMax/(double)count) + "\n");
 			
+		}
+		return str.toString();
+	}
+	
+	/**
+	 * Return the frequencies of all bins a in comma separated list
+	 * @return
+	 */
+	public String freqsToCSV() {
+		StringBuilder str = new StringBuilder();
+		if (count == 0) {
+			str.append("(no data collected)");
+		}
+		else {
+			str.append(formatter.format(hist[0]/(double)count));
+			for(int i=1; i<hist.length; i++) {
+				str.append("," + formatter.format(hist[i]/(double)count) );
+			}
 		}
 		return str.toString();
 	}

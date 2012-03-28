@@ -10,6 +10,8 @@ import java.util.List;
 
 import javax.swing.SwingWorker;
 
+import math.Histogram;
+
 import operator.variant.CompareVCF;
 import operator.variant.CompoundHetFinder;
 
@@ -65,7 +67,35 @@ public class VarUtils {
 
 	}
 	
+	/**
+	 * Generate a histogram of the variant depths in the given pool
+	 * @param vars
+	 * @return
+	 */
+	public static void computeVarDepthHisto(VariantPool vars, Histogram hist) {
+		for(String contig : vars.getContigs()) {
+			for(VariantRec var : vars.getVariantsForContig(contig)) {
+				Double totDepth = var.getProperty(VariantRec.DEPTH);
+				Double varDepth = var.getProperty(VariantRec.VAR_DEPTH);
+				//System.out.println(var.getContig() + "\t" + var.getStart() + "\t" + totDepth + "\t" + varDepth);
+				double ratio = 0.99999*(varDepth / totDepth);
+				hist.addValue(ratio);
+			}
+		}	
+	}
 	
+	
+	private static void computeReadDepthHisto(VariantPool vars,	Histogram hist) {
+		for(String contig : vars.getContigs()) {
+			for(VariantRec var : vars.getVariantsForContig(contig)) {
+				Double totDepth = var.getProperty(VariantRec.DEPTH);
+				//Double varDepth = var.getProperty(VariantRec.VAR_DEPTH);
+				//System.out.println(var.getContig() + "\t" + var.getStart() + "\t" + totDepth + "\t" + varDepth);
+				double ratio = 0.99999*( totDepth);
+				hist.addValue(ratio);
+			}
+		}
+	}
 	
 	public static void handleCompoundHet(String[] args) {
 		if (! args[0].equals("compoundHet")) {
@@ -578,6 +608,74 @@ public class VarUtils {
 			return;
 		}
 		
+		if (firstArg.equals("hapCompare")) {
+			if (args.length != 3) {
+				System.out.println("Enter the names of the sample-from-hapmap csv file and the query file to compare");
+				return;
+			}
+	
+			try {
+				VariantPool hapmap = getPool(new File(args[1]));
+				VariantPool sample = getPool(new File(args[2]));
+				
+				int falsePoz = 0;
+				int falseNeg = 0;
+				int truePoz = 0;
+				int trueNeg = 0;
+				int totHapMapVar = 0;
+				int wrongZygosity = 0;
+				
+				VariantPool falsePosPool = new VariantPool();
+				VariantPool falseNegPool = new VariantPool();
+				
+				for(String contig : hapmap.getContigs()) {
+					for(VariantRec var : hapmap.getVariantsForContig(contig)) {
+						VariantRec sampleVar = sample.findRecordNoWarn(contig, var.getStart());
+						if (var.isVariant() && sampleVar == null) {
+							totHapMapVar++;
+							falseNeg++;
+						}
+						if (var.isVariant() && sampleVar != null) {
+							totHapMapVar++;
+							truePoz++;
+							int flag = 0;
+							if (var.isHetero())
+								flag++;
+							if (sampleVar.isHetero())
+								flag++;
+							if (flag==1)
+								wrongZygosity++;
+						}
+						if ((!var.isVariant()) && sampleVar==null) {
+							trueNeg++;
+						}
+						if ((!var.isVariant()) && sampleVar!=null) {
+							falsePoz++;
+							falsePosPool.addRecord(sampleVar);
+						}
+						
+					}
+					
+				}
+				
+				System.out.println("Found " + hapmap.size() + " sites from hapmap");
+				System.out.println("Of these " + totHapMapVar + " were non-reference");
+				System.out.println("True positives: " + truePoz);
+				System.out.println("True negatives: " + trueNeg);
+				System.out.println("False positives: " + falsePoz);
+				System.out.println("False negatives: " + falseNeg);
+				System.out.println("True positives, but wrong zygosity : " + wrongZygosity);
+				
+				System.out.println("False positives:");
+				falsePosPool.listAll(System.out);
+				
+				return;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
 		if (firstArg.equals("compare")) {
 			if (args.length != 3) {
 				System.out.println("Enter the names of two variant (vcf or csv) files to compare");
@@ -844,24 +942,59 @@ public class VarUtils {
 			return;
 		}
 	
+		if (firstArg.equals("novelFilter")) {
+			if (args.length < 2) {
+				System.out.println("Enter the names of one or more variant (vcf or csv) files to examine");
+				return;
+			}
+			
+			try {
+				VariantPool pool = getPool(new File(args[1]));
+				List<VariantRec> novelVars = pool.filterPool(VarFilterUtils.getPopFreqFilter(1e-8));
+				VariantPool vars = new VariantPool();
+				for(VariantRec var : novelVars) {
+					String rsnum = var.getAnnotation(VariantRec.RSNUM); 
+					if (rsnum == null || rsnum.length()==1) {
+						vars.addRecord(var);
+					}
+				}
+				
+				vars.listAll(System.out);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return;
+		}
+		
 		if (firstArg.equals("summary") || firstArg.equals("sum")) {
 			if (args.length < 2) {
 				System.out.println("Enter the names of one or more variant (vcf or csv) files to examine");
 				return;
 			}
 			
+			Histogram varDepthHisto = new Histogram(0, 1.0, 50); 
+			Histogram readDepthHisto = new Histogram(1, 250, 100); 
+			
+			
 			for(int i=1; i<args.length; i++) {
 				try {
+					DecimalFormat formatter = new DecimalFormat("#0.00");
 					if (i>1)
 						System.out.println("\n\n");
 					VariantPool pool = getPool(new File(args[i]));
 					System.out.println("Summary for file : " + args[i]);
 					System.out.println("Total variants : " + pool.size());
+					System.out.println("Mean variant quality : " + pool.meanQuality());
 					System.out.println("Total SNPs : " + pool.countSNPs());
 					System.out.println("Total indels: " + (pool.countInsertions() + pool.countDeletions()));
 					System.out.println("\t insertions: " + pool.countInsertions());
 					System.out.println("\t deletions: " + pool.countDeletions());
 					System.out.println(" Ts / Tv ratio: " + pool.computeTTRatio());
+					int heteros = pool.countHeteros();
+					System.out.println(" Heterozygotes : " + heteros + " (" + formatter.format((double)heteros / (double)pool.size()) + "% )");
+					computeVarDepthHisto(pool, varDepthHisto);
+					computeReadDepthHisto(pool, readDepthHisto);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -870,6 +1003,14 @@ public class VarUtils {
 				
 			}
 			
+
+			System.out.println("Histogram of variant frequencies:");
+			System.out.println(varDepthHisto.toString());
+			
+			System.out.println("Histogram of read depths :");
+			System.out.println(readDepthHisto.toString());
+			
+			System.out.println(varDepthHisto.freqsToCSV());
 			
 			return;
 		}
@@ -879,7 +1020,9 @@ public class VarUtils {
 		emitUsage();
 	}
 	
-	
+
+
+
 	class ReadVariants extends SwingWorker {
 		
 		private final File inputFile;

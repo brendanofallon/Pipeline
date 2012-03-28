@@ -1,5 +1,5 @@
 
-package util;
+package math;
 
 /********************************************************************
 *
@@ -22,6 +22,7 @@ package util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 
 /**
  * A histogram for which you don't need to specify the min and max initially. This collects the
