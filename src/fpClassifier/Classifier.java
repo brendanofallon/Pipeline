@@ -3,6 +3,10 @@ package fpClassifier;
 import java.io.File;
 import java.io.IOException;
 
+import buffer.CSVFile;
+import buffer.variant.VariantPool;
+import buffer.variant.VariantRec;
+
 import cern.jet.random.Binomial;
 import cern.jet.random.engine.MersenneTwister;
 import cern.jet.random.engine.RandomEngine;
@@ -39,22 +43,67 @@ public class Classifier {
 		return logL;
 	}
 	
+	public double getProbOneAtPos(String contig, int pos) {
+		double[] freqs = freqStore.getFreqs(contig, pos);
+		return getDistOneLikelihood(freqs);
+	}
+	
+	public double getProbTwoAtPos(String contig, int pos) {
+		double[] freqs = freqStore.getFreqs(contig, pos);
+		return getDistTwoLikelihood(freqs);
+	}
+	
+	public double getRatioForVariant(VariantRec var) {
+		if (freqStore.hasEntry(var.getContig(), var.getStart())) {
+			double probNovel = getProbOneAtPos(var.getContig(), var.getStart());
+			double probKnown = getProbTwoAtPos(var.getContig(), var.getStart());
+			
+			double varFreq = var.getProperty(VariantRec.VAR_DEPTH) / var.getProperty(VariantRec.DEPTH);
+			probNovel += Math.log( distOne.getPDF( varFreq) );
+			probKnown += Math.log( distTwo.getPDF( varFreq) );
+			
+			return Math.exp(probNovel - probKnown);
+		}
+		else {
+			return 1.0;
+		}
+	}
 	
 	public static void main(String[] args) {
-		RandomEngine rng = new MersenneTwister(1234);
+		
+		args = new String[1];
+		args[0] = "/media/MORE_DATA/detect_fp/NA12878.exome.csv";
 		
 		UnitDistribution novelDist = new UnitDistribution(novelVarFreqs);
 		UnitDistribution knownDist = new UnitDistribution(knownVarFreqs);
 		
-		Classifier classifier = new Classifier(novelDist, knownDist);
+		File freqDB = new File("/media/MORE_DATA/detect_fp/novel_exome_db.csv");
 		
+		Classifier classifier;
+		try {
+			classifier = new Classifier(freqDB, novelDist, knownDist);
+			
+			double[] testFreqs = new double[]{0.25, 0.25, 0.25, 0.25, 0.4};
+			double novelLogProb = classifier.getDistOneLikelihood(testFreqs);
+			double knownLogProb = classifier.getDistTwoLikelihood(testFreqs);
+			
+			System.out.println("Novel log prob:" + novelLogProb);
+			System.out.println("Known log prob:" + knownLogProb);
+			
+			VariantPool pool = new VariantPool(new CSVFile(new File(args[0])));
+			for(String contig : pool.getContigs()) {
+				for(VariantRec var : pool.getVariantsForContig(contig)) {
+					double ratio = classifier.getRatioForVariant(var);
+					System.out.println(var.getContig() + "\t" + var.getStart() + "\t" + var.getQuality() + "\t" + ratio);
+				}
+			}
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
-		double[] testFreqs = new double[]{0.25, 0.25, 0.25, 0.25, 0.4};
-		double novelLogProb = classifier.getDistOneLikelihood(testFreqs);
-		double knownLogProb = classifier.getDistTwoLikelihood(testFreqs);
-		
-		System.out.println("Novel log prob:" + novelLogProb);
-		System.out.println("Known log prob:" + knownLogProb);
+
 		
 	}
 	

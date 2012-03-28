@@ -58,7 +58,7 @@ public class FreqStore {
 			}
 			contigFPs.add(fp);
 			
-			
+			line = reader.readLine();
 		}
 		
 	}
