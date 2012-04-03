@@ -2,6 +2,8 @@ package fpClassifier;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import buffer.CSVFile;
 import buffer.variant.VariantPool;
@@ -11,6 +13,7 @@ import cern.jet.random.Binomial;
 import cern.jet.random.engine.MersenneTwister;
 import cern.jet.random.engine.RandomEngine;
 import math.ContinuousDistribution;
+import math.Histogram;
 import math.UnitDistribution;
 
 public class Classifier {
@@ -62,41 +65,84 @@ public class Classifier {
 			probNovel += Math.log( distOne.getPDF( varFreq) );
 			probKnown += Math.log( distTwo.getPDF( varFreq) );
 			
-			return Math.exp(probNovel - probKnown);
+			return probNovel - probKnown;
 		}
 		else {
 			return 1.0;
 		}
 	}
 	
+	public double getFalsePosPosterior(VariantRec var) {
+		final double q = 0.5; //Prior probability that variant is not false-positive
+		
+		double probNovel = 1.0;
+		double probKnown = 1.0;
+		if (freqStore.hasEntry(var.getContig(), var.getStart())) {
+			probNovel = getProbOneAtPos(var.getContig(), var.getStart());
+			probKnown = getProbTwoAtPos(var.getContig(), var.getStart());
+		}
+
+		double varFreq = var.getProperty(VariantRec.VAR_DEPTH) / var.getProperty(VariantRec.DEPTH);
+		probNovel += Math.log( distOne.getPDF( varFreq) );
+		probKnown += Math.log( distTwo.getPDF( varFreq) );
+
+		probNovel = Math.exp(probNovel);
+		probKnown = Math.exp(probKnown);
+
+		return probNovel*(1.0-q) / (probKnown*q + probNovel*(1-q));
+	}
+	
+	public FreqStore getFreqStore() {
+		return freqStore;
+	}
+	
 	public static void main(String[] args) {
 		
-		args = new String[1];
-		args[0] = "/media/MORE_DATA/detect_fp/NA12878.exome.csv";
+		//args = new String[1];
+		//args[0] = "/media/MORE_DATA/detect_fp/HHT26_testvars.csv";
 		
 		UnitDistribution novelDist = new UnitDistribution(novelVarFreqs);
 		UnitDistribution knownDist = new UnitDistribution(knownVarFreqs);
 		
-		File freqDB = new File("/media/MORE_DATA/detect_fp/novel_exome_db.csv");
+		File freqDB = new File("/media/MORE_DATA/detect_fp/novel_csvs/novel_exome_db_noHHT26.csv");
 		
 		Classifier classifier;
 		try {
 			classifier = new Classifier(freqDB, novelDist, knownDist);
 			
-			double[] testFreqs = new double[]{0.25, 0.25, 0.25, 0.25, 0.4};
-			double novelLogProb = classifier.getDistOneLikelihood(testFreqs);
-			double knownLogProb = classifier.getDistTwoLikelihood(testFreqs);
+//			classifier.getFreqStore().emitFreqDistro();
+//			System.exit(0);
 			
-			System.out.println("Novel log prob:" + novelLogProb);
-			System.out.println("Known log prob:" + knownLogProb);
+			int hits = 0;
 			
 			VariantPool pool = new VariantPool(new CSVFile(new File(args[0])));
+			VariantPool falseposPool = new VariantPool();
+			
+			Histogram posteriorDist = new Histogram(0, 1, 25);
+			
 			for(String contig : pool.getContigs()) {
 				for(VariantRec var : pool.getVariantsForContig(contig)) {
-					double ratio = classifier.getRatioForVariant(var);
-					System.out.println(var.getContig() + "\t" + var.getStart() + "\t" + var.getQuality() + "\t" + ratio);
+					//double ratio = classifier.getRatioForVariant(var);
+					double posterior = classifier.getFalsePosPosterior(var);
+					if ( classifier.getFreqStore().hasEntry(var.getContig(), var.getStart())) {
+						hits++;
+						var.addProperty(VariantRec.FALSEPOS_PROB, posterior);
+						if (posterior > 0.75)
+							falseposPool.addRecordNoSort(var);
+						posteriorDist.addValue(posterior);
+					}
 				}
 			}
+			
+			System.err.println("Total hits : " + hits);
+			System.err.println("Histogram of posteriors probs:\n" + posteriorDist.toString());
+			
+			falseposPool.sortAllContigs();
+			List<String> keys = new ArrayList<String>();
+			keys.add(VariantRec.DEPTH);
+			keys.add(VariantRec.VAR_DEPTH);
+			keys.add(VariantRec.FALSEPOS_PROB);
+			falseposPool.listAll(System.out, keys);
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

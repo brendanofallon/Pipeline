@@ -49,7 +49,7 @@ public class ExcelWriter extends VariantPoolWriter {
 		builder.append(rec.toSimpleString());
 		for(int i=0; i<keys.length; i++) {
 			String val = rec.getPropertyOrAnnotation(keys[i]);
-			if (keys[i] == VariantRec.RSNUM && (!val.equals("-"))) {
+			if (keys[i] == VariantRec.RSNUM && (!val.trim().equals("-"))) {
 				val = "=HYPERLINK(\"http://www.ncbi.nlm.nih.gov/snp/?term=" + val + "\", \"" + val + "\")";
 			}
 			

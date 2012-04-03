@@ -28,7 +28,11 @@ import buffer.variant.VariantRec;
 public class VariantPoolToFile extends VariantPoolWriter {
 
 
-	String[] toInclude = new String[]{VariantRec.GENE_NAME, VariantRec.VARIANT_TYPE, VariantRec.EXON_FUNCTION, VariantRec.POP_FREQUENCY };
+	String[] toInclude = new String[]{VariantRec.GENE_NAME, 
+								VariantRec.VARIANT_TYPE,
+								VariantRec.EXON_FUNCTION,
+								VariantRec.RSNUM,
+								VariantRec.POP_FREQUENCY };
 	
 	@Override
 	public void writeHeader(PrintStream outputStream) {

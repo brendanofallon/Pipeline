@@ -26,9 +26,9 @@ public class ProtoSequence {
 		refMap.add(first);
 	}
 	
-	public ProtoSequence(StringBuilder strb) {
-		seq = new StringBuilder(strb.toString());
-		Pair first = new Pair(1, 0); //Since the StringBuider is zero-indexed and the variants are 1-sequenced
+	public ProtoSequence(String str, int refStartPos) {
+		seq = new StringBuilder(str);
+		Pair first = new Pair(refStartPos, 0); //Since the StringBuider is zero-indexed and the variants are 1-sequenced
 		refMap.add(first);
 	}
 	
@@ -70,13 +70,17 @@ public class ProtoSequence {
 		}
 		if (phase==1)
 			alt = var.getAlt1();
-		if (alt.equals( var.getRef() ))
+		if (alt.equals( var.getRef() )) {
+			System.out.println("Alt equals ref at this site, ignoring (alt:" + alt  + " ref:" + var.getRef() +")");
 			return; //no variant, do nothing
+		}
 		
 		//Altering wont change mapping
 		if (alt.length()==1) {
-			int refPos = var.getPos();
-			seq.replace(refPos, refPos+1, alt);
+			int refPos = var.getPos(); //This number is in reference coords
+			int seqPos = seqIndexForRefPos(refPos); //Ref coords converted to indices for string
+			System.out.println("Replacing base at site " + seqPos + " with " + alt);
+			seq.replace(seqPos, seqPos+1, alt);
 		}
 		else {
 			System.out.println("WARNING: skipping insertion " + alt + " at pos: " + var.getPos());

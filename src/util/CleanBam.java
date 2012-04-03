@@ -33,6 +33,7 @@ public class CleanBam {
 		int outReadCount = 0;
 		for (final SAMRecord samRecord : inputSam) {
 			readCount++;
+			
 			if ( !samRecord.getMateUnmappedFlag() && (!samRecord.getReadUnmappedFlag()) && (!samRecord.getReadFailsVendorQualityCheckFlag()) && (!samRecord.getDuplicateReadFlag())) {
 				outputSam.addAlignment(samRecord);
 				outReadCount++;

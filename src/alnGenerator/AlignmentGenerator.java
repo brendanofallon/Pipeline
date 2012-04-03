@@ -39,14 +39,17 @@ public class AlignmentGenerator {
 			refSeq.append(base);
 		}
 
+		System.out.println(">reference");
+		System.out.println(refSeq.toString());
+		
 		for(SampleReader reader : sampleReaders) {
-			ProtoSequence seq = new ProtoSequence(refSeq);
+			ProtoSequence seq = new ProtoSequence(refSeq.toString(), startPos);
 			seq.setSampleName(reader.getSampleName());
 			reader.advanceTo(contig, startPos);
 			Variant var = reader.getVariant();
 			while(var.getContig().equals("" + contig) && var.getPos() < endPos) {
 				System.out.println(var);
-				seq.applyVariant(var, 0);
+				seq.applyVariant(var, reader.getPhase());
 				reader.advance();
 				var = reader.getVariant();
 			}

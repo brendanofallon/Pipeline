@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import math.Histogram;
+
 /**
  * Stores a list of variant frequencies by contig and site
  * @author brendan
@@ -61,6 +63,28 @@ public class FreqStore {
 			line = reader.readLine();
 		}
 		
+		//Now sort all contig lists 
+		for(String contig : freqData.keySet()) {
+			List<FreqPos> freqList = freqData.get(contig);
+			Collections.sort(freqList, posComparer);
+		}
+		
+	}
+	
+	/**
+	 * Write the distribution of allele frequencies in the FreqDB to stdout
+	 */
+	public void emitFreqDistro() {
+		Histogram hist = new Histogram(0, 1.0, 40);
+		for(String contig : freqData.keySet()) {
+			for(FreqPos fp : freqData.get(contig)) {
+				for(int i=0; i<fp.freqs.length; i++)
+					if (fp.freqs[i] > 0)
+						hist.addValue(fp.freqs[i]);
+			}
+		}
+		
+		System.out.println(hist.toString());
 	}
 	
 	public int getCount(String contig, int pos) {

@@ -522,6 +522,7 @@ public class VariantRec {
 	public static final String GENOTYPE_QUALITY = "genotype.quality";
 	public static final String SOURCE = "source.file";
 	public static final String VAR_DEPTH = "var.depth";
+	public static final String FALSEPOS_PROB = "fp.prob";
 
 	
 	

@@ -21,8 +21,14 @@ public class JoinVCFs {
 			vars.add(varList);
 		}
 		
-		VariantRec firstVariant = vars.get(0).get(0);
+		List<VariantRec> firstVars = vars.get(0);
+		if (firstVars.size()==0) {
+			return null;
+		}
+		VariantRec firstVariant = firstVars.get(0);
 		for(List<VariantRec> varList : vars) {
+			if (varList.size() == 0)
+				continue;
 			VariantRec testVar = varList.get(0);
 			if (testVar.getStart() < firstVariant.getStart()) {
 				firstVariant = testVar;
@@ -68,38 +74,46 @@ public class JoinVCFs {
 	
 	
 
-	private static void writeLineForVar(VariantRec var, List<VariantPool> pools, Histogram hist) {
+	private static void writeLineForVar(VariantRec var, List<VariantPool> pools, Histogram freqHist, Histogram countHist) {
 		StringBuilder strBFirst = new StringBuilder();
 		StringBuilder strBSecond = new StringBuilder();
 		strBFirst.append(var.getContig() + "\t" + var.getStart() + "\t" + (var.getStart()+1) + "\t" + var.getRef() + "\t" + var.getAlt());
 		
 		int count = 0;
+		List<Double> freqs = new ArrayList<Double>();
+		
 		for(VariantPool pool : pools) {
 			VariantRec qVar = pool.findRecordNoWarn(var.getContig(), var.getStart());
 			if (qVar == null)
-				strBSecond.append("\t0.0\t0.0");
+				strBSecond.append("\t0.0");
 			else {
 				//strBSecond.append("\t" + qVar.getProperty(VariantRec.DEPTH) + "\t" + qVar.getProperty(VariantRec.VAR_DEPTH));
 				double freq = qVar.getProperty(VariantRec.VAR_DEPTH) / qVar.getProperty(VariantRec.DEPTH);
 				//strBSecond.append("\t" + qVar.getProperty(VariantRec.DEPTH) + "\t" +  qVar.getProperty(VariantRec.VAR_DEPTH));
 				strBSecond.append("\t" + freq);
-				if (hist != null && qVar.getProperty(VariantRec.DEPTH) > 4) {
-					hist.addValue(freq);
+				if (freqHist != null && qVar.getProperty(VariantRec.DEPTH) > 4) {
+					freqs.add(freq);
+					//freqHist.addValue(freq);
 				}
 				count++;
 			}
 		}
 		
-		//if (count > 1) {
+		countHist.addValue(count);
+		
+		if (count > 1) {
 			System.out.print(strBFirst);
 			System.out.println("\t" + count + strBSecond);
-		//}
+			for(Double freq : freqs)
+				freqHist.addValue(freq);
+			
+		}
 	}
 	
 	public static void main(String[] args) {
 		
-//		args = new String[2];
-//		args[0] = "/media/MORE_DATA/detect_fp/annotated_files/HHT19.novel.csv";
+//		args = new String[1];
+//		args[0] = "/media/MORE_DATA/detect_fp/novel_csvs/NA12878.novel.csv";
 //		args[1] = "/media/MORE_DATA/detect_fp/annotated_files/HHT15.novel.csv";
 		
 		StringBuilder header = new StringBuilder("#contig\tstart\tend\tref\talt\tcount");
@@ -122,17 +136,21 @@ public class JoinVCFs {
 		}
 		
 		Histogram afHist = new Histogram(0, 1.0, 50);
+		Histogram countHist = new Histogram(0, 25, 25);
 		
 		System.out.println(header);
 		for(String contig : pools.get(0).getContigs()) {
 			VariantRec var = firstVariant(contig, pools);
 			while (var != null) {
-				writeLineForVar(var, pools, afHist);
+				writeLineForVar(var, pools, afHist, countHist);
 				var = nextVariant(var, pools);
 			}
 		}
 		
-		System.err.println(afHist.toString());
+		System.err.println("Histogram of frequencies:\n" + afHist.toString());
+		
+		System.err.println("Total number of variants across all samples:" + countHist.getCount());
+		System.err.println("Histogram of counts:\n" + countHist.toString());
 	}
 	
 	

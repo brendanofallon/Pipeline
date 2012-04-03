@@ -12,9 +12,12 @@ import javax.swing.SwingWorker;
 
 import math.Histogram;
 
+import operator.BamMetrics;
+import operator.BamMetrics.BAMMetrics;
 import operator.variant.CompareVCF;
 import operator.variant.CompoundHetFinder;
 
+import buffer.BAMFile;
 import buffer.BEDFile;
 import buffer.CSVFile;
 import buffer.VCFFile;
@@ -847,7 +850,15 @@ public class VarUtils {
 				if (outputFile != null) {
 					outputStream = new PrintStream(new FileOutputStream(outputFile));
 				}
-				filteredVars.listAll(outputStream);
+				List<String> annoKeys = new ArrayList<String>();
+				annoKeys.add(VariantRec.RSNUM);
+				annoKeys.add(VariantRec.POP_FREQUENCY);
+				annoKeys.add(VariantRec.GENE_NAME);
+				annoKeys.add(VariantRec.VARIANT_TYPE);
+				annoKeys.add(VariantRec.EXON_FUNCTION);
+				annoKeys.add(VariantRec.CDOT);
+				annoKeys.add(VariantRec.PDOT);
+				filteredVars.listAll(outputStream, annoKeys);
 				outputStream.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -950,16 +961,54 @@ public class VarUtils {
 			
 			try {
 				VariantPool pool = getPool(new File(args[1]));
-				List<VariantRec> novelVars = pool.filterPool(VarFilterUtils.getPopFreqFilter(1e-8));
+				List<VariantRec> novelVars = pool.filterPool(VarFilterUtils.getPopFreqFilter(0.001));
+				//System.out.println("Vars passing pop freq filter:" + novelVars.size());
 				VariantPool vars = new VariantPool();
 				for(VariantRec var : novelVars) {
 					String rsnum = var.getAnnotation(VariantRec.RSNUM); 
-					if (rsnum == null || rsnum.length()==1) {
+					if (rsnum == null || rsnum.length()<3) {
 						vars.addRecord(var);
 					}
 				}
+				//System.out.println("Vars passing dbSNP filter: "+ vars.size());
+				List<String> annoKeys = new ArrayList<String>();
+				annoKeys.add(VariantRec.RSNUM);
+				annoKeys.add(VariantRec.POP_FREQUENCY);
+				annoKeys.add(VariantRec.GENE_NAME);
+				annoKeys.add(VariantRec.VARIANT_TYPE);
+				annoKeys.add(VariantRec.EXON_FUNCTION);
+				annoKeys.add(VariantRec.CDOT);
+				annoKeys.add(VariantRec.PDOT);
+				vars.listAll(System.out, annoKeys);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return;
+		}
+		
+		if (firstArg.equals("qualFilter")) {
+			if (args.length < 3) {
+				System.out.println("Enter the quality to filter by and the names of one or more variant (vcf or csv) files to examine");
+				return;
+			}
+			
+			try {
+				double qual = Double.parseDouble(args[1]);
 				
-				vars.listAll(System.out);
+				VariantPool pool = getPool(new File(args[1]));
+				VariantPool vars = new VariantPool(pool.filterPool(VarFilterUtils.getQualityFilter(qual)));
+				
+				
+				List<String> annoKeys = new ArrayList<String>();
+				annoKeys.add(VariantRec.RSNUM);
+				annoKeys.add(VariantRec.POP_FREQUENCY);
+				annoKeys.add(VariantRec.GENE_NAME);
+				annoKeys.add(VariantRec.VARIANT_TYPE);
+				annoKeys.add(VariantRec.EXON_FUNCTION);
+				annoKeys.add(VariantRec.CDOT);
+				annoKeys.add(VariantRec.PDOT);
+				vars.listAll(System.out, annoKeys);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -975,7 +1024,10 @@ public class VarUtils {
 			
 			Histogram varDepthHisto = new Histogram(0, 1.0, 50); 
 			Histogram readDepthHisto = new Histogram(1, 250, 100); 
-			
+			double qualitySum = 0;
+			double tstvSum = 0;
+			double hetSum = 0;
+			double varSum = 0;
 			
 			for(int i=1; i<args.length; i++) {
 				try {
@@ -991,6 +1043,12 @@ public class VarUtils {
 					System.out.println("\t insertions: " + pool.countInsertions());
 					System.out.println("\t deletions: " + pool.countDeletions());
 					System.out.println(" Ts / Tv ratio: " + pool.computeTTRatio());
+					
+					qualitySum += pool.meanQuality()*pool.size();
+					tstvSum += pool.computeTTRatio()*pool.size();
+					hetSum += pool.countHeteros();
+					varSum += pool.size();
+					
 					int heteros = pool.countHeteros();
 					System.out.println(" Heterozygotes : " + heteros + " (" + formatter.format((double)heteros / (double)pool.size()) + "% )");
 					computeVarDepthHisto(pool, varDepthHisto);
@@ -1003,7 +1061,17 @@ public class VarUtils {
 				
 			}
 			
-
+			double qualityMean = qualitySum / varSum;
+			double hetMean = hetSum / varSum;
+			double tstvMean = tstvSum / varSum;
+			
+			System.out.println("Overall statistics :");
+			System.out.println("Total variants examined :" + varSum);
+			System.out.println("Mean quality score : " + qualityMean);
+			System.out.println("Hetero fraction:" + hetMean);
+			System.out.println("Ts/Tv mean:" + tstvMean);
+			
+			
 			System.out.println("Histogram of variant frequencies:");
 			System.out.println(varDepthHisto.toString());
 			
@@ -1015,6 +1083,20 @@ public class VarUtils {
 			return;
 		}
 	
+		
+		
+		if (firstArg.equals("bamMetrics")) {
+			
+			for(int i=1; i<args.length; i++ ) {
+				BAMFile bamFile = new BAMFile(new File(args[i]));
+				BAMMetrics metrics = BamMetrics.computeBAMMetrics(bamFile);
+			
+				System.out.println("Summary for " + args[i] + "\n" + BamMetrics.getBAMMetricsSummary(metrics));
+			}
+				
+			
+			return;
+		}
 		
 		System.out.println("Unrecognized command : " + args[0]);
 		emitUsage();

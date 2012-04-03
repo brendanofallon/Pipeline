@@ -14,12 +14,12 @@ import java.io.IOException;
  */
 public class SampleReader {
 
-	VCFReader vcfReader;
-	BufferedReader reader;
-	String sampleName;
-	int phase;
-	int column;
-	String currentLine = null;
+	private VCFReader vcfReader;
+	private BufferedReader reader;
+	private String sampleName;
+	private int phase;
+	private int column;
+	private String currentLine = null;
 	
 	public SampleReader(VCFReader vcfReader, String sampleName, int phase) throws IOException {
 		this.vcfReader = vcfReader;
@@ -31,6 +31,10 @@ public class SampleReader {
 		reader = new BufferedReader(new FileReader(vcfReader.getSourceFile()));
 		column = vcfReader.getColumnForSample(sampleName);
 		advanceToFirstVariant();
+	}
+	
+	public int getPhase() {
+		return phase;
 	}
 
 	public String getSampleName() {
@@ -99,15 +103,12 @@ public class SampleReader {
 		String contig = toks[0].trim();
 		Integer pos = Integer.parseInt( toks[1].trim() );
 		String ref = toks[3];
-		String alt = toks[4];
+		String altStr = toks[4];
 		Double quality = Double.parseDouble(toks[5]);
-		String[] altAlleles = alt.split(",");
-		
-		
+		String[] altAlleles = altStr.split(",");
 		
 		String formatVals = toks[column];
 		String[] formatToks = formatVals.split(":");
-		
 		
 		String GTStr = formatToks[ vcfReader.getFormatCol("GT")];
 		char gt0 = GTStr.charAt(0);
@@ -116,6 +117,25 @@ public class SampleReader {
 		String alt1;
 		Integer gt0Col = Integer.parseInt(gt0 + "");
 		Integer gt1Col = Integer.parseInt(gt1 + "");
+		
+		String primaryAlt = altAlleles[0];
+		if (primaryAlt.length() != ref.length()) {
+			//Remove initial characters if they are equal and add one to start position
+			if (primaryAlt.charAt(0) == ref.charAt(0)) {
+				primaryAlt = primaryAlt.substring(1);
+				ref = ref.substring(1);
+				if (primaryAlt.length()==0)
+					primaryAlt = ProtoSequence.GAP;
+				altAlleles[0] = primaryAlt;
+				if (ref.length()==0)
+					ref = ProtoSequence.GAP;
+				pos++;
+			}
+			if (altAlleles.length > 1) {
+				throw new IllegalArgumentException("OK, so there are multiple alts at this site, and one of them needs a reassigned position because it's in GaTK-style indel annotation. We can't handle this currently because there are really multiple variants at this position");
+			}
+		}
+		
 		if (gt0Col == 0)
 			alt0 = ref;
 		else

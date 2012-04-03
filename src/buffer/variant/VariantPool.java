@@ -377,7 +377,7 @@ public class VariantPool extends Operator  {
 	 */
 	public VariantRec nextVariant(VariantRec pos) {
 		List<VariantRec> vars = getVariantsForContig(pos.getContig());
-		if (vars == null) {
+		if (vars == null || vars.size()==0) {
 			return null;
 		}
 		
@@ -393,7 +393,10 @@ public class VariantPool extends Operator  {
 			int start = index+1;
 			while (start < vars.size() && vars.get(start).getStart() == pos.getStart())
 				start++;
-			return vars.get(start);
+			if (start == vars.size())
+				return null;
+			else
+				return vars.get(start);
 		}
 		
 		index = -1*index-1;

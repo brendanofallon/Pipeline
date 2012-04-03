@@ -36,6 +36,8 @@ public class UnitDistribution implements ContinuousDistribution {
 			throw new IllegalArgumentException("value not in 0..1, got:" + x);
 
 		int bin = (int)Math.floor(x*densities.length);
+		if (bin == densities.length)
+			bin--;
 		return densities[bin];
 	}
 

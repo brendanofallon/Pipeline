@@ -125,15 +125,15 @@ public class VCFReader {
 		File hht4 = new File("/media/MORE_DATA/detect_fp/rawvcfs/HHT4_all_variants.vcf");
 		File reference = new File("/home/brendan/resources/human_g1k_v37.fasta");
 				
-		Integer contig = 13;
-		int startPos = 32911800;
-		int endPos = 32913100;
+		Integer contig = 17;
+		int startPos = 41249350;
+		int endPos =   41249400;
 		
 		AlignmentGenerator alnGen = new AlignmentGenerator(reference);
 		VCFReader vcfReader;
 		try {
 			vcfReader = new VCFReader(hht15);
-			SampleReader varReader = vcfReader.getReaderForSample("unknown", 0);
+			SampleReader varReader = vcfReader.getReaderForSample("unknown", 1);
 			alnGen.addSampleReader(varReader);
 			
 			vcfReader = new VCFReader(hht16);
