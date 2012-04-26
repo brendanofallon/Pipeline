@@ -1,10 +1,13 @@
-package operator;
+package operator.qc;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.logging.Logger;
+
+import operator.IOOperator;
+import operator.OperationFailedException;
 
 import pipeline.Pipeline;
 
@@ -63,7 +66,7 @@ public class BamMetrics extends IOOperator {
 		int unmappedCount = 0;
 		int unmappedMate = 0;
 		Histogram insertSizeHisto = new Histogram(0, 1000, 100);
-		Histogram baseQHisto = new Histogram(0, 41, 41);
+		Histogram baseQHisto = new Histogram(0, 51, 51);
 		int dupCount = 0;
 		int failsVendorQuality = 0;
 		int hugeInsertSize = 0;
@@ -71,6 +74,7 @@ public class BamMetrics extends IOOperator {
 		long basesAbove20 = 0;
 		long basesAbove10 = 0;
 		long totalBaseCount = 0;
+		Histogram[] posHisto = null; 
 		
 		for (final SAMRecord samRecord : inputSam) {
 			readCount++;
@@ -85,6 +89,13 @@ public class BamMetrics extends IOOperator {
 				dupCount++;
 			
 			byte[] baseQuals = samRecord.getBaseQualities();
+			
+			if (posHisto == null) {
+				posHisto = new Histogram[baseQuals.length];
+				for(int i=0; i<baseQuals.length; i++)
+					posHisto[i] =  new Histogram(0, 50, 50);
+			}
+			
 			for(int i=0; i<baseQuals.length; i++) {
 				if (baseQuals[i] > 30)
 					basesAbove30++;
@@ -92,8 +103,10 @@ public class BamMetrics extends IOOperator {
 					basesAbove20++;
 				if (baseQuals[i] > 10)
 					basesAbove10++;
-				baseQHisto.addValue(baseQuals[i]);
+				//int bq = (int)baseQuals[i];
+				baseQHisto.addValue( baseQuals[i] );
 				
+				posHisto[i].addValue(baseQuals[i]);
 			}
 			totalBaseCount += baseQuals.length;
 			int insertSize = Math.abs( samRecord.getInferredInsertSize() );
@@ -122,6 +135,7 @@ public class BamMetrics extends IOOperator {
 		metrics.basesQAbove20 = basesAbove20;
 		metrics.basesQAbove30 = basesAbove30;
 		metrics.basesRead = totalBaseCount;
+		metrics.readPosQualHistos = posHisto;
 		return metrics;
 	}
 	
@@ -161,6 +175,7 @@ public class BamMetrics extends IOOperator {
 		int totalReads;
 		Histogram insertSizeHistogram;
 		Histogram baseQualityHistogram;
+		Histogram[] readPosQualHistos;
 		int unmappedReads;
 		int unmappedMates;
 		int duplicateReads;

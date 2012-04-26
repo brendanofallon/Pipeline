@@ -18,8 +18,11 @@ public class ExcelWriter extends VariantPoolWriter {
 								 VariantRec.VARIANT_TYPE, 
 								 VariantRec.EXON_FUNCTION,
 								 VariantRec.RSNUM, 
-								 VariantRec.POP_FREQUENCY, 
-								 VariantRec.OMIM_ID, 
+								 VariantRec.POP_FREQUENCY,
+								 VariantRec.EXOMES_FREQ, 
+								 VariantRec.OMIM_ID,
+								 VariantRec.FALSEPOS_PROB,
+								 VariantRec.VQSR,
 								 VariantRec.CDOT,
 								 VariantRec.PDOT,
 								 VariantRec.SIFT_SCORE, 
@@ -48,10 +51,10 @@ public class ExcelWriter extends VariantPoolWriter {
 		StringBuilder builder = new StringBuilder();
 		builder.append(rec.toSimpleString());
 		for(int i=0; i<keys.length; i++) {
-			String val = rec.getPropertyOrAnnotation(keys[i]);
-			if (keys[i] == VariantRec.RSNUM && (!val.trim().equals("-"))) {
-				val = "=HYPERLINK(\"http://www.ncbi.nlm.nih.gov/snp/?term=" + val + "\", \"" + val + "\")";
-			}
+			String val = rec.getPropertyOrAnnotation(keys[i]).trim();
+//			if (keys[i] == VariantRec.RSNUM && (!val.trim().equals("-"))) {
+//				val = "=HYPERLINK(\"http://www.ncbi.nlm.nih.gov/snp/?term=" + val + "\", \"" + val + "\")";
+//			}
 			
 			builder.append("\t" + val);
 		}

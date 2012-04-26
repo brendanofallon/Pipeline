@@ -48,7 +48,9 @@ public class MultiLaneAligner extends PipedCommandOp {
 	public static final String THREADS = "threads";
 	public static final String SKIPSAI = "skipsai";
 	public static final String SINGLE_END = "single";
+	public static final String SAMPE_THREADS = "sampe.threads";
 	
+	protected int sampeThreads = Pipeline.getPipelineInstance().getThreadCount();
 	protected String maxEditDist = "3"; //Maximum edit distance for alignment
 	protected String pathToBWA = "bwa";
 	protected int defaultThreads = 4;
@@ -95,6 +97,11 @@ public class MultiLaneAligner extends PipedCommandOp {
 		else
 			logger.info("Multi-lane aligner is using SINGLE-END mode");
 		
+		String sampeThreadStr = properties.get(SAMPE_THREADS);
+		if (sampeThreadStr != null) {
+			sampeThreads = Integer.parseInt(sampeThreadStr);
+		}
+			
 		
 		FileBuffer reference = getInputBufferForClass(ReferenceFile.class);
 		if (reference == null) {
@@ -319,7 +326,12 @@ public class MultiLaneAligner extends PipedCommandOp {
 		 */
 		public SamBuilderJob(String readsOne, String readsTwo, String saiFileOne, String saiFileTwo) {
 			baseFilename = readsOne;
-			command = pathToBWA + " sampe -r " + defaultRG + " " + referencePath + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo;
+			String threadsStr = "";
+			if (sampeThreads > 1) {
+				threadsStr = " -t " + sampeThreads;
+			}
+				
+			command = pathToBWA + " sampe -r " + defaultRG + " " + referencePath + " " + threadsStr + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo;
 		}
 		
 		/**

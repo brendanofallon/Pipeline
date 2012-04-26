@@ -523,9 +523,7 @@ public class VariantRec {
 	public static final String SOURCE = "source.file";
 	public static final String VAR_DEPTH = "var.depth";
 	public static final String FALSEPOS_PROB = "fp.prob";
-
-	
-	
-
+	public static final String VQSR = "vqsr.score";
+	public static final String EXOMES_FREQ = "exomes5400.frequency";
 	
 }

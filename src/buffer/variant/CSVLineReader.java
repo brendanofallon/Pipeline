@@ -93,6 +93,10 @@ public class CSVLineReader implements VariantLineReader {
 		
 		String[] toks = currentLine.split("\t");
 		
+		if (toks.length < 8) {
+			System.err.println("ERROR: could not parse variant from line : \n " + currentLine);
+			return null;
+		}
 		String contig = getContig(toks);
 		Integer start = getStart(toks);
 		Integer end = getEnd(toks);
@@ -192,7 +196,10 @@ public class CSVLineReader implements VariantLineReader {
 			return 0.0;
 		String trimmed = toks[6].trim();
 		if (trimmed.length()>0)
-			return Double.parseDouble(trimmed);
+			if (trimmed.equals("-"))
+				return 0.0;
+			else
+				return Double.parseDouble(trimmed);
 		else
 			return 0.0;
 	}
@@ -206,7 +213,10 @@ public class CSVLineReader implements VariantLineReader {
 			return 0.0;
 		String trimmed = toks[8].trim();
 		if (trimmed.length()>0)
-			return Double.parseDouble(trimmed);
+			if (trimmed.equals("-"))
+				return 0.0;
+			else
+				return Double.parseDouble(trimmed);
 		else
 			return 0.0;
 	}

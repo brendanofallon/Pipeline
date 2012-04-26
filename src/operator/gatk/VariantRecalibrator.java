@@ -5,6 +5,7 @@ import buffer.FileBuffer;
 import buffer.ReferenceFile;
 import buffer.VCFFile;
 import operator.CommandOperator;
+import operator.OperationFailedException;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 
@@ -16,7 +17,6 @@ public class VariantRecalibrator extends CommandOperator {
 	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
-	protected int threads = 1;
 	
 	@Override
 	public boolean requiresReference() {
@@ -24,7 +24,7 @@ public class VariantRecalibrator extends CommandOperator {
 	}
 	
 	@Override
-	protected String getCommand() {
+	protected String[] getCommands() {
 		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
@@ -35,10 +35,7 @@ public class VariantRecalibrator extends CommandOperator {
 			gatkPath = path;
 		}
 		
-		String threadsStr = properties.get(THREADS);
-		if (threadsStr != null) {
-			threads = Integer.parseInt(threadsStr);
-		}
+		
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
@@ -50,25 +47,46 @@ public class VariantRecalibrator extends CommandOperator {
 		}
 		
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
-		String inputFile = getInputBufferForClass(BAMFile.class).getAbsolutePath();
+		String inputFile = inputBuffers.get(1).getAbsolutePath();
 		FileBuffer hapmapFile = inputBuffers.get(2);
 		FileBuffer genomesFile = inputBuffers.get(3);
 		FileBuffer dbsnpFile = inputBuffers.get(4);
 			
+
+		FileBuffer outputVCF = getOutputBufferForClass(VCFFile.class);
 		
-		String outputRecal = outputBuffers.get(0).getAbsolutePath();
+		String projHome = Pipeline.getPipelineInstance().getProjectHome();
+		String recalFilePath = projHome + "vqsr.output.recal";
+		String tranchesPath = projHome + "vqsr.output.tranches";
+		String rScriptPath = projHome + "vqsr.output.plots.R";
+		
 				
-		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
-		command = command + " -R " + reference + " -input " + inputFile + " -T VariantRecalibrator ";		
-		command = command + "-resource:hapmap,known=false,training=true,truth=true,prior=15.0 " + hapmapFile.getAbsolutePath() + " ";
-		command = command + "-resource:omni,known=false,training=true,truth=false,prior=12.0 " + genomesFile.getAbsolutePath() + " ";
-		command = command + "-resource:dbsnp,known=true,training=false,truth=false,prior=8.0 " + dbsnpFile.getAbsolutePath() + " ";
-		command = command + "-an QD -an HaplotypeScore -an MQRankSum -an ReadPosRankSum -an FS -an MQ ";
-		command = command + "-recalFile " + outputRecal + " ";
-		command = command + "-tranchesFile output.tranches ";
-		command = command + "-rscriptFile output.plots.R ";
+		String recalCommand = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
+		recalCommand = recalCommand + " -R " + reference + " -input " + inputFile + " -T VariantRecalibrator ";		
+		recalCommand = recalCommand + "-resource:hapmap,known=false,training=true,truth=true,prior=15.0 " + hapmapFile.getAbsolutePath() + " ";
+		recalCommand = recalCommand + "-resource:omni,known=false,training=true,truth=false,prior=12.0 " + genomesFile.getAbsolutePath() + " ";
+		recalCommand = recalCommand + "-resource:dbsnp,known=true,training=false,truth=false,prior=8.0 " + dbsnpFile.getAbsolutePath() + " ";
+		recalCommand = recalCommand + "-an QD -an HaplotypeScore -an MQRankSum -an ReadPosRankSum -an FS ";
+		recalCommand = recalCommand + " --maxGaussians 5 ";
+		recalCommand = recalCommand + "-recalFile " + recalFilePath + " ";
+		recalCommand = recalCommand + "-tranchesFile " + tranchesPath + " ";
+		//recalCommand = recalCommand + "-rscriptFile " + rScriptPath + " "; 
 				   
-		return command;
+		
+		
+		String applyCommand = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
+		applyCommand = applyCommand + " -R " + reference + " -input " + inputFile + " -T ApplyRecalibration ";	
+		applyCommand = applyCommand + " -recalFile " + recalFilePath + " ";
+		applyCommand = applyCommand + " -tranchesFile " + tranchesPath + " ";
+		applyCommand = applyCommand + " -o " + outputVCF.getAbsolutePath();
+		
+		return new String[]{recalCommand, applyCommand};
+	}
+
+	@Override
+	protected String getCommand() throws OperationFailedException {
+		//Nothing to do, we've overridden getCommands()
+		return null;
 	}
 	
 }

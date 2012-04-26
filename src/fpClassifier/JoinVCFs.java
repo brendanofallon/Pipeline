@@ -1,4 +1,4 @@
-package util;
+package fpClassifier;
 
 import java.io.File;
 import java.io.IOException;
@@ -91,17 +91,18 @@ public class JoinVCFs {
 				double freq = qVar.getProperty(VariantRec.VAR_DEPTH) / qVar.getProperty(VariantRec.DEPTH);
 				//strBSecond.append("\t" + qVar.getProperty(VariantRec.DEPTH) + "\t" +  qVar.getProperty(VariantRec.VAR_DEPTH));
 				strBSecond.append("\t" + freq);
-				if (freqHist != null && qVar.getProperty(VariantRec.DEPTH) > 4) {
+				if (freqHist != null && qVar.getProperty(VariantRec.DEPTH) > 3) {
 					freqs.add(freq);
 					//freqHist.addValue(freq);
+
+					count++;
 				}
-				count++;
 			}
 		}
 		
 		countHist.addValue(count);
 		
-		if (count > 1) {
+		if (count > 2) {
 			System.out.print(strBFirst);
 			System.out.println("\t" + count + strBSecond);
 			for(Double freq : freqs)
@@ -151,6 +152,11 @@ public class JoinVCFs {
 		
 		System.err.println("Total number of variants across all samples:" + countHist.getCount());
 		System.err.println("Histogram of counts:\n" + countHist.toString());
+		
+		for(int i=0; i<afHist.getBinCount(); i++) {
+			System.err.print( afHist.getFreq(i) + ",");
+		}
+		System.err.println();
 	}
 	
 	

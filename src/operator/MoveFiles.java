@@ -10,9 +10,11 @@ import org.w3c.dom.NodeList;
 
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
+import buffer.BAMFile;
 import buffer.FileBuffer;
 import buffer.GlobFileBuffer;
 import buffer.MultiFileBuffer;
+import buffer.VCFFile;
 
 /**
  * Move input files to another directory, specified by a dest="path/to/destination" attribute
@@ -65,16 +67,34 @@ public class MoveFiles extends Operator {
 			}
 
 			for(int i=0; i<buf.getFileCount(); i++) {
-				files.add( buf.getFile(i));
+				files.add( buf.getFile(i) );
+				
+				//Experimental : Find index files too...
+				FileBuffer file = buf.getFile(i);
+				if (file.getFilename().endsWith(".bam")) {
+					FileBuffer index0 = new BAMFile(new File(file.getAbsolutePath().replace(".bam", ".bai")));
+					FileBuffer index1 = new BAMFile(new File(file.getAbsolutePath() + ".bai"));
+					
+					files.add(index0);
+					files.add(index1);
+				}
+				if (file.getFilename().endsWith("vcf")) {
+					files.add(new VCFFile(new File(file.getAbsolutePath() + ".idx")));
+				}
+				
 			}
 		}
+		
+		
 		
 		for(FileBuffer file : files) {
 			Logger.getLogger(Pipeline.primaryLoggerName).info("Moving file : " + file.getAbsolutePath());
 			String filename = file.getFilename();
 			String newPath = destination.getAbsolutePath() + fileSep + filename;
 			System.out.println("Moving file " + filename + " to new path: " + newPath);
-			file.getFile().renameTo(new File(newPath));
+			File destinationFile = new File(newPath);
+			file.getFile().renameTo(destinationFile);
+			file.setFile(destinationFile);
 		}
 	}
 

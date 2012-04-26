@@ -122,9 +122,16 @@ public class VariantPool extends Operator  {
 	 * @throws IOException
 	 */
 	private void importFromCSV(CSVLineReader reader) throws IOException {
+		int lineNumber = 0;
 		do {
 			VariantRec rec = reader.toVariantRec();
-			addRecordNoSort(rec);
+			if (rec == null) {
+				System.err.println("Warning, could not import variant from line: " + lineNumber );
+			}
+			else {
+				this.addRecordNoSort(rec);
+			}
+			lineNumber++;
 		} while(reader.advanceLine());
 
 		sortAllContigs();		
@@ -136,11 +143,16 @@ public class VariantPool extends Operator  {
 	 */
 	private void importFromVCF(VCFFile file) throws IOException {
 		VCFLineParser vParser = new VCFLineParser(file);
-		int lineCount = countLines(file);
+		//int lineCount = countLines(file);
 		int lineNumber = 0;
 		do {
 			VariantRec rec = vParser.toVariantRec();
-			this.addRecordNoSort(rec);
+			if (rec == null) {
+				System.err.println("Warning, could not import variant from line: " + lineNumber );
+			}
+			else {
+				this.addRecordNoSort(rec);
+			}
 			lineNumber++;
 			//if (lineNumber % 10000 == 0) {
 				//double frac = 100.0*(double)lineNumber / (double)lineCount;
@@ -595,6 +607,20 @@ public class VariantPool extends Operator  {
 	}
 	
 	/**
+	 * Remove the given VariantRec from this pool - this looks BY REFERENCE, NOT VALUE!
+	 * @param rec
+	 * @return
+	 */
+	public boolean removeVariant(VariantRec rec) {
+		List<VariantRec> contig = getVariantsForContig(rec.getContig());
+		if (contig == null)
+			return false;
+		else {
+			return contig.remove(rec);
+		}
+	}
+	
+	/**
 	 * Return total number of heterozygotes in pool
 	 * @return
 	 */
@@ -782,6 +808,23 @@ public class VariantPool extends Operator  {
 	}
 	
 	/**
+	 * Remove from this variant pool all variants not in regions described by the BED file
+	 * @param bedFile
+	 * @throws IOException
+	 */
+	public void removeVariantNotInBED(BEDFile bedFile) throws IOException {
+		bedFile.buildIntervalsMap();
+		for(String contig : getContigs()) {
+			List<VariantRec> vars = getVariantsForContig(contig);
+			for(VariantRec rec : vars) {
+				if (! bedFile.contains(contig, rec.getStart(), false)) {
+					removeVariant(rec); 
+				}
+			}
+		}
+	}
+	
+	/**
 	 * Incomplete: Emit this variant pool in vcf format to a printstream
 	 * @param ref
 	 * @param annotationKeys
@@ -871,9 +914,9 @@ public class VariantPool extends Operator  {
 
 	@Override
 	public void performOperation() throws OperationFailedException {
-		if (inputVariants == null)
-			throw new OperationFailedException("No input variants specified", this);
-
+		if (inputVariants == null) 
+			return ; // Just make an empty pool
+		
 
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		logger.info("Building variant pool from variants in file " + inputVariants.getFilename());

@@ -12,8 +12,8 @@ import javax.swing.SwingWorker;
 
 import math.Histogram;
 
-import operator.BamMetrics;
-import operator.BamMetrics.BAMMetrics;
+import operator.qc.BamMetrics;
+import operator.qc.BamMetrics.BAMMetrics;
 import operator.variant.CompareVCF;
 import operator.variant.CompoundHetFinder;
 
@@ -80,6 +80,8 @@ public class VarUtils {
 			for(VariantRec var : vars.getVariantsForContig(contig)) {
 				Double totDepth = var.getProperty(VariantRec.DEPTH);
 				Double varDepth = var.getProperty(VariantRec.VAR_DEPTH);
+				if (totDepth == null || varDepth == null)
+					continue;
 				//System.out.println(var.getContig() + "\t" + var.getStart() + "\t" + totDepth + "\t" + varDepth);
 				double ratio = 0.99999*(varDepth / totDepth);
 				hist.addValue(ratio);
@@ -858,6 +860,7 @@ public class VarUtils {
 				annoKeys.add(VariantRec.EXON_FUNCTION);
 				annoKeys.add(VariantRec.CDOT);
 				annoKeys.add(VariantRec.PDOT);
+				annoKeys.add(VariantRec.VQSR);
 				filteredVars.listAll(outputStream, annoKeys);
 				outputStream.close();
 			} catch (IOException e) {
@@ -958,28 +961,53 @@ public class VarUtils {
 				System.out.println("Enter the names of one or more variant (vcf or csv) files to examine");
 				return;
 			}
+
+			List<String> annoKeys = new ArrayList<String>();
+			annoKeys.add(VariantRec.RSNUM);
+			annoKeys.add(VariantRec.POP_FREQUENCY);
+			annoKeys.add(VariantRec.EXOMES_FREQ);
+			annoKeys.add(VariantRec.GENE_NAME);
+			annoKeys.add(VariantRec.VARIANT_TYPE);
+			annoKeys.add(VariantRec.EXON_FUNCTION);
+			annoKeys.add(VariantRec.OMIM_ID);
+			annoKeys.add(VariantRec.CDOT);
+			annoKeys.add(VariantRec.PDOT);
+			annoKeys.add(VariantRec.VQSR);
+			StringBuilder header = new StringBuilder( VariantRec.getSimpleHeader() );
+			for(String key : annoKeys) 
+				header.append("\t" + key);
+			System.out.println( header );
 			
 			try {
-				VariantPool pool = getPool(new File(args[1]));
-				List<VariantRec> novelVars = pool.filterPool(VarFilterUtils.getPopFreqFilter(0.001));
-				//System.out.println("Vars passing pop freq filter:" + novelVars.size());
-				VariantPool vars = new VariantPool();
+				double frequencyCutoff = 0.01;
+				boolean hasUserCutoff = false;
+				//See if we can parse a double from args[1]
+				try {
+					Double val = Double.parseDouble(args[1]);
+					frequencyCutoff = val;
+					hasUserCutoff = true;
+				}
+				catch (NumberFormatException nfe) {
+					//dont worry about it
+					hasUserCutoff = false;
+				}
+				
+				VariantPool pool;
+				if (hasUserCutoff)
+					pool = getPool(new File(args[2]));
+				else
+					pool = getPool(new File(args[1]));
+				List<VariantRec> novelVars = pool.filterPool(VarFilterUtils.getPopFreqFilter(frequencyCutoff));
+				
 				for(VariantRec var : novelVars) {
-					String rsnum = var.getAnnotation(VariantRec.RSNUM); 
-					if (rsnum == null || rsnum.length()<3) {
-						vars.addRecord(var);
+					Double exomeFreq = var.getProperty(VariantRec.EXOMES_FREQ);
+					String omimID = var.getAnnotation(VariantRec.OMIM_ID);
+					if (exomeFreq == null || exomeFreq < frequencyCutoff || omimID != null) {
+						//vars.addRecord(var);
+						System.out.println(var.toSimpleString() + var.getPropertyString(annoKeys));
 					}
 				}
-				//System.out.println("Vars passing dbSNP filter: "+ vars.size());
-				List<String> annoKeys = new ArrayList<String>();
-				annoKeys.add(VariantRec.RSNUM);
-				annoKeys.add(VariantRec.POP_FREQUENCY);
-				annoKeys.add(VariantRec.GENE_NAME);
-				annoKeys.add(VariantRec.VARIANT_TYPE);
-				annoKeys.add(VariantRec.EXON_FUNCTION);
-				annoKeys.add(VariantRec.CDOT);
-				annoKeys.add(VariantRec.PDOT);
-				vars.listAll(System.out, annoKeys);
+				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -987,18 +1015,33 @@ public class VarUtils {
 			return;
 		}
 		
-		if (firstArg.equals("qualFilter")) {
-			if (args.length < 3) {
-				System.out.println("Enter the quality to filter by and the names of one or more variant (vcf or csv) files to examine");
+		//General filter, second arg must match a column header, third arg is value for filter
+		if (firstArg.equals("filter") || firstArg.equals("ufilter")) {
+			if (args.length < 4) {
+				System.out.println("Enter the property to filter by and the cutoff value");
 				return;
 			}
 			
+			boolean greater = true;
+			if (firstArg.equals("ufilter"))
+				greater = false;
+			
+			String prop = args[1];
+			double val = Double.parseDouble(args[2]);
 			try {
-				double qual = Double.parseDouble(args[1]);
-				
-				VariantPool pool = getPool(new File(args[1]));
-				VariantPool vars = new VariantPool(pool.filterPool(VarFilterUtils.getQualityFilter(qual)));
-				
+				VariantPool pool = getPool(new File(args[3]));
+				VariantPool filteredVars = new VariantPool();
+				for(String contig : pool.getContigs()) {
+					for(VariantRec var : pool.getVariantsForContig(contig)) {
+						Double varVal = var.getProperty(prop);
+						if ( (!greater) && varVal != null && varVal < val) {
+							filteredVars.addRecord(var);
+						}
+						if (greater && varVal != null && varVal > val) {
+							filteredVars.addRecord(var);
+						}
+					}
+				}
 				
 				List<String> annoKeys = new ArrayList<String>();
 				annoKeys.add(VariantRec.RSNUM);
@@ -1008,13 +1051,17 @@ public class VarUtils {
 				annoKeys.add(VariantRec.EXON_FUNCTION);
 				annoKeys.add(VariantRec.CDOT);
 				annoKeys.add(VariantRec.PDOT);
-				vars.listAll(System.out, annoKeys);
+				annoKeys.add(VariantRec.VQSR);
+				annoKeys.add(prop);
+				filteredVars.listAll(System.out, annoKeys);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		
 			return;
 		}
+		
 		
 		if (firstArg.equals("summary") || firstArg.equals("sum")) {
 			if (args.length < 2) {
@@ -1052,7 +1099,7 @@ public class VarUtils {
 					int heteros = pool.countHeteros();
 					System.out.println(" Heterozygotes : " + heteros + " (" + formatter.format((double)heteros / (double)pool.size()) + "% )");
 					computeVarDepthHisto(pool, varDepthHisto);
-					computeReadDepthHisto(pool, readDepthHisto);
+					//computeReadDepthHisto(pool, readDepthHisto);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -1075,8 +1122,8 @@ public class VarUtils {
 			System.out.println("Histogram of variant frequencies:");
 			System.out.println(varDepthHisto.toString());
 			
-			System.out.println("Histogram of read depths :");
-			System.out.println(readDepthHisto.toString());
+//			System.out.println("Histogram of read depths :");
+//			System.out.println(readDepthHisto.toString());
 			
 			System.out.println(varDepthHisto.freqsToCSV());
 			
@@ -1094,6 +1141,19 @@ public class VarUtils {
 				System.out.println("Summary for " + args[i] + "\n" + BamMetrics.getBAMMetricsSummary(metrics));
 			}
 				
+			
+			return;
+		}
+		
+		
+		if (firstArg.equals("convert")) {
+			try {
+				VariantPool variants = new VariantPool(new SimpleLineReader(new File(args[1])));
+				variants.listAll(System.out);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
 			
 			return;
 		}

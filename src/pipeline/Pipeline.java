@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Properties;
@@ -37,7 +38,10 @@ public class Pipeline {
 
 	protected File source;
 	protected Document xmlDoc;
+	public static final String PYTHON_SCRIPTS_DIR="python.scripts.dir";
 	public static final String PROJECT_HOME="home";
+	public static final String START_TIME="start.time";
+	public static final String END_TIME="end.time";
 	public static final String primaryLoggerName = "pipeline.primary";
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
 	protected String defaultLogFilename = "pipelinelog";
@@ -54,9 +58,16 @@ public class Pipeline {
 	//Stores some basic properties, such as paths to commonly used executables
 	protected Properties props;
 	public static final String defaultPropertiesPath = ".pipelineprops.xml";
+	private String propertiesPath = defaultPropertiesPath;
 	public static Pipeline pipelineInstance;
+	private Date startTime = null;
 	
 	public Pipeline(File inputFile) {
+		this(inputFile, null);
+	}
+	
+		
+	public Pipeline(File inputFile, String propsPath) {
 		this.source = inputFile;
 		pipelineInstance = this;
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -75,7 +86,8 @@ public class Pipeline {
 			e.printStackTrace();
 		}
 		
-
+		if (propsPath != null)
+			setPropertiesPath(propsPath);
 		initializeLogger();
 		loadProperties();	
 	}
@@ -148,6 +160,16 @@ public class Pipeline {
 	}
 	
 	/**
+	 * Returns all keys associated with Properties for this pipeline instance
+	 * @return
+	 */
+	public Collection<Object> getPropertyKeys() {
+		if (props == null)
+			return new ArrayList<Object>();
+		else
+			return props.keySet();
+	}
+	/**
 	 * Add a property to this pipeline object
 	 * @param key
 	 * @param value
@@ -157,23 +179,43 @@ public class Pipeline {
 	}
 	
 	/**
+	 * Set the location of the properties file to use. This only has has effect when called
+	 * prior to loadProperties()
+	 * @param pathToPropsFile
+	 */
+	public void setPropertiesPath(String pathToPropsFile) {
+		System.out.println("Setting properties path to : " + pathToPropsFile);
+		propertiesPath = pathToPropsFile;
+	}
+	
+	/**
 	 * Attempt to load some basic properties from a persistent file
 	 */
 	private void loadProperties() {
 		//First check to see if properties file is in user dir, if so use it
-		String userDir = System.getProperty("user.dir");
-		File propsFile = new File(userDir + "/" + defaultPropertiesPath);
-		
-		//If its not in user.dir, then check home directory, if not there then abort
-		if (! propsFile.exists()) {
-			String homeDir = System.getProperty("user.home");
-			propsFile = new File(homeDir + "/" + defaultPropertiesPath);
+		File propsFile = null;
+		if (! propertiesPath.equals(defaultPropertiesPath)) { //User has set properties path to something special
+			propsFile = new File(propertiesPath);
+		}
+		else { //User has not set properties path, use defaults...
+			String userDir = System.getProperty("user.dir");
+			propsFile = new File(userDir + "/" + defaultPropertiesPath);
+
+			//If its not in user.dir, then check home directory, if not there then abort
 			if (! propsFile.exists()) {
-				primaryLogger.warning("Could not find default properties file, no file at path " + propsFile.getAbsolutePath());
-				return;
+				String homeDir = System.getProperty("user.home");
+				propsFile = new File(homeDir + "/" + defaultPropertiesPath);
+				
 			}
 		}
 		
+		//Can't find properties file
+		if (! propsFile.exists()) {
+			primaryLogger.warning("Could not find default properties file, no file at path " + propsFile.getAbsolutePath());
+			return;
+		}
+
+		primaryLogger.info("Loading properties from " + propsFile.getAbsolutePath());
 		props = new Properties();
 		try {
 			FileInputStream propStream = new FileInputStream(propsFile);
@@ -347,6 +389,10 @@ public class Pipeline {
 		fireMessage("Pipeline initialized");
 	}
 	
+	public Date getStartTime() {
+		return startTime;
+	}
+	
 	/**
 	 * Attempt to run the pipeline defined in the source input file
 	 * @throws PipelineDocException If there are errors in document structure
@@ -354,22 +400,22 @@ public class Pipeline {
 	 * @throws OperationFailedException 
 	 */
 	public void execute() throws OperationFailedException {
-		Date beginTime = new Date();
+		startTime = new Date();
 		
 		primaryLogger.info("Executing pipeline");
-
-		Date pipeBegin = new Date();
 		
 		for(Operator op : handler.getOperatorList()) {
 			try {
-				Date start = new Date();
+				Date opStart = new Date();
 				fireOperatorBeginning(op);
+				op.setAttribute(START_TIME, "" + opStart.getTime());
 				primaryLogger.info("Executing operator : " + op.getObjectLabel() + " class: " + op.getClass());
 				op.operate();
 				System.err.flush(); //Make sure info is written to logger if necessary
 				Date end = new Date();
-				primaryLogger.info("Operator : " + op.getObjectLabel() + " class: " + op.getClass() + " has completed, operator elapsed time: " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()) + "\n Pipeline elapsed time: " + ElapsedTimeFormatter.getElapsedTime(pipeBegin.getTime(), end.getTime()));
+				primaryLogger.info("Operator : " + op.getObjectLabel() + " class: " + op.getClass() + " has completed, operator elapsed time: " + ElapsedTimeFormatter.getElapsedTime(opStart.getTime(), end.getTime()) + "\n Pipeline elapsed time: " + ElapsedTimeFormatter.getElapsedTime(startTime.getTime(), end.getTime()));
 				fireOperatorCompleted(op);
+				op.setAttribute(END_TIME, "" + end.getTime());
 			} catch (OperationFailedException e) {
 				fireMessage("Operator failed : " + e);
 				e.printStackTrace();
@@ -384,7 +430,7 @@ public class Pipeline {
 		firePipelineFinished();
 		long endTime = System.currentTimeMillis();
 		
-		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(beginTime.getTime(), endTime ));
+		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(startTime.getTime(), endTime ));
 	}
 	
 	
@@ -475,6 +521,10 @@ public class Pipeline {
 			projHome = projHome + "/";
 		}
 		
+		//File to obtain properties from
+		String propsPath = argParser.getStringOp("props");
+		
+		
 		String threadCountStr = argParser.getStringOp("threads");
 		int threads = -1; //Use value from properties file if possible
 		if (threadCountStr != null) {
@@ -485,7 +535,7 @@ public class Pipeline {
 		for(int i=0; i<args.length; i++) {
 			if (args[i].endsWith(".xml")) {
 				File input = new File(args[i]);
-				Pipeline pipeline = new Pipeline(input);
+				Pipeline pipeline = new Pipeline(input, propsPath);
 				
 				//Set project home
 				if (projHome != null && projHome.length()>0)

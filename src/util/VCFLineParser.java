@@ -145,6 +145,8 @@ public class VCFLineParser implements VariantLineReader {
 				return null;
 			else {
 				String contig = getContig();
+				if (contig == null)
+					return null;
 				if (stripChr)
 					contig = contig.replace("chr", "");
 				//System.out.println(currentLine);
@@ -185,10 +187,16 @@ public class VCFLineParser implements VariantLineReader {
 				if (genotypeQuality != null) 
 					rec.addProperty(VariantRec.GENOTYPE_QUALITY, genotypeQuality);
 				
+				Double vqsrScore = getVQSR();
+				if (vqsrScore != null)
+					rec.addProperty(VariantRec.VQSR, vqsrScore);
+				
 				return rec;
 			}
 		}
 		
+
+
 		/**
 		 * Read one more line of input, returns false if line cannot be read
 		 * @return
@@ -418,6 +426,18 @@ public class VCFLineParser implements VariantLineReader {
 			
 		}
 		
+		private Double getVQSR() {
+			String[] infoToks = lineToks[7].split(";");
+			for(int i=0; i<infoToks.length; i++) {
+				String tok = infoToks[i];
+				if (tok.startsWith("VQSLOD=")) {
+					Double val = Double.parseDouble(tok.replace("VQSLOD=", ""));
+					return val;
+				}
+			}
+					
+			return null;
+		}
 		/**
 		 * Returns the depth of the variant allele, as parsed from the INFO string for this sample
 		 * @return

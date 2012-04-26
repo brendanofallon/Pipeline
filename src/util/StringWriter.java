@@ -11,6 +11,10 @@ import java.io.Writer;
 public class StringWriter extends Writer {
 
 	private final StringBuilder strB;
+
+	public StringWriter() {
+		this(new StringBuilder());
+	}
 	
 	public StringWriter(StringBuilder strB) {
 		this.strB = strB;
@@ -20,7 +24,11 @@ public class StringWriter extends Writer {
 	public void write(char[] cbuf, int offset, int len) throws IOException {
 		strB.append(cbuf, offset, len);
 	}
-
+	
+	public String toString() {
+		return strB.toString();
+	}
+	
 	@Override
 	public void flush() throws IOException {
 		// Don't need to do anything	
@@ -28,8 +36,8 @@ public class StringWriter extends Writer {
 
 	@Override
 	public void close() throws IOException {
-		// Don't do anything
-		
+		// Don't do anything	
 	}
-
+	
+	
 }
