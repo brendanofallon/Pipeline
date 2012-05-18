@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.InvalidPropertiesFormatException;
@@ -365,7 +366,17 @@ public class Pipeline {
 			try {
 				if (!projHome.endsWith("/"))
 					projHome = projHome + "/";
-				FileHandler fileHandler = new FileHandler(projHome + "pipeinstancelog.xml");
+				Date now = new Date();
+				Calendar cal = Calendar.getInstance();
+				int year = cal.get(Calendar.YEAR);
+				int month = cal.get(Calendar.MONTH);
+				int day = cal.get(Calendar.DATE);
+				int hour = cal.get(Calendar.HOUR);
+				int min = cal.get(Calendar.MINUTE);
+				
+				String suffix = "" + day + month + year + "-" + hour + "-" + min;
+				
+				FileHandler fileHandler = new FileHandler(projHome + "pipeinstancelog-" + suffix + ".xml");
 				primaryLogger.addHandler(fileHandler);
 			} catch (SecurityException e) {
 				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());

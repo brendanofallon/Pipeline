@@ -8,8 +8,8 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 
 /**
- * This class uses a thread to read text data from an input stream and write it to an output stream
- * Its used in Pipeline to read the data emitted to stdout (or stderr) by a process and write it
+ * This class uses a thread to read text data from an input stream and write it to an output stream.
+ * It's used in Pipeline to read the data emitted to stdout (or stderr) by a process and write it
  * to a file. Without this running as a separate thread, buffers used to store data from stdout will
  * fill up and the process generating the data may hang. 
  *  For binary data, use a BinaryPipeHandler

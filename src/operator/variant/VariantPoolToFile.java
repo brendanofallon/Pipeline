@@ -31,8 +31,14 @@ public class VariantPoolToFile extends VariantPoolWriter {
 	String[] toInclude = new String[]{VariantRec.GENE_NAME, 
 								VariantRec.VARIANT_TYPE,
 								VariantRec.EXON_FUNCTION,
-								VariantRec.RSNUM,
-								VariantRec.POP_FREQUENCY };
+								VariantRec.POP_FREQUENCY,
+								VariantRec.EXOMES_FREQ,
+								VariantRec.SIFT_SCORE,
+								VariantRec.POLYPHEN_SCORE,
+								VariantRec.MT_SCORE,
+								VariantRec.PHYLOP_SCORE,
+								VariantRec.GERP_SCORE,
+								VariantRec.EFFECT_PREDICTION };
 	
 	@Override
 	public void writeHeader(PrintStream outputStream) {

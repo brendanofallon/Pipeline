@@ -190,6 +190,10 @@ public class VCFLineParser implements VariantLineReader {
 				Double vqsrScore = getVQSR();
 				if (vqsrScore != null)
 					rec.addProperty(VariantRec.VQSR, vqsrScore);
+
+				Double fsScore = getStrandBiasScore();
+				if (fsScore != null)
+					rec.addProperty(VariantRec.FS_SCORE, fsScore);
 				
 				return rec;
 			}
@@ -197,6 +201,7 @@ public class VCFLineParser implements VariantLineReader {
 		
 
 
+		
 		/**
 		 * Read one more line of input, returns false if line cannot be read
 		 * @return
@@ -438,6 +443,23 @@ public class VCFLineParser implements VariantLineReader {
 					
 			return null;
 		}
+		
+		
+		private Double getStrandBiasScore() {
+			String[] infoToks = lineToks[7].split(";");
+			for(int i=0; i<infoToks.length; i++) {
+				String tok = infoToks[i];
+				if (tok.startsWith("FS=")) {
+					Double val = Double.parseDouble(tok.replace("FS=", ""));
+					return val;
+				}
+			}
+					
+			return null;
+
+		}
+
+		
 		/**
 		 * Returns the depth of the variant allele, as parsed from the INFO string for this sample
 		 * @return

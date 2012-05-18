@@ -49,11 +49,16 @@ public class MultiLaneAligner extends PipedCommandOp {
 	public static final String SKIPSAI = "skipsai";
 	public static final String SINGLE_END = "single";
 	public static final String SAMPE_THREADS = "sampe.threads";
+	public static final String SEED_LENGTH = "seed.length";
+	public static final String SAMPLE = "sample";
+	
 	
 	protected int sampeThreads = Pipeline.getPipelineInstance().getThreadCount();
 	protected String maxEditDist = "3"; //Maximum edit distance for alignment
 	protected String pathToBWA = "bwa";
 	protected int defaultThreads = 4;
+	protected String readGroup = "unknown";
+	protected int seedLength = 1000; //Effectively the default
 	protected boolean pairedEnd = true; //By default, assume paired ends. SINGLE_END property is queried to set this to false
 	protected int threads = defaultThreads;
 	protected String referencePath = null;
@@ -102,6 +107,17 @@ public class MultiLaneAligner extends PipedCommandOp {
 			sampeThreads = Integer.parseInt(sampeThreadStr);
 		}
 			
+		String seedLengthStr = properties.get(SEED_LENGTH);
+		if (seedLengthStr != null) {
+			seedLength = Integer.parseInt(seedLengthStr);
+			logger.info("Using seed length : " + seedLength);	
+		}
+		
+		String rgStr = properties.get(SAMPLE);
+		if (rgStr != null) 
+			readGroup = rgStr;
+		logger.info("Using sample name : " + rgStr);
+		
 		
 		FileBuffer reference = getInputBufferForClass(ReferenceFile.class);
 		if (reference == null) {
@@ -117,15 +133,15 @@ public class MultiLaneAligner extends PipedCommandOp {
 		}
 		
 		List<FileBuffer> files = this.getAllInputBuffersForClass(MultiFileBuffer.class);
-		if (files.size() != 1 && (!pairedEnd)) {
-			throw new OperationFailedException("Need exactly one input files of type MultiFileBuffer for single-end mode", this);
-		}
+		
 		if (files.size() != 2 && pairedEnd) {
 			throw new OperationFailedException("Need exactly two input files of type MultiFileBuffer for paired-end mode", this);
 		}
 		
 		MultiFileBuffer files1 = (MultiFileBuffer) files.get(0);
-		MultiFileBuffer files2 = null; //Will be non-null only in case of paired-end mode
+		MultiFileBuffer files2 = null; //May be null if we're doing single-end. If single-end and non-null, treated exactly same way as files1
+		if (files.size()>1)
+			files2 = (MultiFileBuffer) files.get(1);
 		
 		//Initialize paired-end mode & perform some paired-end specific verification and logging
 		if (pairedEnd) {
@@ -170,6 +186,8 @@ public class MultiLaneAligner extends PipedCommandOp {
 		}
 		else {
 			runSingleEndAlignment(files1, skipSAIGen);
+			if (files2 != null)
+				runSingleEndAlignment(files2, skipSAIGen);
 		}
 		
 		
@@ -279,13 +297,13 @@ public class MultiLaneAligner extends PipedCommandOp {
 	 */
 	class AlignerJob implements Runnable {
 
-		protected String defaultRG = "@RG\\tID:unknown\\tSM:unknown\\tPL:ILLUMINA";
+		//protected String defaultRG = "@RG\\tID:unknown\\tSM:unknown\\tPL:ILLUMINA";
 		final String command;
 		String baseFilename;
 		
 		public AlignerJob(FileBuffer inputFile) {
 			baseFilename = inputFile.getAbsolutePath();
-			command = pathToBWA + " aln -n " + maxEditDist + " -t " + threads + " " + referencePath + " " + inputFile.getAbsolutePath();
+			command = pathToBWA + " aln -n " + maxEditDist + " -l " + seedLength + " -t " + threads + " " + referencePath + " " + inputFile.getAbsolutePath();
 		}
 		
 		@Override
@@ -313,7 +331,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 	
 	class SamBuilderJob implements Runnable {
 
-		protected String defaultRG = "@RG\\tID:unknown\\tSM:unknown\\tPL:ILLUMINA";
+		protected String defaultRG = "@RG\\tID:unknown\\tSM:$SAMPLE$\\tPL:ILLUMINA";
 		final String command;
 		String baseFilename;
 		
@@ -331,7 +349,9 @@ public class MultiLaneAligner extends PipedCommandOp {
 				threadsStr = " -t " + sampeThreads;
 			}
 				
-			command = pathToBWA + " sampe -r " + defaultRG + " " + referencePath + " " + threadsStr + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo;
+			String rgStr = defaultRG.replace("$SAMPLE$", SAMPLE);
+			
+			command = pathToBWA + " sampe -r " + rgStr + " " + referencePath + " " + threadsStr + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo;
 		}
 		
 		/**

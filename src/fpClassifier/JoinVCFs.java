@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import operator.variant.FPComputer;
+
 import math.Histogram;
 
 import buffer.CSVFile;
@@ -83,18 +85,31 @@ public class JoinVCFs {
 		List<Double> freqs = new ArrayList<Double>();
 		
 		for(VariantPool pool : pools) {
+			FPComputer.computeFPForPool(pool);
+			
 			VariantRec qVar = pool.findRecordNoWarn(var.getContig(), var.getStart());
 			if (qVar == null)
 				strBSecond.append("\t0.0");
 			else {
 				//strBSecond.append("\t" + qVar.getProperty(VariantRec.DEPTH) + "\t" + qVar.getProperty(VariantRec.VAR_DEPTH));
+				double varDepth = qVar.getProperty(VariantRec.VAR_DEPTH);
+				double depth = qVar.getProperty(VariantRec.DEPTH);
 				double freq = qVar.getProperty(VariantRec.VAR_DEPTH) / qVar.getProperty(VariantRec.DEPTH);
+				
+				
+				Double fpScore = qVar.getProperty(VariantRec.FALSEPOS_PROB);
+				Double fsScore = qVar.getProperty(VariantRec.FS_SCORE);
+				String fpStr = "NA";
+				if (fpScore != null)
+					fpStr = "" + fpScore;
+				String fsStr = "NA";
+				if (fsScore != null)
+					fsStr = "" + fsScore;
+				
 				//strBSecond.append("\t" + qVar.getProperty(VariantRec.DEPTH) + "\t" +  qVar.getProperty(VariantRec.VAR_DEPTH));
-				strBSecond.append("\t" + freq);
+				strBSecond.append("\t" + varDepth + "," + depth + "," + fpStr + "," + fsStr);
 				if (freqHist != null && qVar.getProperty(VariantRec.DEPTH) > 3) {
 					freqs.add(freq);
-					//freqHist.addValue(freq);
-
 					count++;
 				}
 			}
@@ -102,7 +117,7 @@ public class JoinVCFs {
 		
 		countHist.addValue(count);
 		
-		if (count > 2) {
+		if (count > 3) {
 			System.out.print(strBFirst);
 			System.out.println("\t" + count + strBSecond);
 			for(Double freq : freqs)

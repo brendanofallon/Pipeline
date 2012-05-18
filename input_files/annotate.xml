@@ -47,6 +47,12 @@
 	<VariantPool />	
 </PopFreqAnnotate>
 
+<ExomesAnnotate class="operator.annovar.Exomes5400Annotator" > 
+  <AnnoInput />
+  <VariantPool />
+</ExomesAnnotate>
+
+
 <DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
  <AnnoInput />
  <VariantPool />
@@ -57,9 +63,19 @@
   <VariantPool />
 </OMIMAnnotate>
 
+<HGMDAnnotate class="operator.annovar.HGMDAnnotator">
+  <VariantPool />
+</HGMDAnnotate >
+
 <GOAnnotate class="operator.annovar.GOAnnotator" >
   <VariantPool />
 </GOAnnotate>
+
+
+<EffectAnnotate class="operator.annovar.EffectPredictionAnnotator">
+	<VariantPool />
+</EffectAnnotate>
+
 
 <ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />

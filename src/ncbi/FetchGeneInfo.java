@@ -1,11 +1,8 @@
 package ncbi;
 
-import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.StringWriter;
-import java.io.Writer;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -23,8 +20,11 @@ import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 
+
 /**
- * A test class to obtain ref gene information from NCBI
+ * A class to obtain ref gene information from NCBI. THis uses NCBI's 'e-utils' protocol
+ * to obtain an XML representation of much information for a gene. Right now, we focus on
+ * just parsing the gene summary information, and ignore everything else
  * @author brendan
  *
  */
@@ -66,18 +66,28 @@ public class FetchGeneInfo {
 		DocumentBuilder builder;
 		builder = factory.newDocumentBuilder();
 		Document doc = builder.parse( yc.getInputStream() );
-		
-		System.out.println( getXMLString(doc) );
-		
+				
 		//From the DOM document construct a gene record object
         GeneRecord rec = GeneRecordParser.parse(doc);
         return rec;
 	}
 	
 	public static void main(String[] args) throws Exception {
-        FetchGeneInfo fetcher = new FetchGeneInfo();
-        GeneRecord rec = fetcher.fetchInfoForGene("9883");
-        System.out.println(rec);
+//        FetchGeneInfo fetcher = new FetchGeneInfo();
+//        GeneInfoDB geneInfo = new GeneInfoDB(new File("/home/brendan/resources/LRG_RefSeqGene.txt"));
+//        String symbol = "ENG";
+//        String id = geneInfo.idForSymbol(symbol);
+//        GeneRecord rec = fetcher.fetchInfoForGene(id);
+//        System.out.println(rec.getSymbol() + " : " + rec.getSummary());
+        
+        CachedGeneSummaryDB summaryDB = new CachedGeneSummaryDB();
+        String[] toGet = new String[]{"ENG", "ACVRL1", "FLT1", "ROBO4", "NRP1"};
+        for(int i=0; i<toGet.length; i++) {
+        	String summary = summaryDB.getSummaryForGene(toGet[i]);
+        	System.out.println("Summary for " + toGet[i] + " : " + summary);
+        }
+        
+        summaryDB.writeMapToFile();
     }
 	
 }

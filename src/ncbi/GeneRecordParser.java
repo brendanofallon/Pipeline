@@ -67,7 +67,7 @@ public class GeneRecordParser {
 		String summary = parseSummary(egene);
 		rec.setSummary(summary);
 		
-		parseGOFunctions(egene);
+		//parseGOFunctions(egene);
 		
 		return rec;
 	}
@@ -161,7 +161,7 @@ public class GeneRecordParser {
 		NodeList children = parent.getChildNodes();
 		for(int i=0; i<children.getLength(); i++) {
 			Node child = children.item(i);
-			System.out.println("Looking at node:" + child.getNodeName());
+			//System.out.println("Looking at node:" + child.getNodeName());
 			if (child.getNodeType() == Node.ELEMENT_NODE && child.getNodeName().equals(name)) {
 				return (Element)child;
 			}

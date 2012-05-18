@@ -1,5 +1,7 @@
 package operator.gatk;
 
+import java.util.logging.Logger;
+
 import buffer.BAMFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
@@ -11,12 +13,15 @@ import pipeline.PipelineXMLConstants;
 
 public class VariantRecalibrator extends CommandOperator {
 
+	public static final String MAX_GAUSSIANS="max.gaussians";
 	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
 	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
+	
+	protected int maxGaussians = 5;
 	
 	@Override
 	public boolean requiresReference() {
@@ -25,6 +30,7 @@ public class VariantRecalibrator extends CommandOperator {
 	
 	@Override
 	protected String[] getCommands() {
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
@@ -45,6 +51,13 @@ public class VariantRecalibrator extends CommandOperator {
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
+		
+		String maxGaussianStr = properties.get(MAX_GAUSSIANS);
+		if (maxGaussianStr != null) {
+			maxGaussians = Integer.parseInt(maxGaussianStr);
+			logger.info("Setting max.gaussians to : " + maxGaussians);
+		}
+		
 		
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
 		String inputFile = inputBuffers.get(1).getAbsolutePath();
@@ -67,9 +80,9 @@ public class VariantRecalibrator extends CommandOperator {
 		recalCommand = recalCommand + "-resource:omni,known=false,training=true,truth=false,prior=12.0 " + genomesFile.getAbsolutePath() + " ";
 		recalCommand = recalCommand + "-resource:dbsnp,known=true,training=false,truth=false,prior=8.0 " + dbsnpFile.getAbsolutePath() + " ";
 		recalCommand = recalCommand + "-an QD -an HaplotypeScore -an MQRankSum -an ReadPosRankSum -an FS ";
-		recalCommand = recalCommand + " --maxGaussians 5 ";
-		recalCommand = recalCommand + "-recalFile " + recalFilePath + " ";
-		recalCommand = recalCommand + "-tranchesFile " + tranchesPath + " ";
+		recalCommand = recalCommand + " --maxGaussians " + maxGaussians + " ";
+		recalCommand = recalCommand + " -recalFile " + recalFilePath + " ";
+		recalCommand = recalCommand + " -tranchesFile " + tranchesPath + " ";
 		//recalCommand = recalCommand + "-rscriptFile " + rScriptPath + " "; 
 				   
 		

@@ -13,6 +13,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
+
+import operator.OperationFailedException;
+import operator.Operator;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import buffer.CSVFile;
+import buffer.VCFFile;
+
+import pipeline.Pipeline;
+import pipeline.PipelineObject;
 
 /**
  * A GenePool contains a bunch of variant records but organizes them by
@@ -20,7 +34,7 @@ import java.util.Set;
  * @author brendan
  *
  */
-public class GenePool {
+public class GenePool extends Operator {
 
 	//Map is keyed by gene and values are a (possibly empty, but non-null) list of variant records
 	Map<String, List<VariantRec>> pool = new HashMap<String, List<VariantRec>>();
@@ -42,7 +56,7 @@ public class GenePool {
 					count++;
 			}
 		}
-		System.out.println("Added " + count + " records to gene pool");
+		//System.out.println("Added " + count + " records to gene pool");
 	}
 	
 	public GenePool(List<VariantRec> variants) {
@@ -52,7 +66,7 @@ public class GenePool {
 				if (added)
 					count++;
 		}
-		System.out.println("Added " + count + " records to gene pool");
+		//System.out.println("Added " + count + " records to gene pool");
 	}
 	
 	/**
@@ -61,6 +75,17 @@ public class GenePool {
 	 * @throws IOException 
 	 */
 	public GenePool(File inputFile) throws IOException {
+		readGenesFromFile(inputFile);
+	}
+	
+	/**
+	 * Read in all genes in the given text file. We assume there's one gene name per line and ignore
+	 * blank lines and lines starting with #
+	 * 
+	 * @param inputFile
+	 * @throws IOException 
+	 */
+	public void readGenesFromFile(File inputFile) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(inputFile));
 		String line = reader.readLine();
 		while (line != null) {
@@ -71,7 +96,7 @@ public class GenePool {
 			String[] toks = line.split("\t");
 			String geneName = toks[0].trim();
 			if (geneName.length()>0) {
-				System.out.println("Adding gene " + geneName);
+				//System.out.println("Adding gene " + geneName);
 				addGene(geneName);
 			}
 			line = reader.readLine();
@@ -149,23 +174,20 @@ public class GenePool {
 	}
 	
 	/**
+	 * Returns the number of genes in this gene pool
+	 * @return
+	 */
+	public int size() {
+		return pool.size();
+	}
+	
+	/**
 	 * Attempt to add the given record to this pool, but don't warn
 	 * if the record does not contain the GENE_NAME annotation
 	 * returns true if the record was added.
 	 * @param rec
 	 */
-	public boolean addRecordNoWarn(VariantRec rec) {
-		String variantType = rec.getAnnotation(VariantRec.VARIANT_TYPE);
-
-		if (variantType == null || variantType.equals("-")) {
-			return false;
-		}
-		
-		//Ignore everything except exonic 
-		if (!variantType.contains("exonic")) {
-			return false;
-		}
-		
+	public boolean addRecordNoWarn(VariantRec rec) {		
 		String geneName = rec.getAnnotation(VariantRec.GENE_NAME); 
 		
 		if (geneName != null) {
@@ -200,15 +222,63 @@ public class GenePool {
 		for(String key : pool.keySet()) {
 			List<VariantRec> vars = pool.get(key);
 			int sourceCount =  countSources(key);
-			if (sourceCount > 1 && vars.size() < 15) {
+			out.println("GENE:" + key + " : " + vars.size() + "\t" + sourceCount);
+			for(VariantRec var : vars) {
+				out.println("\t" + var.getAnnotation(VariantRec.SOURCE) + "\t " + var.toSimpleString() + "\t" + var.getAnnotation(VariantRec.EXON_FUNCTION) + "\t" + var.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + var.getAnnotation(VariantRec.CDOT) + "\t" + var.getAnnotation(VariantRec.PDOT));
+			}
+
+			out.println();
+		}
+	}
+
+	public void listGenesWithMultipleVars(PrintStream out, int cutoff, List<String> annoKeys) {
+		for(String key : pool.keySet()) {
+			List<VariantRec> vars = pool.get(key);
+			int sourceCount =  countSources(key);
+			if (sourceCount >= cutoff && vars.size() < 10) {
 				out.println("GENE:" + key + " : " + vars.size() + "\t" + sourceCount);
 				for(VariantRec var : vars) {
-					out.println("\t" + var.getAnnotation(VariantRec.SOURCE) + "\t " + var.toSimpleString() + "\t" + var.getAnnotation(VariantRec.EXON_FUNCTION) + "\t" + var.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + var.getAnnotation(VariantRec.CDOT) + "\t" + var.getAnnotation(VariantRec.PDOT));
+					out.println(var.getAnnotation(VariantRec.SOURCE) + "\t" + var.toBasicString() + "\t" + var.getPropertyString(annoKeys));
 				}
-
-				out.println();
 			}
+		}		
+	}
+	
+	@Override
+	public void performOperation() throws OperationFailedException {
+		if (geneListFile == null) 
+			return ; // Just make an empty pool- should actually never happen since we demand that filename be specified
+		
+
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+		logger.info("Building gene pool from variants in file " + geneListFile.getAbsolutePath());
+		
+		try {
+			readGenesFromFile(geneListFile);
+		} catch (IOException e) {
+			
+			e.printStackTrace();
+			throw new OperationFailedException("Could not read genes in file : " + geneListFile.getAbsolutePath(), this);
+		}
+				
+		logger.info("Created gene pool with " + this.size() + " total genes");
+	}
+
+	@Override
+	public void initialize(NodeList children) {
+		//We just look to see if there was a filename specified as an attribute. We will then read the
+		//file in performOperation()
+		String inputPath = properties.get(FILENAME);
+		if (inputPath == null)
+			throw new IllegalArgumentException("No filename specified to create gene list");
+		
+		File file = new File(inputPath);
+		if (! file.exists()) {
+			throw new IllegalArgumentException("Gene list input file : " + file.getAbsolutePath() + " does not exist");
+		
 		}
 	}
 	
+	public static final String FILENAME = "filename";
+	private File geneListFile = null;
 }

@@ -13,25 +13,30 @@ public class ExcelWriter extends VariantPoolWriter {
 
 	String[] keys = new String[]{VariantRec.GENE_NAME,
 								 VariantRec.NM_NUMBER,
-								 VariantRec.EXON_NUMBER,
-								 VariantRec.DEPTH,
-								 VariantRec.VARIANT_TYPE, 
-								 VariantRec.EXON_FUNCTION,
-								 VariantRec.RSNUM, 
-								 VariantRec.POP_FREQUENCY,
-								 VariantRec.EXOMES_FREQ, 
-								 VariantRec.OMIM_ID,
-								 VariantRec.FALSEPOS_PROB,
-								 VariantRec.VQSR,
 								 VariantRec.CDOT,
 								 VariantRec.PDOT,
+								 VariantRec.EXON_NUMBER,
+								 VariantRec.VARIANT_TYPE, 
+								 VariantRec.EXON_FUNCTION,
+								 VariantRec.EFFECT_PREDICTION,
+								 VariantRec.EFFECT_PREDICTION2,
+								 VariantRec.GO_SCORE,
+								 VariantRec.SUMMARY_SCORE,
+								 VariantRec.INTERACTION_SCORE,
+								 VariantRec.GO_EFFECT_PROD,
+								 VariantRec.POP_FREQUENCY,
+								 VariantRec.EXOMES_FREQ,
+								 VariantRec.RSNUM, 
+								 VariantRec.OMIM_ID,
+								 VariantRec.HGMD_INFO,
+								 VariantRec.VQSR,
+								 VariantRec.FALSEPOS_PROB,
+								 VariantRec.FS_SCORE,
 								 VariantRec.SIFT_SCORE, 
 								 VariantRec.POLYPHEN_SCORE, 
 								 VariantRec.PHYLOP_SCORE, 
 								 VariantRec.MT_SCORE,
-								 VariantRec.GO_FUNCTION,
-								 VariantRec.GO_PROCESS,
-								 VariantRec.GO_COMPONENT};
+								 VariantRec.GERP_SCORE  };
 	
 	@Override
 	public void writeHeader(PrintStream outputStream) {
@@ -40,9 +45,7 @@ public class ExcelWriter extends VariantPoolWriter {
 		for(int i=0; i<keys.length; i++) {
 			builder.append("\t " + keys[i]);
 		}
-		
-		builder.append("\t effect.prediction");
-		
+
 		outputStream.println(builder.toString());
 	}
 
@@ -59,74 +62,10 @@ public class ExcelWriter extends VariantPoolWriter {
 			builder.append("\t" + val);
 		}
 		
-		String effect = getEffectPrediction(rec);
-		builder.append("\t" + effect);
 		
 		outputStream.println(builder.toString());
 	}
 
-	/**
-	 * Returns a string that attempts to summarize sift, polyphen, mutation taster, and phylop
-	 * scores into a couple qualitative categories
-	 * @param rec
-	 * @return
-	 */
-	private String getEffectPrediction(VariantRec rec) {
-		Double sift = rec.getProperty(VariantRec.SIFT_SCORE);
-		Double pp = rec.getProperty(VariantRec.POLYPHEN_SCORE);
-		Double mt = rec.getProperty(VariantRec.MT_SCORE);
-		Double phylop = rec.getProperty(VariantRec.PHYLOP_SCORE);
-		
-		int siftVal = 0;
-		int ppVal = 0;
-		int mtVal = 0;
-		int phylopVal = 0;
-		
-		if (sift != null) {
-			if (sift < 0.0001)
-				siftVal = 3;
-			else if (sift < 0.1)
-				siftVal = 2;
-			else 
-				siftVal = 1;
-		}
-		
-		if (pp != null) {
-			if (pp > 0.899)
-				ppVal = 3;
-			else if (pp > 0.5)
-				ppVal = 2;
-			else 
-				ppVal = 1;
-		}
-		
-		if (mt != null) {
-			if (mt > 0.899)
-				mtVal = 3;
-			else if (mt > 0.5)
-				mtVal = 2;
-			else 
-				mtVal = 1;
-		}
-		
-		if (phylop != null) {
-			if (phylop > 0.899)
-				phylopVal = 3;
-			else if (phylop > 0.5)
-				phylopVal = 2;
-			else 
-				phylopVal = 1;
-		}
-		
-		int sum = siftVal + ppVal + mtVal + phylopVal;
-		if (sum < 3) 
-			return "unknown";
-		if (sum < 6)
-			return "benign";
-		if (sum < 10)
-			return "inconclusive";
-		
-		return "damaging";
-	}
+	
 
 }

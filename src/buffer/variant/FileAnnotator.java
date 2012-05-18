@@ -120,7 +120,7 @@ public class FileAnnotator extends PipelineObject {
 		if (rec != null)
 			return rec;
 
-		System.out.println("Variant at contig " + contig + " pos: " + pos + " not found, searching for close variants..");
+		//System.out.println("Variant at contig " + contig + " pos: " + pos + " not found, searching for close variants..");
 		if (ref.equals("-")) {
 			int modPos = pos+1;
 

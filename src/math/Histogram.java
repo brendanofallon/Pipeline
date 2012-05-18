@@ -309,5 +309,34 @@ public class Histogram {
 		}
 		return str.toString();
 	}
+
+	/**
+	 * The number of values added which are less than minVal
+	 * @return
+	 */
+	public double getLessThanMin() {
+		return lessThanMin;
+	}
+	
+	/**
+	 * Return the sum of the densities of all bins (including 'lessThanMin') up to, and including, the bin specified
+	 * @param bin
+	 * @return
+	 */
+	public double getCumulativeDensity(int bin) {
+		double sum = (double)lessThanMin / (double)count;
+		for(int i=0; i<=bin; i++) {
+			sum += getFreq(i);
+		}
+		return sum;
+	}
+	
+	/**
+	 * The number of values added which are greater than or equal to maxVal
+	 * @return
+	 */
+	public double getMoreThanMax() {
+		return moreThanMax;
+	}
 }
 

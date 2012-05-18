@@ -33,7 +33,8 @@ public class FilterVCFByBED extends IOOperator {
 		VCFFile inVCF = (VCFFile) getInputBufferForClass(VCFFile.class);
 		VCFFile outVCF = (VCFFile) getOutputBufferForClass(VCFFile.class);
 		
-	//	Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+		logger.info("Filtering input vcf " + inVCF.getFilename() + " by bed file: " + bedFile.getFilename());
 		
 		if (! bedFile.isMapCreated())
 			try {
@@ -75,6 +76,7 @@ public class FilterVCFByBED extends IOOperator {
 			}
 			writer.close();
 			
+			logger.info("Done filtering input vcf " + inVCF.getFilename() + " resulting file has " + varsFound + " variants (" + varsNotFound + " excluded)") ;
 			System.out.println("Total variants in vcf file: " + totVars);
 			System.out.println("Variants in bed: " + varsFound);
 			System.out.println("Variants not in bed: " + varsNotFound);

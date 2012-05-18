@@ -30,8 +30,8 @@ public class ConvertCSVAnnovar extends IOOperator {
 		
 		try {
 			BufferedWriter writer = new BufferedWriter(new FileWriter(output.getAbsolutePath()));
-			CSVLineReader csvReader = new CSVLineReader(input.getFile());
-			//CSVLineReader csvReader = new SimpleLineReader(input.getFile());
+			//CSVLineReader csvReader = new CSVLineReader(input.getFile());
+			CSVLineReader csvReader = new SimpleLineReader(input.getFile());
 			do {
 				VariantRec rec = csvReader.toVariantRec();
 				String het = "het";

@@ -317,7 +317,7 @@ public class VariantRec {
 	 * @return
 	 */
 	public static String getSimpleHeader() {
-		return "#contig	\t start \t end \t ref \t alt \t quality \t depth \t zygosity \t genotype.quality \t " + VariantRec.VAR_DEPTH;
+		return "#contig\tstart \t end \t ref \t alt \t quality \t depth \t zygosity \t genotype.quality \t " + VariantRec.VAR_DEPTH;
 	}
 	
 	/**
@@ -495,10 +495,13 @@ public class VariantRec {
 	private static final PositionComparator posComparator =  new PositionComparator();
 	
 	//A few oft-used property / annotation keys
+	public static final String EFFECT_PREDICTION = "effect.prediction";
+	public static final String EFFECT_PREDICTION2 = "effect.prediction2";
 	public static final String POP_FREQUENCY = "pop.freq";
 	public static final String SIFT_SCORE = "sift.score";
 	public static final String POLYPHEN_SCORE = "pp.score";
 	public static final String MT_SCORE = "mt.score";
+	public static final String GERP_SCORE = "gerp.score";
 	public static final String SIFT_QUARTILE = "sift.quartile";
 	public static final String MT_QUARTILE = "mt.quartile";
 	public static final String POLYPHEN_QUARTILE = "pp.quartile";
@@ -509,6 +512,7 @@ public class VariantRec {
 	public static final String EXON_NUMBER = "exon.number";
 	public static final String NM_NUMBER = "nm.number";
 	public static final String GENE_NAME = "gene";
+	public static final String FS_SCORE = "strand.bias.score";
 	public static final String DEPTH = "depth";
 	public static final String CDOT = "cdot";
 	public static final String PDOT = "pdot";
@@ -519,11 +523,17 @@ public class VariantRec {
 	public static final String GO_FUNCTION = "go.function";
 	public static final String GO_PROCESS = "go.process";
 	public static final String GO_COMPONENT = "go.component";
+	public static final String GO_SCORE = "go.score";
+	public static final String GO_EFFECT_PROD = "go.effect.prod";
+	public static final String SUMMARY_SCORE = "summary.score";
 	public static final String GENOTYPE_QUALITY = "genotype.quality";
 	public static final String SOURCE = "source.file";
 	public static final String VAR_DEPTH = "var.depth";
 	public static final String FALSEPOS_PROB = "fp.prob";
 	public static final String VQSR = "vqsr.score";
 	public static final String EXOMES_FREQ = "exomes5400.frequency";
+	public static final String HGMD_INFO = "hgmd.info";
+	public static final String INTERACTION_SCORE = "interaction.score";
 	
 }
+

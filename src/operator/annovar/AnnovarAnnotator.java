@@ -33,6 +33,10 @@ public abstract class AnnovarAnnotator extends Annotator {
 
 	protected FileBuffer annovarInputFile = null;
 	
+	public void annotateVariant(VariantRec rec) {
+		//Blank on purpose, annovar annotators do something else
+	}
+	
 	public void initialize(NodeList children) {
 		super.initialize(children);
 		
@@ -112,14 +116,14 @@ public abstract class AnnovarAnnotator extends Annotator {
 		if (rec != null)
 			return rec;
 
-		System.out.println("Variant at contig " + contig + " pos: " + pos + " not found, searching for close variants..");
+		//System.out.println("Variant at contig " + contig + " pos: " + pos + " not found, searching for close variants..");
 		if (ref.equals("-")) {
 			int modPos = pos+1;
 
 			rec = variants.findRecord(contig, modPos);
 
 			if (! rec.getAlt().equals(alt)) {
-				System.out.println("Record found, but alt for record is " + rec.getAlt() + " and alt from file is " + alt);
+				//System.out.println("Record found, but alt for record is " + rec.getAlt() + " and alt from file is " + alt);
 				return null;
 			}
 

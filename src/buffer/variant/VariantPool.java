@@ -740,6 +740,13 @@ public class VariantPool extends Operator  {
 	}
 	
 	/**
+	 * Remove all variants from this pool
+	 */
+	public void clear() {
+		vars = new HashMap<String, List<VariantRec>>();
+	}
+	
+	/**
 	 * Obtain a list of all property keys used in the variants
 	 * @return
 	 */
@@ -946,6 +953,7 @@ public class VariantPool extends Operator  {
 	
 	
 	private FileBuffer inputVariants = null;
+
 
 
 	

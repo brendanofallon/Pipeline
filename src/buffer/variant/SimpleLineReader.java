@@ -24,8 +24,8 @@ public class SimpleLineReader extends CSVLineReader {
 		
 		String contig = getContig(toks);
 		Integer start = getStart(toks);
-		String ref = toks[2];
-		String alt = toks[3];
+		String ref = toks[3];
+		String alt = toks[4];
 		
 		VariantRec rec = new VariantRec(contig, start, start+ref.length(), ref, alt, 100.0, true);
 

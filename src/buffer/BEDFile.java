@@ -16,10 +16,8 @@ import java.util.logging.Logger;
 import pipeline.Pipeline;
 import util.VCFLineParser;
 
-public class BEDFile extends FileBuffer {
+public class BEDFile extends IntervalsFile {
 
-	private Map<String, List<Interval>> intervals = null;
-	private final IntervalComparator intComp = new IntervalComparator();
 	
 	public BEDFile() {
 	}
@@ -110,105 +108,8 @@ public class BEDFile extends FileBuffer {
 		return size;
 	}
 	
-	/**
-	 * Returns true if the intervals map has been created
-	 * @return
-	 */
-	public boolean isMapCreated() {
-		return intervals != null;
-	}
-
-	public boolean contains(String contig, int pos) {
-		return contains(contig, pos, true);
-	}
-	
-	public boolean contains(String contig, int pos, boolean warn) {
-		List<Interval> cInts = intervals.get(contig);
-		Interval qInterval = new Interval(pos, pos);
-		if (cInts == null) {
-			if (warn)
-				System.out.println("Contig " + contig + " is not in BED file!");
-			return false;
-		}
-		else {
-			int index = Collections.binarySearch(cInts, qInterval, intComp);
-			if (index >= 0) {
-				//System.out.println("Interval " + cInts.get(index) + " contains the position " + pos);
-				//An interval starts with the query position so we do contain the given pos
-				return true;
-			}
-			else {
-				//No interval starts with the query pos, but we 
-				int keyIndex = -index-1 -1;
-				if (keyIndex < 0) {
-					//System.out.println("Interval #0 does NOT contain the position " + pos);
-					return false;
-				}
-				Interval cInterval = cInts.get(keyIndex);
-				if (pos >= cInterval.begin && pos < cInterval.end) {
-					//System.out.println("Interval " + cInterval + " contains the position " + pos);
-					return true;
-				}
-				else {
-					//System.out.println("Interval " + cInterval + " does NOT contain the position " + pos);
-					return false;
-				}
-			}
-		}
-	}
-	
-	class Interval implements Comparable {
-		final int begin;
-		final int end;
-		
-		public Interval(int begin, int end) {
-			this.begin = begin;
-			this.end = end;
-		}
-
-		@Override
-		public int compareTo(Object o) {
-			if (o instanceof Interval) {
-				Interval inter = (Interval)o;
-				return this.begin - inter.begin;
-			}
-			return 0;
-		}
-		
-		public String toString() {
-			return "[" + begin + "-" + end + "]";
-		}
-	}
-	
-	public class IntervalComparator implements Comparator<Interval> {
-
-		@Override
-		public int compare(Interval o1, Interval o2) {
-			return o1.begin - o2.begin;
-		}
-		
-	}
 	
 	
-	public static void main(String[] args) {
-		File file = new File("/home/brendan/exomeBEDfiles/SureSelect_50mb_with_annotation_b37.bed");
-		try {
-			BEDFile bed = new BEDFile(file);
-			bed.buildIntervalsMap();
-			boolean c1 = bed.contains("1", 14000);
-			boolean c2 = bed.contains("1", 610388);
-//			boolean c3 = bed.contains("1", 14468);
-//			boolean c4 = bed.contains("1", 14587);
-//			boolean c5 = bed.contains("1", 14588);
-//			boolean c6 = bed.contains("1", 14600);
-//			boolean c7 = bed.contains("1", 14639);
-//			boolean c8 = bed.contains("1", 35670);
-//			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
+	
 
 }

@@ -87,4 +87,17 @@ public class DepthOfCoverage extends CommandOperator {
 		return command;
 	}
 
+	
+	public static DOCMetrics computeDOCMetrics(BAMFile bamFile, BEDFile bedFile) {
+		
+	}
+	
+	/**
+	 * Tiny 
+	 * @author brendan
+	 *
+	 */
+	class DOCMetrics {
+		
+	}
 }
