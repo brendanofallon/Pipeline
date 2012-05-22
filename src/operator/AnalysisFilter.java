@@ -33,8 +33,9 @@ public class AnalysisFilter extends Operator {
 	protected double popFreqCutoff = 0.01; //Ignore variants with pop freqs greater than the given value
 	protected double coverageCutoff = 5.0; //Ignore variants with less coverage than this
 	protected double varFreqCutoff = 0.15; //Ignore variants with variant allele freqs less than this
-	protected double vqsrCutoff = -10; //Ignore variants with VQSR scores less than the given value
-	
+	protected double vqsrCutoff = -10; //Ignore variants with VQSR scores less than the given value	
+	protected double fpCutoff = -0.1; //Ignore variants with FP scores greater than the given value
+
 	@Override
 	public void performOperation() throws OperationFailedException {
 		if (inputVars == null)
@@ -82,6 +83,7 @@ public class AnalysisFilter extends Operator {
 		Double goScore = var.getProperty(VariantRec.GO_SCORE);
 		Double summaryScore = var.getProperty(VariantRec.SUMMARY_SCORE);
 		Double interactionScore = var.getProperty(VariantRec.INTERACTION_SCORE);
+		Double falsePosProb = var.getProperty(VariantRec.FALSEPOS_PROB);
 		
 		if (depth != null && varFreq != null) {
 			if (depth > 10) //Only variant freq apply cutoff to variants with greater than 10 reads
@@ -110,6 +112,10 @@ public class AnalysisFilter extends Operator {
 			return false;
 		}
 		
+		if (falsePosProb != null && falsePosProb > fpCutoff) {
+			return false;
+		}
+		
 		if (varFreq != null && varFreq < varFreqCutoff) {
 			return false;
 		}
@@ -124,8 +130,8 @@ public class AnalysisFilter extends Operator {
 		}
 		
 		
-		Integer effectPred = EffectPredictionAnnotator.getEffectPredictionSimple(var);
-		var.addProperty(VariantRec.EFFECT_PREDICTION, new Double(effectPred));
+		Double effectPred = EffectPredictionAnnotator.getEffectPredictionLinearWeight(var);
+		var.addProperty(VariantRec.EFFECT_PREDICTION2, effectPred);
 		
 		
 		

@@ -16,6 +16,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import ncbi.PubMedFetcher.PubMedRecord;
+
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -80,14 +82,21 @@ public class FetchGeneInfo {
 //        GeneRecord rec = fetcher.fetchInfoForGene(id);
 //        System.out.println(rec.getSymbol() + " : " + rec.getSummary());
         
-        CachedGeneSummaryDB summaryDB = new CachedGeneSummaryDB();
-        String[] toGet = new String[]{"ENG", "ACVRL1", "FLT1", "ROBO4", "NRP1"};
-        for(int i=0; i<toGet.length; i++) {
-        	String summary = summaryDB.getSummaryForGene(toGet[i]);
-        	System.out.println("Summary for " + toGet[i] + " : " + summary);
-        }
-        
-        summaryDB.writeMapToFile();
+//        CachedGeneSummaryDB summaryDB = new CachedGeneSummaryDB();
+//        String[] toGet = new String[]{"ENG", "ACVRL1", "FLT1", "ROBO4", "NRP1"};
+//        for(int i=0; i<toGet.length; i++) {
+//        	String summary = summaryDB.getSummaryForGene(toGet[i]);
+//        	System.out.println("Summary for " + toGet[i] + " : " + summary);
+//        }
+//        
+//        summaryDB.writeMapToFile();
+		
+		
+		PubMedFetcher fetcher = new PubMedFetcher();
+		PubMedRecord rec = fetcher.getPubMedRecordForID(21212665);
+		System.out.println("Title: "  + rec.title);
+		System.out.println("Abstract: "  + rec.abs);
+		System.out.println("Citation: "  + rec.citation);
     }
 	
 }

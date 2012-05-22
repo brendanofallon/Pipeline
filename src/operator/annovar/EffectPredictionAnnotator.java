@@ -16,12 +16,12 @@ public class EffectPredictionAnnotator extends Annotator {
 	}
 
 	public static double getEffectPredictionLinearWeight(VariantRec rec) {
-		double siftWeight = -8.0;
-		double ppWeight = -1.0;
-		double mtWeight = 23.0;
-		double phylopWeight = -8.0;
-		double gerpWeight = 1.0;
-		double predWeight = 4;
+		double siftWeight = -0.5;
+		double ppWeight = 1.46;
+		double mtWeight = 6.29;
+		double phylopWeight = -1.48;
+		double gerpWeight = -0.3;
+		double predWeight = 0.87;
 
 		Double sift = rec.getProperty(VariantRec.SIFT_SCORE);
 		Double pp = rec.getProperty(VariantRec.POLYPHEN_SCORE);
@@ -31,17 +31,17 @@ public class EffectPredictionAnnotator extends Annotator {
 		Double pred = rec.getProperty(VariantRec.EFFECT_PREDICTION);
 		
 		if (sift == null)
-			sift = 0d;
+			sift = 0.5d;
 		if (pp == null)
-			pp = 0d;
+			pp = 0.0d;
 		if (mt == null)
-			mt = 0d;
+			mt = 0.0d;
 		if (phylop == null)
-			phylop = 0d;
+			phylop = 0.0d;
 		if (gerp == null)
-			gerp = 0d;
+			gerp = 0.0d;
 		if (pred == null)
-			pred = 0d;
+			pred = 0.0d;
 		
 		double val = sift * siftWeight 
 					+ pp * ppWeight
@@ -55,7 +55,7 @@ public class EffectPredictionAnnotator extends Annotator {
 	
 	/**
 	 * Returns an integer that attempts to summarize sift, polyphen, mutation taster, and phylop
-	 * scores into simple tripartite categorization
+	 * scores into simple categorization
 	 * Higher scores are more indicative of damagingness, the highest possible score, 5, means that
 	 * every tool thought the given variant was damaging.
 	 * Scores near zero are inconclusive, either because no data is available or because the scores conflict

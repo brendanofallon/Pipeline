@@ -28,7 +28,7 @@ public class CachedGeneSummaryDB {
 	private FetchGeneInfo fetcher = new FetchGeneInfo(); //Fetches gene summaries from ncbi
     private GeneInfoDB geneInfo; //Stores symbol / refgene id information so we can look genes up by symbol
     
-    public static final int expirationDays = 14; // Force re-downloading of records older than two weeks
+    public static final int expirationDays = 30; // Force re-downloading of records older than one month
     private int missesSinceLastWrite = 0; //Number of cache misses since last writeToFile
     
 	public CachedGeneSummaryDB() throws IOException {
@@ -36,6 +36,13 @@ public class CachedGeneSummaryDB {
 		buildMapFromFile();
 	}
 	
+	/**
+	 * Obtain the full string containing ncbi's summary for the given gene symbol (i.e. 'RASA1'). 
+	 * If the summary is already in the local cache and has not expired, just return it. If not, we 
+	 * query ncbi and try to get it. 
+	 * @param symbol
+	 * @return
+	 */
 	public String getSummaryForGene(String symbol) {
 		GeneSummary summary = map.get(symbol);
 		
