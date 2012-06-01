@@ -94,73 +94,82 @@ public class CSVLineReader implements VariantLineReader {
 			return null;
 		
 		String[] toks = currentLine.split("\t");
+		VariantRec rec = null;
 		
 		if (toks.length < 8) {
-			System.err.println("ERROR: could not parse variant from line : \n " + currentLine);
+			System.err.println("ERROR: could not parse variant from file : " + sourceFile.getName() + " line : \n " + currentLine);
 			return null;
 		}
-		String contig = getContig(toks);
-		Integer start = getStart(toks);
-		Integer end = getEnd(toks);
-		String ref = getRef(toks);
-		String alt = getAlt(toks);
-		Double qual = getQuality(toks);
-		Double depth = getDepth(toks); 
-		boolean isHet = getHet(toks);
-		Double genoQual = getGenotypeQuality(toks);
 		
-		
-		if (alt.length() != ref.length()) {
-			//Remove initial characters if they are equal and add one to start position
-			if (alt.charAt(0) == ref.charAt(0)) {
-				alt = alt.substring(1);
-				ref = ref.substring(1);
-				if (alt.length()==0)
-					alt = "-";
-				if (ref.length()==0)
-					ref = "-";
-				start++;
-			}
-			
-			if (ref.equals("-"))
-				end = start;
-			else
-				end = start + ref.length();
-		}
-				
-		VariantRec rec = new VariantRec(contig, start, start+ref.length(), ref, alt, qual, isHet);
-		rec.addProperty(VariantRec.DEPTH, depth);
-		rec.addProperty(VariantRec.GENOTYPE_QUALITY, genoQual);
+		try {
+			String contig = getContig(toks);
+			Integer start = getStart(toks);
+			Integer end = getEnd(toks);
+			String ref = getRef(toks);
+			String alt = getAlt(toks);
+			Double qual = getQuality(toks);
+			Double depth = getDepth(toks); 
+			boolean isHet = getHet(toks);
+			Double genoQual = getGenotypeQuality(toks);
 
-		//Parse additional annotations / properties from header
-		if (hasHeader() && toks.length > 8) {
-			if (toks.length != headerToks.length) {
-				for(int i=0; i<toks.length; i++) {
-					System.out.println(i + "\t" + headerToks[i] + " : " + toks[i]);
+
+			if (alt.length() != ref.length()) {
+				//Remove initial characters if they are equal and add one to start position
+				if (alt.charAt(0) == ref.charAt(0)) {
+					alt = alt.substring(1);
+					ref = ref.substring(1);
+					if (alt.length()==0)
+						alt = "-";
+					if (ref.length()==0)
+						ref = "-";
+					start++;
 				}
-				throw new IllegalArgumentException("Incorrect number of columns for variant, header shows " + headerToks.length + ", but this variant has: " + toks.length + "\n" + currentLine);
-				
+
+				if (ref.equals("-"))
+					end = start;
+				else
+					end = start + ref.length();
 			}
-			for(int i=9; i<toks.length; i++) {
-				String key = headerToks[i].trim();
-				//System.out.println("Adding annotation for key: " + key + " value:" + toks[i]);
-				if (toks[i].equals("-") || toks[i].equals("NA") || toks[i].equals("?"))
-					continue; 
-				
-				try {
-					Double val = Double.parseDouble(toks[i]);
-					rec.addProperty(key, val);
+
+			rec = new VariantRec(contig, start, start+ref.length(), ref, alt, qual, isHet);
+			rec.addProperty(VariantRec.DEPTH, depth);
+			rec.addProperty(VariantRec.GENOTYPE_QUALITY, genoQual);
+
+			//Parse additional annotations / properties from header
+			if (hasHeader() && toks.length > 8) {
+				if (toks.length != headerToks.length) {
+					for(int i=0; i<toks.length; i++) {
+						System.out.println(i + "\t" + headerToks[i] + " : " + toks[i]);
+					}
+					throw new IllegalArgumentException("Incorrect number of columns for variant, header shows " + headerToks.length + ", but this variant has: " + toks.length + "\n" + currentLine);
+
 				}
-				catch (NumberFormatException ex) {
-					//this is expected, we just assume it's an annotation, not a property
+				for(int i=9; i<toks.length; i++) {
+					String key = headerToks[i].trim();
+					//System.out.println("Adding annotation for key: " + key + " value:" + toks[i]);
+					if (toks[i].equals("-") || toks[i].equals("NA") || toks[i].equals("?"))
+						continue; 
+
+					try {
+						Double val = Double.parseDouble(toks[i]);
+						rec.addProperty(key, val);
+					}
+					catch (NumberFormatException ex) {
+						//this is expected, we just assume it's an annotation, not a property
+					}
+
+					rec.addAnnotation(key, toks[i]);
 				}
-				
-				rec.addAnnotation(key, toks[i]);
 			}
+
+			if (sourceFile != null)
+				rec.addAnnotation(VariantRec.SOURCE, sourceFile.getName());
+
 		}
-		
-		if (sourceFile != null)
-			rec.addAnnotation(VariantRec.SOURCE, sourceFile.getName());
+		catch (NumberFormatException nfe) {
+			System.err.println("ERROR: could not parse variant from file : " + sourceFile.getName() + " line : \n " + currentLine);
+
+		}
 		return rec;
 	}
 

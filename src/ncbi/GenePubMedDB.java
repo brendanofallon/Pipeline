@@ -27,6 +27,13 @@ public class GenePubMedDB {
 		readFile(dbFile);
 	}
 	
+	/**
+	 * Obtain a list of pubmed ids associated with the given gene. This will return null
+	 * if there is no entry associated with the gene id
+	 * @param geneID
+	 * @param  
+	 * @return
+	 */
 	public List<Integer> getPubMedIDsForGene(Integer geneID) {
 		if (map == null)
 			throw new IllegalStateException("Map has not been initialized");
@@ -65,6 +72,7 @@ public class GenePubMedDB {
 				}
 				geneList.add(pubmedID);
 			}
+			line = reader.readLine();
 		}
 		System.out.println("Initialized PubMed lookup list with " + map.size() + " genes and " + pubmedsRead + " abstracts");
 		

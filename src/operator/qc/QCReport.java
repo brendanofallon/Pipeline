@@ -25,6 +25,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import buffer.BAMFile;
+import buffer.DOCMetrics;
 import buffer.FileBuffer;
 import buffer.VCFFile;
 import buffer.variant.VariantPool;
@@ -44,6 +45,8 @@ public class QCReport extends Operator {
 
 	public static final String QC_STYLE_SHEET = "qc.style.sheet";
 	
+	DOCMetrics rawCoverageMetrics = null;
+	DOCMetrics finalCoverageMetrics = null;
 	BAMFile rawBAMFile = null;
 	BAMFile finalBAMFile = null;
 	VCFFile variantsFile = null;
@@ -55,6 +58,19 @@ public class QCReport extends Operator {
 		if ( (! homeDir.exists()) || (! homeDir.isDirectory()) ) {
 			throw new OperationFailedException("Could not open project home directory : " + homeDir.getAbsolutePath(), this);
 		}
+	
+		if (rawBAMFile == null) {
+			throw new OperationFailedException("No raw bam file specified", this);
+		}
+		
+		if (finalBAMFile == null) {
+			throw new OperationFailedException("No final bam file specified", this);
+		}
+		
+		
+		System.out.println("Found raw doc metrics : " + rawCoverageMetrics);
+		System.out.println("Found final doc metrics : " + finalCoverageMetrics);
+
 		
 		BAMMetrics rawMetrics = BamMetrics.computeBAMMetrics(rawBAMFile);
 		BAMMetrics finalMetrics = BamMetrics.computeBAMMetrics(finalBAMFile);
@@ -95,8 +111,8 @@ public class QCReport extends Operator {
 			writer = new BufferedWriter(new FileWriter(outputPath + "/alignment.html"));
 			StringWriter alnWriter = new StringWriter();
 			
-			writeBAMMetricsBlock(alnWriter, rawMetrics, "Metrics for raw bam file " + rawBAMFile.getFilename(), outputDir);			
-			writeBAMMetricsBlock(alnWriter, finalMetrics, "Metrics for final bam file " + finalBAMFile.getFilename(), outputDir);
+			writeBAMMetricsBlock(alnWriter, rawMetrics, rawCoverageMetrics, "Metrics for raw bam file " + rawBAMFile.getFilename(), outputDir);			
+			writeBAMMetricsBlock(alnWriter, finalMetrics, finalCoverageMetrics, "Metrics for final bam file " + finalBAMFile.getFilename(), outputDir);
 			pageWriter.writePage(writer, alnWriter.toString());
 			writer.close();
 			
@@ -229,11 +245,11 @@ public class QCReport extends Operator {
 		writer.write(" Mean quality :" + formatter.format(metrics.baseQualityHistogram.getMean()) + " </p>" +lineSep);		
 		writer.write(" Stdev quality:" + formatter.format(metrics.baseQualityHistogram.getStdev()) + " </p>" +lineSep );
 
-		String rpFigStr =  "rpfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
-		String rpFigFullPath = outputDir.getAbsolutePath() + "/" + rpFigStr;
-		CreateFigure.generateHistoImage(metrics.readPosQualHistos, "Read position", "Quality score distribution", rpFigFullPath);
-		writer.write("<h2> Base qualities by read position: " + " </h2>" +lineSep);
-		writer.write("<img src=\"" + rpFigStr + "\">");
+//		String rpFigStr =  "rpfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
+//		String rpFigFullPath = outputDir.getAbsolutePath() + "/" + rpFigStr;
+//		CreateFigure.generateHistoImage(metrics.readPosQualHistos, "Read position", "Quality score distribution", rpFigFullPath);
+//		writer.write("<h2> Base qualities by read position: " + " </h2>" +lineSep);
+//		writer.write("<img src=\"" + rpFigStr + "\">");
 		
 		
 		String bqFigStr =  "bqfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
@@ -309,7 +325,7 @@ public class QCReport extends Operator {
 	}
 
 
-	private void writeBAMMetricsBlock(Writer writer, BAMMetrics metrics, String header, File outputDir) throws IOException {
+	private void writeBAMMetricsBlock(Writer writer, BAMMetrics metrics, DOCMetrics docMetrics, String header, File outputDir) throws IOException {
 		DecimalFormat formatter = new DecimalFormat("#0.00");
 		String lineSep = System.getProperty("line.separator");
 		writer.write("<div class=\"bammetrics\">");
@@ -322,6 +338,22 @@ public class QCReport extends Operator {
 		writer.write("<p> Number of low vendor quality reads : " + metrics.duplicateReads + " ( " + formatter.format(100.0*metrics.lowVendorQualityReads / metrics.totalReads) + "% )" + " </p>" +lineSep);
 		writer.write("<p> Number of pairs with insert size > 10K : " + metrics.hugeInsertSize + " </p>" +lineSep);
 		
+		writer.write("<h2>  Coverage statistics : " + " </h2>" +lineSep);
+		if (docMetrics == null) {
+			writer.write("<p id=\"error\">  No coverage information found </p>" +lineSep);
+		}
+		else {
+			writer.write("<p>  Mean overall coverage:" + formatter.format(docMetrics.getMeanCoverage()) + " </p>" + lineSep);
+			if (docMetrics.getCutoffs() == null) {
+				writer.write("<p id=\"error\">  Count not find cutoff values! </p>" +lineSep);
+			}
+			else {
+				for(int i=0; i<docMetrics.getCutoffs().length; i++) {
+					double val  = docMetrics.getFractionAboveCutoff()[i];
+					writer.write("<p>  Fraction of bases with coverage > " + docMetrics.getCutoffs()[i] + " : " + formatter.format(val) + " </p>" +lineSep);
+				}
+			}
+		}
 		
 		writer.write("<h2>  Distribution of insert sizes : " + " </h2>" +lineSep);
 		
@@ -349,12 +381,21 @@ public class QCReport extends Operator {
 				if (obj instanceof BAMFile) {
 					if (rawBAMFile == null)
 						rawBAMFile = (BAMFile)obj;
-					else if (finalBAMFile == null)
-						finalBAMFile = (BAMFile)obj;
+					else if (finalBAMFile == null) {
+						finalBAMFile= (BAMFile)obj;
+						System.out.println("Found final bam file : " + finalBAMFile.getAbsolutePath());
+					}
 					else
 						throw new IllegalArgumentException("Too many input bam files to QC report");
 				}
 				
+				if (obj instanceof DOCMetrics) {
+					if (rawCoverageMetrics == null)
+						rawCoverageMetrics = (DOCMetrics) obj;
+					else {
+						finalCoverageMetrics = (DOCMetrics) obj;
+					}
+				}
 				if (obj instanceof VCFFile) {
 					if (variantsFile == null)
 						variantsFile = (VCFFile)obj;

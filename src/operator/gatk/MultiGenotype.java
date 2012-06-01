@@ -27,6 +27,8 @@ public class MultiGenotype extends MultiOperator {
 	protected String gatkPath = defaultGATKPath;
 	public static final String CALL_CONF = "call_conf";
 	public static final String EMIT_CONF = "emit_conf";
+	protected int minIndelCount = 2; //Minimum number of consensus indels that must be present for an indel call
+	protected double minIndelFrac = 0.2; //Minimum fraction of consensus indels that must be present for an indel call
 	protected double emitConf = 10.0;
 	protected double callConf = 30.0;
 	
@@ -104,6 +106,8 @@ public class MultiGenotype extends MultiOperator {
 		if (dbsnpFile != null)
 			command = command + " --dbsnp " + dbsnpFile.getAbsolutePath();
 		command = command + " -glm BOTH";
+		command = command + " -minIndelCnt " + minIndelCount;
+		command = command + " -minIndelFrac " + minIndelFrac;
 		command = command + " -stand_call_conf " + callConf + " ";
 		command = command + " -stand_emit_conf " + emitConf + " ";
 		if (inputBuffer.getContig() != null) {

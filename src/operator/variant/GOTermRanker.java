@@ -87,8 +87,13 @@ public class GOTermRanker extends Annotator {
 			}
 			
 			String[] toks = line.split("\t");
-			Integer score = Integer.parseInt(toks[1]);
-			rankingMap.put(toks[0], score);
+			if (toks.length < 2) {
+				System.err.println("Warning : could not parse GO term from this line: " + line);
+			}
+			else {
+				Integer score = Integer.parseInt(toks[1]);
+				rankingMap.put(toks[0], score);
+			}
 			line = reader.readLine();
 		}
 	}

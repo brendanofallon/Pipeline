@@ -44,6 +44,14 @@ public class GeneSummaryRanker extends Annotator {
 		}
 	}
 	
+	/**
+	 * If true, we write some progress indicators to system.out
+	 * @return
+	 */
+	protected boolean displayProgress() {
+		return true;
+	}
+	
 	@Override
 	public void annotateVariant(VariantRec var) {
 		if (summaryDB == null) {

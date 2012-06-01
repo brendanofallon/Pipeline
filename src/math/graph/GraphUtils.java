@@ -30,9 +30,14 @@ public class GraphUtils {
 		String distanceKey = "distance.to." + sourceLabel;
 		
 		GraphNode source = g.getNodeForLabel(sourceLabel);
+		if (source == null) {
+			System.err.println("ERROR : No node found with label : " + sourceLabel + " cannot compute shortest paths for this gene");
+			return;
+		}
+
 		unvisited.remove(source);
 		source.addAnnotation(distanceKey, 0.0);
-		
+
 		GraphNode current = source;
 		
 		

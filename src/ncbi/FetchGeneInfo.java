@@ -16,8 +16,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import ncbi.PubMedFetcher.PubMedRecord;
-
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -92,11 +90,24 @@ public class FetchGeneInfo {
 //        summaryDB.writeMapToFile();
 		
 		
-		PubMedFetcher fetcher = new PubMedFetcher();
-		PubMedRecord rec = fetcher.getPubMedRecordForID(21212665);
+//		PubMedFetcher fetcher = new PubMedFetcher();
+//		PubMedRecord rec = fetcher.getPubMedRecordForID(19028676);
+//		System.out.println("Title: "  + rec.title);
+//		System.out.println("Abstract: "  + rec.abs);
+//		System.out.println("Citation: "  + rec.citation);
+		
+		
+		CachedPubmedAbstractDB abstractCache = new CachedPubmedAbstractDB();
+		
+		PubMedRecord rec = abstractCache.getRecordForID(16343615);
 		System.out.println("Title: "  + rec.title);
 		System.out.println("Abstract: "  + rec.abs);
-		System.out.println("Citation: "  + rec.citation);
+		System.out.println("Citation: "  + rec.getCitation());
+		
+		
+		
+		abstractCache.writeMapToFile();
+		
     }
 	
 }

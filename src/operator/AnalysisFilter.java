@@ -92,6 +92,13 @@ public class AnalysisFilter extends Operator {
 				varFreq = null;
 		}
 				
+		//Hard-coded exclusion of HLA and MUC genes
+		String geneName = var.getAnnotation(VariantRec.GENE_NAME);
+		if (geneName != null) {
+			if (geneName.startsWith("HLA-") || geneName.startsWith("MUC")) {
+				return false;
+			}
+		}
 		
 		//Ignore all intergenic variants
 		if (type != null && (type.equals("intergenic") || type.contains("intron") || type.contains("upstream") || type.contains("downstream")))
@@ -146,7 +153,15 @@ public class AnalysisFilter extends Operator {
 		if (interactionScore != null)
 			interactionVal = interactionScore;
 		
-		Double goEffectProd = effectPred * (goVal + sumVal + 5*interactionVal);
+		
+		double pubmedScore = 0;
+		Double pmScore = var.getProperty(VariantRec.PUBMED_SCORE);
+		if (pmScore != null) {
+			pubmedScore = pmScore;
+		}
+		
+		
+		Double goEffectProd = effectPred * (goVal + sumVal + 5*interactionVal + pubmedScore/2.0);
 		var.addProperty(VariantRec.GO_EFFECT_PROD, goEffectProd);
 		
 		return true;

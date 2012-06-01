@@ -8,17 +8,28 @@ package ncbi;
  */
 public class PubMedRecord {
 
-		Integer pubMedID; //Unique id used to find this record
-		String title; //Title of paper
-		Integer yearCreated; //Year paper was published
-		String citation; //Full citation of paper 
-		String abs; //Abstract
+		protected Integer pubMedID; //Unique id used to find this record
+		protected String title; //Title of paper
+		protected Integer yearCreated; //Year paper was published
+		protected String citation; //Full citation of paper 
+		protected String abs; //Abstract
 		
 		/**
 		 * This MUST be easily parseable in CachedPubmedAbstractsDB
 		 */
 		public String toString() {
-			return pubMedID + "\t" + yearCreated + "\t" + title + "\t" + citation + "\t" + abs;
+			return pubMedID + "\t" + yearCreated + "\t" + title + "\t" + getCitation() + "\t" + abs;
 		}
-	
+
+		public String getCitation() {
+			return citation;
+		}
+
+		public String getAbstract() {
+			return abs;
+		}
+
+		public String getTitle() {
+			return title;
+		}
 }

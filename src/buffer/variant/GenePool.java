@@ -30,7 +30,8 @@ import pipeline.PipelineObject;
 
 /**
  * A GenePool contains a bunch of variant records but organizes them by
- * gene, not genomic position. 
+ * gene, not genomic position. Generally speaking, variants without a GENE_NAME annotation
+ * are ignored. 
  * @author brendan
  *
  */
@@ -235,8 +236,8 @@ public class GenePool extends Operator {
 		for(String key : pool.keySet()) {
 			List<VariantRec> vars = pool.get(key);
 			int sourceCount =  countSources(key);
-			if (sourceCount >= cutoff && vars.size() < 10) {
-				out.println("GENE:" + key + " : " + vars.size() + "\t" + sourceCount);
+			if (sourceCount >= cutoff ) {
+				out.println("GENE:" + key + " : " + vars.size() + "\t" + sourceCount + "\t" + computeMeanProd(vars));
 				for(VariantRec var : vars) {
 					out.println(var.getAnnotation(VariantRec.SOURCE) + "\t" + var.toBasicString() + "\t" + var.getPropertyString(annoKeys));
 				}
@@ -277,6 +278,21 @@ public class GenePool extends Operator {
 			throw new IllegalArgumentException("Gene list input file : " + file.getAbsolutePath() + " does not exist");
 		
 		}
+	}
+	
+	/**
+	 * Computes the mean go_effect_product of the variants in the list
+	 * @param vars
+	 * @return
+	 */
+	public static double computeMeanProd(List<VariantRec> vars) {
+		double sum = 0;
+		for(VariantRec rec : vars) {
+			Double prod = rec.getProperty(VariantRec.GO_EFFECT_PROD);
+			if (prod != null)
+				sum += prod;
+		}
+		return sum / vars.size();
 	}
 	
 	public static final String FILENAME = "filename";

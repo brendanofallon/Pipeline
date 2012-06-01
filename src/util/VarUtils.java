@@ -191,31 +191,46 @@ public class VarUtils {
 		
 		GenePool genePool = new GenePool();
 		for(File file : variantFiles) {
-			VariantPool vPool = new VariantPool(new CSVLineReader(file));
+			VariantPool vPool = new VariantPool(getPool(file));
 
 //			VariantPool lowFreqVars = new VariantPool(vPool.filterPool(VarFilterUtils.getPopFreqFilter(popFreqCutoff)));
 //			VariantPool interestingVars = new VariantPool( lowFreqVars.filterPool(VarFilterUtils.getNonSynFilter()));
-
-			genePool.addPool(vPool);
+			int found = 0;
+			for(String contig : vPool.getContigs()) {
+				for(VariantRec var : vPool.getVariantsForContig(contig)) {
+					Double prod = var.getProperty(VariantRec.GO_EFFECT_PROD); 
+					if (prod != null && prod > 0) {
+						genePool.addRecordNoWarn(var);
+						found++;
+					}
+				}
+			}
+			
+			if (found == 0) {
+				System.err.println("WARNING : Found 0 variants with correct annotations for file : " + file.getName());
+			}
+			System.err.println("WARNING : Found " + found + " variants with correct annotations for file : " + file.getName());
 
 		}
 		
-		List<String> annoKeys = new ArrayList<String>();
-		annoKeys.add(VariantRec.NM_NUMBER);
-		annoKeys.add(VariantRec.RSNUM);
-		annoKeys.add(VariantRec.POP_FREQUENCY);
-		annoKeys.add(VariantRec.EXOMES_FREQ);
+		List<String> annoKeys = new ArrayList<String>();		
 		annoKeys.add(VariantRec.GENE_NAME);
 		annoKeys.add(VariantRec.VARIANT_TYPE);
 		annoKeys.add(VariantRec.EXON_FUNCTION);
-		annoKeys.add(VariantRec.EFFECT_PREDICTION);
-		annoKeys.add(VariantRec.GO_SCORE);
-		annoKeys.add(VariantRec.GO_EFFECT_PROD);
+		annoKeys.add(VariantRec.NM_NUMBER);
 		annoKeys.add(VariantRec.CDOT);
 		annoKeys.add(VariantRec.PDOT);
+		annoKeys.add(VariantRec.RSNUM);
+		annoKeys.add(VariantRec.POP_FREQUENCY);
+		annoKeys.add(VariantRec.EXOMES_FREQ);
+		annoKeys.add(VariantRec.EFFECT_PREDICTION);
+		annoKeys.add(VariantRec.SUMMARY_SCORE);
+		annoKeys.add(VariantRec.PUBMED_SCORE);
+		annoKeys.add(VariantRec.PUBMED_HIT);
+		annoKeys.add(VariantRec.GO_EFFECT_PROD);
 		annoKeys.add(VariantRec.VQSR);
 		
-		genePool.listGenesWithMultipleVars(System.out, 3, annoKeys);
+		genePool.listGenesWithMultipleVars(System.out, 2, annoKeys);
 		
 	}
 
@@ -976,33 +991,37 @@ public class VarUtils {
 			return;
 		}
 	
-		if (firstArg.equals("novelFilter")) {
+		if (firstArg.equals("interestingFilter")) {
 			if (args.length < 2) {
 				System.out.println("Enter the names of one or more variant (vcf or csv) files to examine");
 				return;
 			}
 
 			List<String> annoKeys = new ArrayList<String>();
+			annoKeys.add(VariantRec.GENE_NAME);
+			annoKeys.add(VariantRec.CDOT);
+			annoKeys.add(VariantRec.PDOT);
 			annoKeys.add(VariantRec.NM_NUMBER);
+			annoKeys.add(VariantRec.VARIANT_TYPE);
+			annoKeys.add(VariantRec.EXON_FUNCTION);
+			
 			annoKeys.add(VariantRec.RSNUM);
 			annoKeys.add(VariantRec.POP_FREQUENCY);
 			annoKeys.add(VariantRec.EXOMES_FREQ);
-			annoKeys.add(VariantRec.GENE_NAME);
-			annoKeys.add(VariantRec.VARIANT_TYPE);
-			annoKeys.add(VariantRec.EXON_FUNCTION);
+			
 			annoKeys.add(VariantRec.OMIM_ID);
-			annoKeys.add(VariantRec.CDOT);
-			annoKeys.add(VariantRec.PDOT);
-			annoKeys.add(VariantRec.VQSR);
-			annoKeys.add(VariantRec.FALSEPOS_PROB);
-			annoKeys.add(VariantRec.FS_SCORE);
+			annoKeys.add(VariantRec.HGMD_INFO);
+			
+			//annoKeys.add(VariantRec.VQSR);
+			//annoKeys.add(VariantRec.FALSEPOS_PROB);
+			//annoKeys.add(VariantRec.FS_SCORE);
 			StringBuilder header = new StringBuilder( VariantRec.getSimpleHeader() );
 			for(String key : annoKeys) 
 				header.append("\t" + key);
 			System.out.println( header );
 			
 			try {
-				double frequencyCutoff = 0.01;
+				double frequencyCutoff = 0.05;
 				boolean hasUserCutoff = false;
 				//See if we can parse a double from args[1]
 				try {
@@ -1020,14 +1039,36 @@ public class VarUtils {
 					pool = getPool(new File(args[2]));
 				else
 					pool = getPool(new File(args[1]));
-				List<VariantRec> novelVars = pool.filterPool(VarFilterUtils.getPopFreqFilter(frequencyCutoff));
 				
-				for(VariantRec var : novelVars) {
-					Double exomeFreq = var.getProperty(VariantRec.EXOMES_FREQ);
-					String omimID = var.getAnnotation(VariantRec.OMIM_ID);
-					if (exomeFreq == null || exomeFreq < frequencyCutoff || omimID != null) {
-						//vars.addRecord(var);
-						System.out.println(var.toSimpleString() + var.getPropertyString(annoKeys));
+				//List<VariantRec> novelVars = pool.filterPool(VarFilterUtils.getPopFreqFilter(frequencyCutoff));
+				
+				for(String contig : pool.getContigs()) {
+					for(VariantRec var : pool.getVariantsForContig(contig)) {
+						boolean passes = false;
+						
+						if (var.getProperty(VariantRec.POP_FREQUENCY) == null || (var.getProperty(VariantRec.POP_FREQUENCY) != null && var.getProperty(VariantRec.POP_FREQUENCY) < frequencyCutoff)) {
+							passes = true;
+						}
+						
+						String varType = var.getAnnotation(VariantRec.VARIANT_TYPE);
+						String exonFunc = var.getAnnotation(VariantRec.EXON_FUNCTION);
+						
+						//Exclude variants that are not in exons or splicing 
+						if (passes && !(varType != null && varType.contains("exon") || varType.contains("splic"))) {
+							passes = false;
+						}
+						
+						if (passes && (exonFunc != null && exonFunc.trim().startsWith("synony"))) {
+							passes = false;
+						}
+						
+						if (var.getAnnotation(VariantRec.OMIM_ID) != null || var.getAnnotation(VariantRec.HGMD_INFO) != null) {
+							passes = true;
+						}
+						
+						if (passes) {
+							System.out.println(var.toSimpleString() + var.getPropertyString(annoKeys));
+						}
 					}
 				}
 				
@@ -1057,11 +1098,16 @@ public class VarUtils {
 				for(String contig : pool.getContigs()) {
 					for(VariantRec var : pool.getVariantsForContig(contig)) {
 						Double varVal = var.getProperty(prop);
-						if ( (!greater) && varVal != null && varVal < val) {
+						if (varVal == null) {
 							filteredVars.addRecord(var);
 						}
-						if (greater && varVal != null && varVal > val) {
-							filteredVars.addRecord(var);
+						else {
+							if ( (!greater) && varVal < val) {
+								filteredVars.addRecord(var);
+							}
+							if (greater && varVal > val) {
+								filteredVars.addRecord(var);
+							}
 						}
 					}
 				}

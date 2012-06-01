@@ -40,6 +40,9 @@ public abstract class AnnovarAnnotator extends Annotator {
 	public void initialize(NodeList children) {
 		super.initialize(children);
 		
+		String ranPrefix = "" + (int)Math.round(100000 * Math.random()); //Attach a random number here so if we're doing simultaneous annotations annovar output files dont clobber each other
+		annovarPrefix = annovarPrefix + "." + ranPrefix;
+		
 		//Find annovar input file
 		for(int i=0; i<children.getLength(); i++) {
 			Node child = children.item(i);
@@ -121,7 +124,9 @@ public abstract class AnnovarAnnotator extends Annotator {
 			int modPos = pos+1;
 
 			rec = variants.findRecord(contig, modPos);
-
+			if (rec == null)
+				return null;
+			
 			if (! rec.getAlt().equals(alt)) {
 				//System.out.println("Record found, but alt for record is " + rec.getAlt() + " and alt from file is " + alt);
 				return null;

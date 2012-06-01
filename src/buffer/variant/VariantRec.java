@@ -40,11 +40,11 @@ public class VariantRec {
 		this.isHetero = isHetero;
 	}
 	
-	public void addProperty(String key, Double val) {
+	public synchronized void addProperty(String key, Double val) {
 		props.put(key, val);
 	}
 	
-	public void addAnnotation(String key, String anno) {
+	public synchronized void addAnnotation(String key, String anno) {
 		annotations.put(key, anno);
 	}
 	
@@ -438,7 +438,7 @@ public class VariantRec {
 	 * @return
 	 */
 	public static PositionComparator getPositionComparator() {
-		return posComparator;
+		return new PositionComparator();
 	}
 	
 	/**
@@ -492,7 +492,7 @@ public class VariantRec {
 		
 	}
 	
-	private static final PositionComparator posComparator =  new PositionComparator();
+	private final PositionComparator posComparator =  new PositionComparator();
 	
 	//A few oft-used property / annotation keys
 	public static final String EFFECT_PREDICTION = "effect.prediction";
@@ -534,6 +534,8 @@ public class VariantRec {
 	public static final String EXOMES_FREQ = "exomes5400.frequency";
 	public static final String HGMD_INFO = "hgmd.info";
 	public static final String INTERACTION_SCORE = "interaction.score";
+	public static final String PUBMED_SCORE = "pubmed.score";
+	public static final String PUBMED_HIT = "pubmed.hit";
 	
 }
 

@@ -1,5 +1,7 @@
 package operator.annovar;
 
+import java.text.DecimalFormat;
+
 import operator.OperationFailedException;
 import operator.Operator;
 
@@ -30,13 +32,35 @@ public abstract class Annotator extends Operator {
 	 */
 	public abstract void annotateVariant(VariantRec var);
 	
+	/**
+	 * If true, we write some progress indicators to system.out
+	 * @return
+	 */
+	protected boolean displayProgress() {
+		return false;
+	}
+	
 	public void performOperation() throws OperationFailedException {
 		if (variants == null)
 			throw new OperationFailedException("No variant pool specified", this);
 		
+		DecimalFormat formatter = new DecimalFormat("#0.00");
+		int tot = variants.size();
+		
+		
+		int varsAnnotated = 0;
+		
 		for(String contig : variants.getContigs()) {
 			for(VariantRec rec : variants.getVariantsForContig(contig)) {
 				annotateVariant(rec);
+				
+				varsAnnotated++;
+				double prog = 100 * (double)varsAnnotated  / (double) tot;
+				if (displayProgress() && varsAnnotated % 2000 == 0) {
+					System.out.println("Annotated " + varsAnnotated + " of " + tot + " variants  (" + formatter.format(prog) + "% )");	
+				}
+				
+				
 			}
 		}
 			

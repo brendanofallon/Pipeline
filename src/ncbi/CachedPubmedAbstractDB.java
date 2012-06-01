@@ -6,18 +6,30 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import ncbi.PubMedFetcher.XMLParseException;
+
+import org.xml.sax.SAXException;
 
 /**
  * Analagous to CachedGeneSUmmaryDB, this stores pubmed abstract information locally so we're not always
- * re-downloading it from ncbi
+ * re-downloading it from ncbi, but grabs and stores new IDs as needed. Thus, the first lookup will be slow,
+ * but all subsequent lookups should be very fast
  * @author brendan
  *
  */
 public class CachedPubmedAbstractDB {
 
 	private Map<Integer, PubMedRecord> map = null;
+	private Set<Integer> brokenIDs = new HashSet<Integer>(); //Stores IDs for which retrieving data 
 	private String cacheFilePath = System.getProperty("user.home") + System.getProperty("file.separator") + ".pubmedcache"; 
 	private PubMedFetcher fetcher = new PubMedFetcher(); //Fetches gene summaries from ncbi
     private GenePubMedDB genePubMed; //Stores gene-pubmed id mapping
@@ -27,41 +39,131 @@ public class CachedPubmedAbstractDB {
 	    genePubMed = new GenePubMedDB(new File("/home/brendan/resources/gene2pubmed_human"));
 		buildMapFromFile();
 	}
+
+	/**
+	 * Obtain a list of pubmed records for the given ids. If you're downloading lots of records
+	 * this is a lot more efficient than getting them one at a time. 
+	 * @param pubmedIDs
+	 * @return 
+	 */
+	public List<PubMedRecord> getRecordForIDs(List<Integer> pubmedIDs) {
+		return getRecordForIDs(pubmedIDs, false);
+	}
 	
 	/**
-	 * Obtain the full string containing ncbi's summary for the given gene symbol (i.e. 'RASA1'). 
+	 * Obtain a list of pubmed records for the given ids. If you're downloading lots of records
+	 * this is a lot more efficient than getting them one at a time. 
+	 * @param pubmedIDs
+	 * @param disableCacheWrites If true we will not write newly downloaded records to local cache
+	 * @return 
+	 */
+	public List<PubMedRecord> getRecordForIDs(List<Integer> pubmedIDs, boolean disableCacheWrites) {
+		
+		//Make a list of all the ids we need to grab
+		List<Integer> idsToGrab = new ArrayList<Integer>();
+		for(Integer recID : pubmedIDs) {
+			if (! map.containsKey(recID) && (!brokenIDs.contains(recID))) {
+				idsToGrab.add(recID);
+			}
+		}
+		
+		//Grab the list of ids in an efficient way
+		if (idsToGrab.size() > 0) {
+			int recordsDownloaded = forceFetchIDs(idsToGrab);
+			missesSinceLastWrite += recordsDownloaded;
+		}
+
+		
+		if (missesSinceLastWrite > 20 && (!disableCacheWrites)) {
+			try {
+				writeMapToFile();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		
+		List<PubMedRecord> records = new ArrayList<PubMedRecord>(pubmedIDs.size());
+		for(Integer id : pubmedIDs) {
+			PubMedRecord rec = map.get(id);
+			if (rec != null) {
+				records.add(rec);
+			}
+		}
+		return records;
+	}
+	
+	/**
+	 * Forces re-downloading of all ids in the list. These are then added directly to the map
+	 * @param pubmedIDs
+	 */
+	private int forceFetchIDs(List<Integer> pubmedIDs) {
+		int recordsObtained = 0;
+
+		List<PubMedRecord> records;
+		try {
+			records = fetcher.getPubMedRecordForIDs(pubmedIDs);
+			for(PubMedRecord rec : records) {
+				if (rec != null) {
+					map.put(rec.pubMedID, rec);
+					recordsObtained++;
+				}
+			}
+			
+			//We need to determine which, if any, IDs resulted in errors, so see if there are any ids in 
+			//the input list which are not associated with an entry in the map. These are all 'broken'
+			for(Integer id : pubmedIDs) {
+				if (! map.containsKey(id))
+					brokenIDs.add(id);
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SAXException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		return recordsObtained;
+	}
+	
+	/**
+	 * Obtain the full string containing the pubmed summary information for the given pubmed id 
 	 * If the summary is already in the local cache and has not expired, just return it. If not, we 
 	 * query ncbi and try to get it. 
 	 * @param symbol
 	 * @return
 	 */
 	public PubMedRecord getRecordForID(Integer pubmedID) {
-		PubMedRecord summary = map.get(pubmedID);
+		PubMedRecord rec = map.get(pubmedID);
 		
 		//Sweet, cache hit. Return the info right away
-		if (summary != null) {
+		if (rec != null) {
 			//System.out.println("Got cache hit for gene : " + symbol);
-			return summary;
+			return rec;
 		}
 
 		
         try {
-
-			System.out.println("Fetching abstract #" + pubmedID);
+			//System.out.println("Fetching abstract #" + pubmedID);
 			
-			
-			PubMedRecord rec = fetcher.getPubMedRecordForID(pubmedID);
+			rec = fetcher.getPubMedRecordForID(pubmedID);
 
 			//Sanity check
 			if (!(rec.pubMedID == pubmedID)) {
 				throw new IllegalArgumentException("Obtained pubmedID does not match requested ID!");
 			}
 			
-			map.put(pubmedID, summary);
+			map.put(pubmedID, rec);
 			missesSinceLastWrite++;
-			if (missesSinceLastWrite > 50)
+			if (missesSinceLastWrite > 20)
 				writeMapToFile();
-			return summary;
+			return rec;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -71,7 +173,7 @@ public class CachedPubmedAbstractDB {
 	}
 	
 	public void writeMapToFile() throws IOException {
-		System.out.println("Writing cached gene summaries to " + cacheFilePath);
+		//System.out.println("Writing cached gene summaries to " + cacheFilePath);
 		if (map == null) //Map may not have been initialized
 			return;
 		
@@ -98,7 +200,7 @@ public class CachedPubmedAbstractDB {
 	
 	public void buildMapFromFile() throws IOException {
 		map = new HashMap<Integer, PubMedRecord>();
-		System.out.println("Initializing cached pubmed db");
+		//System.out.println("Initializing cached pubmed db");
 		File cache = new File(cacheFilePath);
 		if (!cache.exists()) {
 			try {
@@ -135,7 +237,7 @@ public class CachedPubmedAbstractDB {
 			map.put(id, rec);
 			line = reader.readLine();
 		}
-		System.out.println("Read in " + map.size() + " cached abstracts from cache");
+		System.out.println("Read in " + map.size() + " cached pubmed abstracts from cache");
 	}
 	
 	

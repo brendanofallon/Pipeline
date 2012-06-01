@@ -16,6 +16,23 @@ public class EffectPredictionAnnotator extends Annotator {
 	}
 
 	public static double getEffectPredictionLinearWeight(VariantRec rec) {
+		
+		String exonFuncType = rec.getAnnotation(VariantRec.EXON_FUNCTION);
+		if (exonFuncType != null) {
+			if (exonFuncType.contains("frameshift")) {
+				if (exonFuncType.contains("non"))
+					return 10;
+				else
+					return 25;
+			}
+			if (exonFuncType.contains("stopgain"))
+				return 25;
+			if (exonFuncType.contains("stoploss"))
+				return 20;
+			if (exonFuncType.contains("splice"))
+				return 20;
+		}
+		
 		double siftWeight = -0.5;
 		double ppWeight = 1.46;
 		double mtWeight = 6.29;

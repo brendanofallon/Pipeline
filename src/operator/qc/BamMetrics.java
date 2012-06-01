@@ -58,9 +58,11 @@ public class BamMetrics extends IOOperator {
 	
 	public static BAMMetrics computeBAMMetrics(BAMFile inputBAM) {
 		SAMFileReader.setDefaultValidationStringency(ValidationStringency.LENIENT);
+		if (inputBAM.getFile() == null) {
+			throw new IllegalArgumentException("File associated with inputBAM " + inputBAM.getAbsolutePath() + " is null");
+		}
 		final SAMFileReader inputSam = new SAMFileReader(inputBAM.getFile());
-		inputSam.setValidationStringency(ValidationStringency.LENIENT);
-		
+		inputSam.setValidationStringency(ValidationStringency.LENIENT);		
 
 		int readCount = 0;
 		int unmappedCount = 0;
