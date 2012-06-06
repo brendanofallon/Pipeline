@@ -199,7 +199,7 @@ public class VarUtils {
 			for(String contig : vPool.getContigs()) {
 				for(VariantRec var : vPool.getVariantsForContig(contig)) {
 					Double prod = var.getProperty(VariantRec.GO_EFFECT_PROD); 
-					if (prod != null && prod > 0) {
+					if (prod != null && prod > 50) {
 						genePool.addRecordNoWarn(var);
 						found++;
 					}
@@ -509,7 +509,7 @@ public class VarUtils {
 				annos.add(VariantRec.EXOMES_FREQ);
 				annos.add(VariantRec.CDOT);
 				annos.add(VariantRec.PDOT);
-				annos.add(VariantRec.VQSR);
+				//annos.add(VariantRec.VQSR);
 				geneVars.listAll(System.out, annos);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block

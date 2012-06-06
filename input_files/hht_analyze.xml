@@ -1,0 +1,172 @@
+
+<Pipeline>
+
+<reference class="buffer.ReferenceFile" filename="/home/brendan/resources/human_g1k_v37.fasta" />
+<capture class="buffer.BEDFile" filename="/home/brendan/resources/SureSelect_50mb_with_annotation_b37.bed" />
+<KnownDBSNP class="buffer.VCFFile" filename="/home/brendan/resources/dbsnp_132.b37.vcf" />
+<HapMap class="buffer.VCFFile" filename="/home/brendan/resources/hapmap_3.3.b37.sites.vcf" />
+<Omni class="buffer.VCFFile" filename="/home/brendan/resources/1000G_omni2.5.b37.sites.vcf" />
+
+
+<genesOfInterest class="buffer.variant.GenePool" filename="/media/MORE_DATA/HHT/HHT-genes.txt" />
+
+<InputVCF class="buffer.VCFFile" filename="$$INPUTFILE" />
+
+
+<!-- Perform variant quality score recalibration VQSR, using GaTK -->
+<!--VQSR class="operator.gatk.VariantRecalibrator" >
+ <input>
+  <reference />
+  <InputVCF />
+  <HapMap /> 
+  <Omni />   
+  <KnownDBSNP />  
+ </input>
+ <output>
+  <recalibratedVCF class="buffer.VCFFile" filename="$$PREFIX.vqsr.vcf" />
+ </output>
+</VQSR -->
+
+<filterByCapture class="operator.variant.FilterVCFByBED">
+ <input>
+   <InputVCF />
+   <!-- recalibratedVCF / -->
+   <capture />
+  </input>
+  <output>
+   <captureVCF class="buffer.VCFFile" filename="$$PREFIX.capture.vcf" />
+ </output>
+</filterByCapture>
+
+
+<MakeInput class="operator.annovar.ConvertVCFAnnovar">
+ <input>
+	<captureVCF />
+ </input>
+ <output>
+	<AnnoInput class="buffer.AnnovarInputFile" filename="annovar.input" />
+ </output>
+</MakeInput>
+
+<VariantPool class="buffer.variant.VariantPool">
+	<captureVCF />
+</VariantPool>
+
+<GeneAnnotate class="operator.annovar.GeneAnnotator">
+	<AnnoInput />
+	<VariantPool />
+</GeneAnnotate>
+
+<FPAnnotate class="operator.variant.FPComputer">
+  <VariantPool />
+</FPAnnotate>
+
+<ParallelAnnotator class="operator.ParallelOperator">
+
+<SiftAnnotate class="operator.annovar.SiftAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</SiftAnnotate>
+
+<PolyphenAnnotate class="operator.annovar.PolyphenAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PolyphenAnnotate>
+
+<MTAnnotate class="operator.annovar.MTAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</MTAnnotate>
+
+<PhyloPAnnotate class="operator.annovar.PhyloPAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PhyloPAnnotate>
+
+<GERPAnnotate class="operator.annovar.GERPAnnotator">
+  <AnnoInput />
+  <VariantPool />
+</GERPAnnotate>
+
+<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PopFreqAnnotate>
+
+<ESPAnnotate class="operator.annovar.Exomes5400Annotator">
+   <AnnoInput />
+   <VariantPool />
+</ESPAnnotate>
+
+<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
+ <AnnoInput />
+ <VariantPool />
+</DBSNPAnnotate>
+
+</ParallelAnnotator>
+
+<OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
+  <AnnoInput />
+  <VariantPool />
+</OMIMAnnotate>
+
+<HGMD class="operator.annovar.HGMDAnnotator">
+  <VariantPool />
+</HGMD>
+
+<EffectPred class="operator.annovar.EffectPredictionAnnotator">
+ <VariantPool />
+</EffectPred>
+
+<GOAnnotate class="operator.annovar.GOAnnotator" >
+  <VariantPool />
+</GOAnnotate>
+
+<GoRank class="operator.variant.GOTermRanker">
+ <VariantPool />
+ <rankedTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-keyterms.txt" />
+</GoRank>
+
+<SummaryRank class="operator.variant.GeneSummaryRanker">
+	<VariantPool />
+	<rankedSummaryTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-summaryterms.txt" />
+</SummaryRank>
+
+
+<InteractionRank class="operator.variant.InteractionRanker" source="ENG,ACVRL1,SMAD4">
+  <VariantPool />
+  <InteractionMatrix class="buffer.GeneInteractionGraph">
+	<GeneInteractions class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-proteins500.csv" />
+  </InteractionMatrix>
+</InteractionRank>
+
+
+<PubmedRank class="operator.variant.PubmedRanker">
+  <VariantPool />
+  <pubmedTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-pubmedterms.txt" />
+</PubmedRank>
+
+
+
+<Analysis class="operator.AnalysisFilter">
+ <input>
+   <VariantPool />
+   <genesOfInterest />
+ </input>
+ <output>
+  <filteredVariants class="buffer.variant.VariantPool" />
+ </output>
+</Analysis>
+
+<EverythingToFile class="operator.variant.ExcelWriter">
+  <VariantPool />
+  <CSVFileAll class="buffer.CSVFile" filename="$$PREFIX.all.csv" />
+</EverythingToFile>
+
+<ToFile class="operator.variant.ExcelWriter">
+	<filteredVariants />
+	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.hht.analysis.csv" />
+</ToFile>
+
+
+</Pipeline>

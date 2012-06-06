@@ -37,7 +37,7 @@ public class CleanBam extends MultiOperator {
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
 		
 		if (samtoolsPath == null) {
-			Object samPropsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+			Object samPropsPath = getPipelineProperty(PipelineXMLConstants.SAMTOOLS_PATH);
 			samtoolsPath = samPropsPath.toString();
 		}
 		

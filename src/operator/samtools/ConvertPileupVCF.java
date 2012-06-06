@@ -17,7 +17,7 @@ public class ConvertPileupVCF extends PipedCommandOp {
 	@Override
 	protected String getCommand() throws OperationFailedException {
 	
-		Object samPath = Pipeline.getPropertyStatic(PipelineXMLConstants.BCFTOOLS_PATH);
+		Object samPath = getPipelineProperty(PipelineXMLConstants.BCFTOOLS_PATH);
 		if (samPath != null)
 			bcftoolsPath = samPath.toString();
 		

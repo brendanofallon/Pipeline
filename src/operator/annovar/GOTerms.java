@@ -42,7 +42,7 @@ public class GOTerms extends Operator {
 
 	@Override
 	public void initialize(NodeList children) {
-		String goDir = (String) Pipeline.getPipelineInstance().getProperty(GO_DIR);
+		String goDir = (String) getPipelineProperty(GO_DIR);
 		if (goDir == null || goDir.length()==0) {
 			throw new IllegalArgumentException("G.O. info base directory not specified (use goinfo.dir in pipelineprops file)");	
 		}

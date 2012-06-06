@@ -38,7 +38,7 @@ public class MoveFiles extends Operator {
 			throw new OperationFailedException("No destination path specified, use dest=\"path/to/dir/\"", this);
 		}
 		
-		String projHome = (String)Pipeline.getPropertyStatic(Pipeline.PROJECT_HOME);
+		String projHome = getProjectHome();
 		
 		if (! destinationPath.startsWith("/") && projHome != null) {
 			destinationPath = projHome + destinationPath;

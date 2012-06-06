@@ -58,7 +58,7 @@ public abstract class AnnovarAnnotator extends Annotator {
 		if (annovarInputFile == null)
 			throw new IllegalArgumentException("Annovar-based annotators require an annovar input file to run");
 		
-		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.ANNOVAR_PATH);
+		Object path = getPipelineProperty(PipelineXMLConstants.ANNOVAR_PATH);
 		if (path != null)
 			annovarPath = path.toString();
 		
@@ -74,7 +74,7 @@ public abstract class AnnovarAnnotator extends Annotator {
 			annovarPath = userPath;
 		}
 		
-		annovarPrefix = Pipeline.getPipelineInstance().getProjectHome() + annovarPrefix;
+		annovarPrefix = getProjectHome() + annovarPrefix;
 	}
 
 	

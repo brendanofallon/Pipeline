@@ -24,7 +24,7 @@ public class FastQC extends MultiOperator {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
 		String fastqcPath = "~/FastQC/fastqc ";
-		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.FASTQC_PATH);
+		Object path = getPipelineProperty(PipelineXMLConstants.FASTQC_PATH);
 		if (path != null)
 			fastqcPath = path.toString();
 		else {
@@ -37,14 +37,14 @@ public class FastQC extends MultiOperator {
 		}
 		
 		//Make the output directory 'fastqc'
-		File qcDir = new File( Pipeline.getPipelineInstance().getProjectHome() + "fastqc");
+		File qcDir = new File( getProjectHome() + "fastqc");
 		if (! qcDir.exists()) {
 			qcDir.mkdir();
 		}
 		else {
 			//Destination directory already exists... is it not a directory?
 			if (qcDir.isFile()) { //If not a directory, just put output files in project-home
-				qcDir = new File( Pipeline.getPipelineInstance().getProjectHome() );
+				qcDir = new File( getProjectHome() );
 			}
 		}
 		

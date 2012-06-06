@@ -26,7 +26,7 @@ public class CoordinateSort extends CommandOperator {
 	@Override
 	protected String getCommand() {
 	
-		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.PICARD_PATH);
+		Object path = getPipelineProperty(PipelineXMLConstants.PICARD_PATH);
 		if (path != null)
 			picardDir = path.toString();
 		
@@ -55,7 +55,7 @@ public class CoordinateSort extends CommandOperator {
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
-			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+			jvmARGStr = (String) getPipelineProperty(JVM_ARGS);
 		}
 		//If it's still null then be sure to make it the empty string
 		if (jvmARGStr == null || jvmARGStr.length()==0) {

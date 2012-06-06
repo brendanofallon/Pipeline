@@ -30,7 +30,7 @@ public class ApplyRecalibration extends CommandOperator {
 	@Override
 	protected String getCommand() {
 		
-		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
+		Object propsPath = getPipelineProperty(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
 		

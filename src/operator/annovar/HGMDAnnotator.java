@@ -28,7 +28,7 @@ public class HGMDAnnotator extends Annotator {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		if (db == null) {
 			db = new HGMDB();
-			Object hgmdObj =  Pipeline.getPipelineInstance().getProperty(HGMDB_PATH);
+			Object hgmdObj =  getPipelineProperty(HGMDB_PATH);
 			if (hgmdObj== null) {
 				throw new OperationFailedException("Could not initialize HGMD db, no path to db file specified (use " + HGMDB_PATH + ")", this);
 			}

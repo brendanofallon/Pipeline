@@ -24,7 +24,7 @@ public class ConvertSamBam extends PipedCommandOp {
 	@Override
 	protected String getCommand() {
 	
-		Object samPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+		Object samPath = getPipelineProperty(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samPath != null)
 			samtoolsPath = samPath.toString();
 		

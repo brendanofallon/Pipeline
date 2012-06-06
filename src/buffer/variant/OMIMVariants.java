@@ -20,7 +20,7 @@ public class OMIMVariants extends VariantPool {
 	File baseDir = null;
 	
 	public OMIMVariants() {
-		String omimDir = (String) Pipeline.getPipelineInstance().getProperty(OMIM_DIR);
+		String omimDir = (String) getPipelineProperty(OMIM_DIR);
 		if (omimDir == null || omimDir.length()==0) {
 			throw new IllegalArgumentException("OMIM base directory not specified (use omim.dir in pipelineprops file)");	
 		}

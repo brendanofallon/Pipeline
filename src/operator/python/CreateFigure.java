@@ -33,8 +33,8 @@ public class CreateFigure {
 	 * @return
 	 * @throws IOException 
 	 */
-	public static void generateFigure(List<Point2D> points, String xLabel, String yLabel, String outputPath) throws IOException {
-		String pythonScriptsDir = (String) Pipeline.getPipelineInstance().getProperty(Pipeline.PYTHON_SCRIPTS_DIR);
+	public static void generateFigure(Pipeline pipeline, List<Point2D> points, String xLabel, String yLabel, String outputPath) throws IOException {
+		String pythonScriptsDir = (String) pipeline.getProperty(Pipeline.PYTHON_SCRIPTS_DIR);
 		if (pythonScriptsDir != null) {
 			pathToScript = pythonScriptsDir;
 		}
@@ -60,19 +60,19 @@ public class CreateFigure {
 		}
 	}
 
-	public static void generateFigure(Histogram hist, String seriesLabel, String xLabel, String yLabel, String outputPath) throws IOException {
+	public static void generateFigure(Pipeline pipeline, Histogram hist, String seriesLabel, String xLabel, String yLabel, String outputPath) throws IOException {
 		List<Histogram> histList = new ArrayList<Histogram>();
 		histList.add(hist);
 		List<String> label = new ArrayList<String>();
 		label.add(seriesLabel);
-		generateFigure(histList, label, xLabel, yLabel, outputPath);
+		generateFigure(pipeline, histList, label, xLabel, yLabel, outputPath);
 	}
 	
 	
-	public static void generateFigure(List<Histogram> histList, List<String> seriesLabels, String xLabel, String yLabel, String outputPath) throws IOException {
+	public static void generateFigure(Pipeline pipeline, List<Histogram> histList, List<String> seriesLabels, String xLabel, String yLabel, String outputPath) throws IOException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
-		String pythonScriptsDir = (String) Pipeline.getPipelineInstance().getProperty(Pipeline.PYTHON_SCRIPTS_DIR);
+		String pythonScriptsDir = (String)  pipeline.getProperty(Pipeline.PYTHON_SCRIPTS_DIR);
 		if (pythonScriptsDir != null) {
 			pathToScript = pythonScriptsDir;
 		}
@@ -108,11 +108,11 @@ public class CreateFigure {
 	}
 
 	
-	public static void generateHistoImage(Histogram[] histos, String xLabel, String yLabel, String outputPath) throws IOException {
+	public static void generateHistoImage(Pipeline pipeline, Histogram[] histos, String xLabel, String yLabel, String outputPath) throws IOException {
 		BufferedWriter writer = new BufferedWriter(new FileWriter(new File(".histodata.csv")));
 		String lineSep= System.getProperty("line.separator");
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		String pythonScriptsDir = (String) Pipeline.getPipelineInstance().getProperty(Pipeline.PYTHON_SCRIPTS_DIR);
+		String pythonScriptsDir = (String) pipeline.getProperty(Pipeline.PYTHON_SCRIPTS_DIR);
 		if (pythonScriptsDir != null) {
 			pathToScript = pythonScriptsDir;
 		}
@@ -157,23 +157,23 @@ public class CreateFigure {
 	}
 	
 	
-	public static void main(String[] args) {
-		List<Point2D> points = new ArrayList<Point2D>();
-		
-		points.add(new Point2D.Double(0, 1.0));
-		points.add(new Point2D.Double(1, 1.0));
-		points.add(new Point2D.Double(2, 2.0));
-		points.add(new Point2D.Double(3, 1.0));
-		points.add(new Point2D.Double(4, 5.0));
-		points.add(new Point2D.Double(4.1, 1.0));
-		points.add(new Point2D.Double(4.321, 7.0));
-		
-		try {
-			CreateFigure.generateFigure(points, "X data", "y data", "newlymadefigure.png");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
+//	public static void main(String[] args) {
+//		List<Point2D> points = new ArrayList<Point2D>();
+//		
+//		points.add(new Point2D.Double(0, 1.0));
+//		points.add(new Point2D.Double(1, 1.0));
+//		points.add(new Point2D.Double(2, 2.0));
+//		points.add(new Point2D.Double(3, 1.0));
+//		points.add(new Point2D.Double(4, 5.0));
+//		points.add(new Point2D.Double(4.1, 1.0));
+//		points.add(new Point2D.Double(4.321, 7.0));
+//		
+//		try {
+//			CreateFigure.generateFigure(points, "X data", "y data", "newlymadefigure.png");
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//	}
 }

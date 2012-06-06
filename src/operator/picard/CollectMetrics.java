@@ -32,7 +32,7 @@ public class CollectMetrics extends CommandOperator {
 	
 	@Override
 	protected String getCommand() throws OperationFailedException {
-		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.PICARD_PATH);
+		Object path = getPipelineProperty(PipelineXMLConstants.PICARD_PATH);
 		if (path != null)
 			picardDir = path.toString();
 		
@@ -55,7 +55,7 @@ public class CollectMetrics extends CommandOperator {
 		
 		String inputPath = inputBAM.getAbsolutePath();
 		
-		File metricsDir = new File(Pipeline.getPipelineInstance().getProjectHome() + "/metrics");
+		File metricsDir = new File(getProjectHome() + "/metrics");
 		if (! metricsDir.exists()) {
 			metricsDir.mkdir();
 		}

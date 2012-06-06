@@ -60,14 +60,17 @@ public class DGVVariationFile extends IntervalsFile {
 			line = reader.readLine();
 		}
 		
-		sortAllContigs();
+	//	sortAllContigs();
 		
 		logger.info("Done building intervals map for " + getFilename());
 	}
 
 	@Override
 	public String getTypeStr() {
-		return "DGV-variation file"
+		// TODO Auto-generated method stub
+		return null;
 	}
+
+
 
 }

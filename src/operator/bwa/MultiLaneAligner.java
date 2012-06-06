@@ -53,7 +53,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 	public static final String SAMPLE = "sample";
 	
 	
-	protected int sampeThreads = Pipeline.getPipelineInstance().getThreadCount();
+	protected int sampeThreads = 1;  //Overridden in performOperation
 	protected String maxEditDist = "3"; //Maximum edit distance for alignment
 	protected String pathToBWA = "bwa";
 	protected int defaultThreads = 4;
@@ -70,7 +70,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 	protected MultiFileBuffer outputSAMs;
 	
 	public int getPreferredThreadCount() {
-		return Pipeline.getPipelineInstance().getThreadCount();
+		return getPipelineOwner().getThreadCount();
 	}
 
 	@Override
@@ -79,7 +79,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
 		
-		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.BWA_PATH);
+		Object propsPath = getPipelineProperty(PipelineXMLConstants.BWA_PATH);
 		if (propsPath != null)
 			pathToBWA = propsPath.toString();
 		
@@ -102,6 +102,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 		else
 			logger.info("Multi-lane aligner is using SINGLE-END mode");
 		
+		sampeThreads = getPipelineOwner().getThreadCount();
 		String sampeThreadStr = properties.get(SAMPE_THREADS);
 		if (sampeThreadStr != null) {
 			sampeThreads = Integer.parseInt(sampeThreadStr);

@@ -32,7 +32,7 @@ public class VariantRecalibrator extends CommandOperator {
 	protected String[] getCommands() {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
-		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
+		Object propsPath = getPipelineProperty(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
 		
@@ -45,7 +45,7 @@ public class VariantRecalibrator extends CommandOperator {
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
-			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+			jvmARGStr = (String) getPipelineProperty(JVM_ARGS);
 		}
 		//If it's still null then be sure to make it the empty string
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
@@ -68,7 +68,7 @@ public class VariantRecalibrator extends CommandOperator {
 
 		FileBuffer outputVCF = getOutputBufferForClass(VCFFile.class);
 		
-		String projHome = Pipeline.getPipelineInstance().getProjectHome();
+		String projHome = getProjectHome();
 		String recalFilePath = projHome + "vqsr.output.recal";
 		String tranchesPath = projHome + "vqsr.output.tranches";
 		String rScriptPath = projHome + "vqsr.output.plots.R";

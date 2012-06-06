@@ -19,7 +19,7 @@ public class ConvertVCFAnnovar extends CommandOperator {
 	
 	@Override
 	protected String getCommand() {
-		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.ANNOVAR_PATH);
+		Object path = getPipelineProperty(PipelineXMLConstants.ANNOVAR_PATH);
 		if (path != null)
 			annovarPath = path.toString();
 		

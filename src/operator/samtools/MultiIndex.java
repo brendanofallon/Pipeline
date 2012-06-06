@@ -18,7 +18,7 @@ public class MultiIndex extends MultiOperator {
 	
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
-		Object samPropsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+		Object samPropsPath = getPipelineProperty(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samPropsPath != null)
 			samtoolsPath = samPropsPath.toString();
 	
