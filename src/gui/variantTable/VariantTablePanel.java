@@ -53,7 +53,7 @@ public class VariantTablePanel extends JPanel {
 		for(int i=0; i<keys.size(); i++) {
 			TableColumn col = table.getColumnModel().getColumn(i);
 			col.setHeaderValue(keys.get(i));
-			col.setHeaderRenderer(new TableHeaderRenderer());
+			col.setHeaderRenderer(new TableHeaderRenderer(model, keys.get(i)));
 		}
 	}
 	

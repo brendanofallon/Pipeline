@@ -42,7 +42,7 @@ public class VarViewerFrame extends JFrame {
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		initComponents();
-		setLocationRelativeTo(null);
+		//setLocationRelativeTo(null);
 		setPreferredSize(new Dimension(800, 600));
 		//setSize(new Dimension(800, 600));
 		pack();
@@ -62,9 +62,12 @@ public class VarViewerFrame extends JFrame {
 		
 		this.add(filePanel, BorderLayout.NORTH);
 		
-		variantPanel = new VariantTablePanel();
-		this.add(variantPanel, BorderLayout.CENTER);
-		variantPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		TermsInputPanel termsPanel = new TermsInputPanel();
+		this.add(termsPanel, BorderLayout.CENTER);
+		
+		//variantPanel = new VariantTablePanel();
+		//this.add(variantPanel, BorderLayout.CENTER);
+		//variantPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 	}
 	
 

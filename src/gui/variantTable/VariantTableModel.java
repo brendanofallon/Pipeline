@@ -1,5 +1,7 @@
 package gui.variantTable;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.swing.table.AbstractTableModel;
@@ -40,7 +42,11 @@ public class VariantTableModel extends AbstractTableModel {
 		return columnKeys.size();
 	}
 
-	
+	public void sortByKey(String key) {
+		VariantRowComparator comp = new VariantRowComparator(key);
+		Collections.sort(variants, comp);
+		setVariants(variants);
+	}
 	
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
@@ -56,7 +62,7 @@ public class VariantTableModel extends AbstractTableModel {
 		return getValueForColumnKey(var, key);
 	}
 
-	private String getValueForColumnKey(VariantRec var, String key) {
+	private static String getValueForColumnKey(VariantRec var, String key) {
 		if (key == CONTIG) {
 			return var.getContig();
 		}
@@ -74,6 +80,41 @@ public class VariantTableModel extends AbstractTableModel {
 		}
 		
 		return var.getPropertyOrAnnotation(key);
+	}
+	
+	
+	class VariantRowComparator implements Comparator<VariantRec> {
+
+		final String key;
+		
+		public VariantRowComparator(String key) {
+			this.key = key;
+		}
+		
+		@Override
+		public int compare(VariantRec v1, VariantRec v2) {
+			String str1 = getValueForColumnKey(v1, key);
+			String str2 = getValueForColumnKey(v2, key);
+			
+			try {
+				Double val1 = Double.parseDouble(str1);
+				Double val2 = Double.parseDouble(str2);
+				if (val1 == val2)
+					return 0;
+				if (val1 < val2) {
+					return -1;
+				}
+				else {
+					return 1;
+				}
+			}
+			catch (NumberFormatException ex) {
+				//don't do anything
+			}
+			
+			return str1.compareTo(str2);
+		}
+		
 	}
 	
 	public static final String CONTIG = "contig";
