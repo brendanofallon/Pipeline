@@ -17,35 +17,27 @@ public class GOAnnotator extends Annotator {
 	public void setVariantPool(VariantPool pool) {
 		this.variants = pool;
 	}
-	
-	
-	@Override
-	public void performOperation() throws OperationFailedException {
-		if (variants == null)
-			throw new OperationFailedException("Variant pool not initialized", this);
 
+	@Override
+	public void annotateVariant(VariantRec rec) {
 		if (goTerms == null)
 			goTerms = new GOTerms();
 		
-		for(String contig : variants.getContigs()) {
-			List<VariantRec> vars = variants.getVariantsForContig(contig);
-			for(VariantRec rec : vars) {
-				String gene = rec.getAnnotation(VariantRec.GENE_NAME);
-				List<String> functions = goTerms.getFunctionsForGene(gene);
-				String funcStr = combineStrings(functions);
-				rec.addAnnotation(VariantRec.GO_FUNCTION, funcStr);
-				
-				List<String> procs = goTerms.getProcessesForGene(gene);
-				String procsStr = combineStrings(procs);
-				rec.addAnnotation(VariantRec.GO_PROCESS, procsStr);
-				
-				List<String> comps = goTerms.getComponentsForGene(gene);
-				String compsStr = combineStrings(comps);
-				rec.addAnnotation(VariantRec.GO_COMPONENT, compsStr);
-			}
-			
+		String gene = rec.getAnnotation(VariantRec.GENE_NAME);
+		if (gene == null) {
+			return;
 		}
+		List<String> functions = goTerms.getFunctionsForGene(gene);
+		String funcStr = combineStrings(functions);
+		rec.addAnnotation(VariantRec.GO_FUNCTION, funcStr);
 		
+		List<String> procs = goTerms.getProcessesForGene(gene);
+		String procsStr = combineStrings(procs);
+		rec.addAnnotation(VariantRec.GO_PROCESS, procsStr);
+		
+		List<String> comps = goTerms.getComponentsForGene(gene);
+		String compsStr = combineStrings(comps);
+		rec.addAnnotation(VariantRec.GO_COMPONENT, compsStr);
 	}
 
 	private static String combineStrings(List<String> strs) {
@@ -60,5 +52,7 @@ public class GOAnnotator extends Annotator {
 			return strB.toString();
 		}
 	}
+
+
 
 }

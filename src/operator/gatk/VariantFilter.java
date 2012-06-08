@@ -51,8 +51,9 @@ public class VariantFilter extends CommandOperator {
 		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
 		command = command + " -R " + reference;
-		command = command + " --variant " + inputFile + " -T VariantFiltration";
-		command = command + " --filterExpression \"" + filterStr + "\" ";
+		command = command + " --variant " + inputFile + " -T VariantFiltration ";
+		command = command + " --filterExpression \'QD < 2.0\' ";
+		command = command + " --filterName " + getObjectLabel() + " ";
 		if (bedFile != null)
 			command = command + " -L:intervals,BED " + bedFile.getAbsolutePath();
 		command = command + " --out " + outputVCF;

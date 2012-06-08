@@ -19,7 +19,7 @@ public class DBSNPAnnotator extends AnnovarAnnotator {
 		executeCommand(command);
 		
 		File resultsFile = new File(annovarPrefix + ".hg19_snp132_dropped");
-		FileAnnotator annotator = new FileAnnotator(resultsFile, VariantRec.RSNUM, 1, variants);
+		FileAnnotator annotator = new FileAnnotator(resultsFile, VariantRec.RSNUM, 1, 5, 6, variants);
 		try {
 			annotator.annotateAll(false);
 		} catch (IOException e) {

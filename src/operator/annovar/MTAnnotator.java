@@ -24,7 +24,7 @@ public class MTAnnotator extends AnnovarAnnotator {
 		executeCommand(command);
 		
 		File resultFile = new File(annovarPrefix + ".hg19_ljb_mt_dropped"); 
-		FileAnnotator annotator = new FileAnnotator(resultFile, VariantRec.MT_SCORE, 1, variants);
+		FileAnnotator annotator = new FileAnnotator(resultFile, VariantRec.MT_SCORE, 1, 5, 6, variants);
 		try {
 			annotator.annotateAll();
 		} catch (IOException e) {

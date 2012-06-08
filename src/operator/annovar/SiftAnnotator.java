@@ -31,7 +31,7 @@ public class SiftAnnotator extends AnnovarAnnotator {
 		executeCommand(command);
 		
 		File siftFile = new File(annovarPrefix + ".hg19_avsift_dropped"); 
-		FileAnnotator siftAnnotator = new FileAnnotator(siftFile, VariantRec.SIFT_SCORE, 1, variants);
+		FileAnnotator siftAnnotator = new FileAnnotator(siftFile, VariantRec.SIFT_SCORE, 1, 5, 6, variants);
 		try {
 			siftAnnotator.annotateAll();
 		} catch (IOException e) {

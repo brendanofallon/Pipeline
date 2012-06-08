@@ -74,11 +74,11 @@ public abstract class MultiOperator extends IOOperator {
 	 * Traverse through input files and see if we have all of the contigs (Y is optional) 
 	 */
 	protected void checkInputContigs() {
-		checkContigs(inputFiles);
+		checkContigs(inputFiles.getFileList());
 	}
 	
 	protected void checkOutputContigs() {
-		checkContigs(outputFiles);
+		checkContigs(outputFiles.getFileList());
 	}
 	
 	
@@ -91,6 +91,10 @@ public abstract class MultiOperator extends IOOperator {
 		if (inputFiles == null) {
 			throw new OperationFailedException("InputFiles buffer has not been initialized for MultiOperator " + getObjectLabel(), this);
 		}
+		if (inputFiles.getFileCount()==0) {
+			throw new OperationFailedException("No input files specified to operator " + getObjectLabel() + ", aborting. ", this);
+		}
+		
 		logger.info("Beginning parallel multi-operation " + getObjectLabel() + " with " + inputFiles.getFileCount() + " input files");
 		if (inputFiles != null && checkContigs) {
 			checkInputContigs();
@@ -171,6 +175,7 @@ public abstract class MultiOperator extends IOOperator {
 						throw new IllegalArgumentException("Unknown object reference to MultiOperator " + getObjectLabel());
 					if (obj instanceof MultiFileBuffer) {
 						inputFiles = (MultiFileBuffer)obj;
+
 					}
 					else {
 						if (obj instanceof ReferenceFile) {
@@ -181,8 +186,8 @@ public abstract class MultiOperator extends IOOperator {
 						}
 					}
 				}
-			}
 		}
+	}
 		
 		if (outputList != null) {
 			NodeList outputChilden = outputList.getChildNodes();

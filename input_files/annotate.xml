@@ -2,9 +2,9 @@
 <!-- Uses annovar to annotate the given VCF file. This will produce lots of different output files... -->
 <Pipeline>
 
-<InputVCF class="buffer.VCFFile" filename="your_input.vcf" />
+<InputVCF class="buffer.CSVFile" filename="noonan20.filtered.rasmapk.csv" />
 
-<MakeInput class="operator.annovar.ConvertVCFAnnovar">
+<MakeInput class="operator.annovar.ConvertCSVAnnovar">
  <input>
 	<InputVCF />
  </input>
@@ -13,7 +13,7 @@
  </output>
 </MakeInput>
 
-<VariantPool class="buffer.variant.AbstractVariantPool">
+<VariantPool class="buffer.variant.VariantPool">
 	<InputVCF />
 </VariantPool>
 
@@ -46,6 +46,36 @@
 	<AnnoInput />
 	<VariantPool />	
 </PopFreqAnnotate>
+
+<ExomesAnnotate class="operator.annovar.Exomes5400Annotator" > 
+  <AnnoInput />
+  <VariantPool />
+</ExomesAnnotate>
+
+
+<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
+ <AnnoInput />
+ <VariantPool />
+</DBSNPAnnotate>
+
+<OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
+  <AnnoInput />
+  <VariantPool />
+</OMIMAnnotate>
+
+<HGMDAnnotate class="operator.annovar.HGMDAnnotator">
+  <VariantPool />
+</HGMDAnnotate >
+
+<GOAnnotate class="operator.annovar.GOAnnotator" >
+  <VariantPool />
+</GOAnnotate>
+
+
+<EffectAnnotate class="operator.annovar.EffectPredictionAnnotator">
+	<VariantPool />
+</EffectAnnotate>
+
 
 <ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />

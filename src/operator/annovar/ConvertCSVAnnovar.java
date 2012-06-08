@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 import buffer.AnnovarInputFile;
 import buffer.CSVFile;
 import buffer.variant.CSVLineReader;
+import buffer.variant.SimpleLineReader;
 import buffer.variant.VariantRec;
 import operator.IOOperator;
 import operator.OperationFailedException;
@@ -29,7 +30,8 @@ public class ConvertCSVAnnovar extends IOOperator {
 		
 		try {
 			BufferedWriter writer = new BufferedWriter(new FileWriter(output.getAbsolutePath()));
-			CSVLineReader csvReader = new CSVLineReader(input.getFile());
+			//CSVLineReader csvReader = new CSVLineReader(input.getFile());
+			CSVLineReader csvReader = new SimpleLineReader(input.getFile());
 			do {
 				VariantRec rec = csvReader.toVariantRec();
 				String het = "het";
@@ -38,8 +40,10 @@ public class ConvertCSVAnnovar extends IOOperator {
 				writer.write(rec.getContig() + "\t" + 
 							 rec.getStart() + "\t" + 
 							 (rec.getStart() + rec.getRef().length()-1) + "\t" + 
-							 rec.getRef() + "\t" + 
-							 rec.getAlt() + "\t" + 
+							 rec.getRef() + "\t" +
+							 //"- \t" +
+							 rec.getAlt() + "\t" +
+							 //"A \t" +
 							 rec.getQuality() + "\t" + 
 							 rec.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t" + 
 							 het + "\t" +

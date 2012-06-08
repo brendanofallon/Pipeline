@@ -107,7 +107,7 @@ public class ObjectHandler {
 	 * @throws ObjectCreationException
 	 */
 	private PipelineObject createElement(Element el) throws ObjectCreationException {
-		
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		if (verbose) {
 			System.out.println("Examining element : " + el.getNodeName());
 		}
@@ -175,12 +175,20 @@ public class ObjectHandler {
 				return obj;
 
 			} catch (ClassNotFoundException e) {
+				logger.severe("Critical object creation error : " + e.getClass() + "\n " + e.toString());
+				e.printStackTrace();
 				throw new ObjectCreationException("Object creation error: Class " + classStr + " not found \n" + e.getCause() + " : " + e.getLocalizedMessage(), el);
 			} catch (InstantiationException e) {
+				logger.severe("Critical object creation error : " + e.getClass() + "\n " + e.toString());
+				e.printStackTrace();
 				throw new ObjectCreationException("Instantiation exception, \n " + e.getCause() + " : " + e.getLocalizedMessage(), el);
 			} catch (IllegalAccessException e) {
+				logger.severe("Critical object creation error : " + e.getClass() + "\n " + e.toString());
+				e.printStackTrace();
 				throw new ObjectCreationException("Illegal access exception, \n " + e.getCause() + " : " + e.getLocalizedMessage(), el);
 			} catch (Exception e) {
+				logger.severe("Critical object creation error : " + e.getClass() + "\n " + e.toString());
+				e.printStackTrace();
 				throw new ObjectCreationException(e.getCause() + " : " + e.getLocalizedMessage(), el);
 			}
 		}

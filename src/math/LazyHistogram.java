@@ -1,5 +1,5 @@
 
-package util;
+package math;
 
 /********************************************************************
 *
@@ -22,6 +22,7 @@ package util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 
 /**
  * A histogram for which you don't need to specify the min and max initially. This collects the
@@ -113,6 +114,10 @@ public class LazyHistogram {
 	 */
 	private void makeHistoFromList() {
 		Collections.sort(vals);
+		if (vals.size() == 0) {
+			return;
+		}
+		
 		double min = vals.get(0);
 		double max = vals.get(vals.size()-1);
 		
@@ -131,6 +136,15 @@ public class LazyHistogram {
 		
 	}
 	
+	/**
+	 * Force a dump of all data to a regular histogram and return it
+	 * @return
+	 */
+	public Histogram getHistogram() {
+		if (histo == null)
+			makeHistoFromList();
+		return histo;
+	}
 	
 	/**
 	 * Returns the x-value of the first bin for which the sum of the frequencies in all bins with 

@@ -41,5 +41,11 @@ public class StateLogger implements PipelineListener {
 		
 	}
 
+	@Override
+	public void errorEncountered(Operator op) {
+		// TODO Auto-generated method stub
+		
+	}
+
 	
 }

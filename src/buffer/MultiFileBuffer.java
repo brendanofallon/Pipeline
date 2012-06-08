@@ -29,6 +29,7 @@ public class MultiFileBuffer extends FileBuffer {
 	}
 	
 	public void addFile(FileBuffer buf) {
+		//System.out.println("Adding file : " + buf.getFile().getAbsolutePath() + " to MultiFileBuffer " + getObjectLabel());
 		files.add(buf);
 	}
 	
@@ -52,6 +53,10 @@ public class MultiFileBuffer extends FileBuffer {
 		return files.get(i);
 	}
 
+	public List<FileBuffer> getFileList() {
+		return files;
+	}
+	
 	@Override
 	public void initialize(NodeList children) {
 		boolean guessContig = true;

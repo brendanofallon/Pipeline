@@ -1,0 +1,180 @@
+
+<Pipeline>
+
+
+<reference class="buffer.ReferenceFile" filename="/home/brendan/resources/human_g1k_v37.fasta" />
+<KnownDBSNP class="buffer.VCFFile" filename="/home/brendan/resources/dbsnp_132.b37.vcf" />
+
+<readsOne class="buffer.GlobFileBuffer" filename="tiny_1.fastq" />
+<readsTwo class="buffer.GlobFileBuffer" filename="tiny_2.fastq" />
+
+<FastQC class="operator.qc.FastQC">
+ <input>
+  <readsOne />
+  <readsTwo />
+ </input>
+ <output />
+</FastQC>
+
+
+<MultiLaneAlign class="operator.bwa.MultiLaneAligner" threads="4">
+  <input>
+    <reference />
+    <readsOne />
+    <readsTwo />
+  </input>
+  <output>
+   <outputSAMs class="buffer.MultiFileBuffer" />
+  </output>
+</MultiLaneAlign>
+
+ <ConvertBAM class="operator.samtools.MultiConvertBam">
+   <input>
+     <outputSAMs />
+   </input>
+   <output>
+     <rawBAMs class="buffer.MultiFileBuffer" />
+   </output>
+ </ConvertBAM>
+ 
+ <Sort1 class="operator.samtools.MultiSort">
+   <input>
+     <rawBAMs />
+   </input>
+   <output>
+      <sortedBAMs class="buffer.MultiFileBuffer" />
+   </output>
+ </Sort1>
+ 
+<Index class="operator.samtools.MultiIndex" >
+ <input>
+   <sortedBAMs />
+ </input>
+ <output> </output>
+</Index>
+
+<MergeBigBAMs class="operator.samtools.MergeFiles">
+   <input>
+     <sortedBAMs />
+   </input>
+   <output>
+     <BigRawBAM class="buffer.BAMFile" filename="test.raw.bam" />
+   </output>
+ </MergeBigBAMs>
+
+ <IndexBig class="operator.samtools.Index" >
+ <input>
+   <BigRawBAM />
+ </input>
+ <output> </output>
+ </IndexBig>
+
+
+<Split class="operator.gatk.SplitByChromosome">
+  <input>
+    <reference />
+    <BigRawBAM />
+  </input>
+  <output>
+    <contigs class="buffer.MultiFileBuffer" />
+  </output>
+</Split>
+
+ <Index1 class="operator.samtools.MultiIndex">
+   <input>
+     <contigs />
+   </input>
+   <output>
+   </output>
+ </Index1>
+
+<Dedup class="operator.samtools.MultiRemoveDuplicates">
+   <input>
+     <contigs />
+   </input>
+   <output>
+     <dedupedContigs class="buffer.MultiFileBuffer" />
+   </output>
+ </Dedup>
+
+ <Index2 class="operator.samtools.MultiIndex">
+   <input>
+     <dedupedContigs />
+   </input>
+   <output>
+   </output>
+ </Index2>
+
+<Realign class="operator.ParallelRealign">
+   <input>
+     <dedupedContigs />
+     <reference />
+   </input>
+   <output>
+     <realignedBAMs class="buffer.MultiFileBuffer" />
+   </output>
+ </Realign>
+
+<MultiSort class="operator.samtools.MultiSort">
+   <input>
+    <reference />
+    <realignedBAMs />
+   </input>
+   <output>
+     <sortedBams class="buffer.MultiFileBuffer" />
+   </output>
+</MultiSort>
+
+<MultiRecal class="operator.gatk.MultiRecalibrate">
+  <input>
+     <reference  />	
+     <KnownDBSNP />
+     <sortedBams />
+  </input>
+ <output>
+   <recalBAMs class="buffer.MultiFileBuffer" />
+ </output>
+</MultiRecal>
+
+<Index3 class="operator.samtools.MultiIndex">
+   <input>
+     <recalBAMs />
+   </input>
+   <output>
+   </output>
+ </Index3>
+
+
+
+
+<MultiGenotype class="operator.gatk.MultiGenotype">
+   <input>
+    <reference />
+    <recalBAMs />
+   </input>
+   <output>
+     <variants class="buffer.MultiFileBuffer" />
+   </output>
+</MultiGenotype>
+
+ <MergeBAMs class="operator.samtools.MergeFiles">
+   <input>
+     <recalBAMs />
+   </input>
+   <output>
+     <finalBAM class="buffer.BAMFile" filename="test.final.bam" />
+   </output>
+ </MergeBAMs>
+
+
+<AllVariants class="operator.gatk.MergeFiles">
+   <input>
+     <reference />
+     <variants />
+   </input>
+   <output>
+     <finalVariants class="buffer.VCFFile" filename="test.vcf" />
+   </output>
+ </AllVariants>
+
+</Pipeline>

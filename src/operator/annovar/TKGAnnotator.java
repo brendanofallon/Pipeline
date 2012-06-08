@@ -24,19 +24,12 @@ public class TKGAnnotator extends AnnovarAnnotator {
 		executeCommand(command);
 		
 		File resultsFile = new File(annovarPrefix + ".hg19_ALL.sites.2010_11_dropped");
-		FileAnnotator annotator = new FileAnnotator(resultsFile, VariantRec.POP_FREQUENCY, 1, variants);
+		FileAnnotator annotator = new FileAnnotator(resultsFile, VariantRec.POP_FREQUENCY, 1, 5, 6, variants);
 		try {
 			annotator.annotateAll();
 		} catch (IOException e) {
 			throw new OperationFailedException("Error occurred during 1000G annotation: " + e.getMessage(), this);
 		}
 		
-//		List<String> keys = new ArrayList<String>();
-//		keys.add(VariantRec.POP_FREQUENCY);
-//		keys.add(VariantRec.SIFT_SCORE);
-//		keys.add(VariantRec.POLYPHEN_SCORE);
-//		keys.add(VariantRec.MT_SCORE);
-//		keys.add(VariantRec.PHYLOP_SCORE);
-//		variants.listAll(System.out, keys);
 	}
 }

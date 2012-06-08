@@ -39,7 +39,7 @@ public class FileTypeGuesser {
 			return new FastQFile(file);
 		}
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		logger.warning("Could not find file type associated with file : " + file.getAbsolutePath() + " guesser is returning null");
-		return null;
+		logger.warning("Could not find file type associated with file : " + file.getAbsolutePath() + " guesser is returning UnknownFileType");
+		return new UnknownFileBuffer(file);
 	}
 }

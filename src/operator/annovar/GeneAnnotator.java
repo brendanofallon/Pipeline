@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import buffer.variant.FileAnnotator;
 import buffer.variant.VariantRec;
@@ -13,7 +14,9 @@ import operator.OperationFailedException;
 import pipeline.Pipeline;
 
 /**
- * Adds gene / exon variant functions to variant records
+ * Adds gene / exon variant functions to variant records. This runs annovar -geneanno to generate the information,
+ * then parses the resulting output text files to associate the gene/exon function with variants in the
+ * variant pool 
  * @author brendan
  *
  */
@@ -41,6 +44,8 @@ public class GeneAnnotator extends AnnovarAnnotator {
 	
 	private void addAnnotations(String variantFilePath, String exonicFuncFilePath) throws IOException {
 		//Add gene annotations 
+		int totalVars =0 ;
+		int errorVars = 0;
 		BufferedReader reader = new BufferedReader(new FileReader(variantFilePath));
 		String line = reader.readLine();
 		while (line != null) {
@@ -48,32 +53,28 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			String variantType = toks[0];
 			String gene = toks[1];
 			String contig = toks[2];
+			String ref = toks[5];
+			String alt = toks[6];
+			
 			int pos = Integer.parseInt(toks[3]);
-			
-			//Unfortunately, annovar likes to strip the leading base from deletion sequences, converting
-			//a record that looks like pos: 5 ref: CCT alt: C 
-			//to something like :      pos: 6 ref: CT alt: -
-			//so we won't be able to find the record since its position will have changed. 
-			//Below is a kludgy workaround that subtracts one from the position if a deletion is detected
-			if (toks[6].trim().equals("-")) {
-				pos--;
-			}
+			VariantRec rec = findVariant(contig, pos, ref, alt); //variants.findRecord(contig, pos);
 
-			//System.out.println("Modified pos is: " + pos);
-			
-			VariantRec rec = variants.findRecord(contig, pos);
-			if (rec == null) {
-				System.out.println("record not found, modified position is:" + pos + " tokens are : ");
-				for(int i=0; i<toks.length; i++) {
-					System.out.println(i + "\t |" + toks[i] + "|");
-				}
-				
-				throw new IOException("Could not find variant record at contig: " + contig + " and pos: " + pos);
+			if (rec == null)
+				errorVars++;
+			else {
+				rec.addAnnotation(VariantRec.GENE_NAME, gene);
+				rec.addAnnotation(VariantRec.VARIANT_TYPE, variantType);
 			}
-			rec.addAnnotation(VariantRec.GENE_NAME, gene);
-			rec.addAnnotation(VariantRec.VARIANT_TYPE, variantType);
+			totalVars++;
 			line = reader.readLine();
 		}
+		
+		if (errorVars > totalVars*0.01) {
+			throw new IOException("Too many variants not found, errors: " + errorVars + " total variants: " + totalVars);
+		}
+		Logger.getLogger(Pipeline.primaryLoggerName).info(errorVars + " of " + totalVars + " could not be associated with a variant record");
+		totalVars = 0;
+		errorVars = 0;
 		
 		//Add exonic variants functions to records where applicable 
 		reader = new BufferedReader(new FileReader(exonicFuncFilePath));
@@ -82,14 +83,13 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			if (line.length()>1) {
 				String[] toks = line.split("\\t");
 				String exonicFunc = toks[1];
-				
+				String ref = toks[6];
+				String alt = toks[7];
 				String NM = "NA";
 				String exonNum = "NA";
 				String cDot = "NA";
 				String pDot = "NA";
-				
-				
-				
+	
 				String[] details = toks[2].split(":");
 				if (details.length>4) {
 					NM = details[1];
@@ -104,22 +104,29 @@ public class GeneAnnotator extends AnnovarAnnotator {
 				String contig = toks[3];
 				int pos = Integer.parseInt( toks[4] );
 				
-				//Same workaround as above...
-				if (toks[7].trim().equals("-")) {
-					pos--;
-				}
-				
-				VariantRec rec = variants.findRecord(contig, pos);
-				if (rec != null)
+				//VariantRec rec = variants.findRecord(contig, pos);
+				totalVars++;
+				VariantRec rec = findVariant(contig, pos, ref, alt);
+				if (rec != null) {
 					rec.addAnnotation(VariantRec.EXON_FUNCTION, exonicFunc);
 					rec.addAnnotation(VariantRec.NM_NUMBER, NM);
 					rec.addAnnotation(VariantRec.EXON_NUMBER, exonNum);
 					rec.addAnnotation(VariantRec.CDOT, cDot);
 					rec.addAnnotation(VariantRec.PDOT, pDot);
+				}
+				else {
+					errorVars++;
+				}
 			}
 			line = reader.readLine();
 		}
 		reader.close();
+		
+		Logger.getLogger(Pipeline.primaryLoggerName).info(errorVars + " of " + totalVars + " could not be associated with a variant record");
+		if (errorVars > totalVars*0.01) {
+			throw new IOException("Too many variants not found, errors: " + errorVars + " total variants: " + totalVars);
+		}
 	}
+
 	
 }

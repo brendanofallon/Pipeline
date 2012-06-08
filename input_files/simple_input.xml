@@ -1,0 +1,29 @@
+
+<!-- A very simple input file for illustrative purposes -->
+<Pipeline>
+
+<!-- We almost always need a reference file -->
+<reference class="buffer.ReferenceFile" filename="/home/brendan/resources/human_g1k_v37.fasta" />
+
+<!-- An input BAM file -->
+<inputBAM class="buffer.BAMFile" filename="sample.bam" />
+
+<!-- Use samtools to sort the input file -->
+<samtoolsSort class="operator.samtools.Sort">
+ <input>
+   <inputBAM />
+ </input>
+ <output>
+   <sortedBAM class="buffer.BAMFile" filename="sample.sorted.bam" />
+ </output>
+</samtoolsSort>
+
+<!-- Now index the newly sorted .bam file -->
+<index class="operator.samtools.Index" >
+ <input>
+   <sortedBAM />
+ </input>
+</index>
+
+
+</Pipeline>

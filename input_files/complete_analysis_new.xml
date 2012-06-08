@@ -1,0 +1,259 @@
+
+<Pipeline>
+
+
+<reference class="buffer.ReferenceFile" filename="/home/brendan/resources/human_g1k_v37.fasta" />
+<capture class="buffer.BEDFile" filename="/home/brendan/resources/SureSelect_50mb_with_annotation_b37.bed" />
+<KnownDBSNP class="buffer.VCFFile" filename="/home/brendan/resources/dbsnp_132.b37.vcf" />
+<HapMap class="buffer.VCFFile" filename="/home/brendan/resources/hapmap_3.3.b37.sites.vcf" />
+<Omni class="buffer.VCFFile" filename="/home/brendan/resources/1000G_omni2.5.b37.sites.vcf" />
+
+
+
+<readsOne class="buffer.GlobFileBuffer" filename="$$INPUTFILE" />
+<readsTwo class="buffer.GlobFileBuffer" filename="$$INPUT2FILE" />
+
+<!-- Initial QC check of reads.. -->
+<FastQC class="operator.qc.FastQC">
+ <input>
+  <readsOne />
+  <readsTwo />
+ </input>
+ <output />
+</FastQC>
+
+<!-- Parallel realignment with given number of threads. This will assume paired-ends unless single="true" is given -->
+<MultiLaneAlign class="operator.bwa.MultiLaneAligner" threads="4">
+  <input>
+    <reference />
+    <readsOne />
+    <readsTwo />
+  </input>
+  <output>
+   <outputSAMs class="buffer.MultiFileBuffer" />
+  </output>
+</MultiLaneAlign>
+
+ <ConvertBAM class="operator.samtools.MultiConvertBam">
+   <input>
+     <outputSAMs />
+   </input>
+   <output>
+     <rawBAMs class="buffer.MultiFileBuffer" />
+   </output>
+ </ConvertBAM>
+ 
+ <Sort1 class="operator.samtools.MultiSort">
+   <input>
+     <rawBAMs />
+   </input>
+   <output>
+      <sortedBAMs class="buffer.MultiFileBuffer" />
+   </output>
+ </Sort1>
+ 
+<Index class="operator.samtools.MultiIndex" >
+ <input>
+   <sortedBAMs />
+ </input>
+ <output> </output>
+</Index>
+
+<!-- Merge raw bams from alignment into one big bam -->
+<MergeBigBAMs class="operator.samtools.MergeFiles">
+   <input>
+     <sortedBAMs />
+   </input>
+   <output>
+     <BigRawBAM class="buffer.BAMFile" filename="$$PREFIX.raw.bam" />
+   </output>
+ </MergeBigBAMs>
+
+ <IndexBig class="operator.samtools.Index" >
+ <input>
+   <BigRawBAM />
+ </input>
+ <output> </output>
+ </IndexBig>
+
+<!-- Compute a few basic metrics for the big initial bam file -->
+<BamMetrics class="operator.qc.BamMetrics">
+ <input>
+   <BigRawBAM />
+ </input>
+ <output>
+   <rawMetrics class="buffer.TextBuffer" filename="raw.bam.metrics.txt" />
+ </output>
+</BamMetrics>
+
+<!-- Split the raw bam into chunks, one per chromosome -->
+<Split class="operator.gatk.SplitByChromosome">
+  <input>
+    <reference />
+    <BigRawBAM />
+  </input>
+  <output>
+    <contigs class="buffer.MultiFileBuffer" />
+  </output>
+</Split>
+
+<Index1 class="operator.samtools.MultiIndex">
+   <input>
+     <contigs />
+   </input>
+   <output>
+   </output>
+</Index1>
+
+<Dedup class="operator.samtools.MultiRemoveDuplicates">
+   <input>
+     <contigs />
+   </input>
+   <output>
+     <dedupedContigs class="buffer.MultiFileBuffer" />
+   </output>
+ </Dedup>
+
+<Index2 class="operator.samtools.MultiIndex">
+   <input>
+     <dedupedContigs />
+   </input>
+   <output>
+   </output>
+</Index2>
+
+<!-- A bit of bam cleanp, remove zero mapping quality reads and reads with unmapped mates, etc. -->
+ <CleanBams class="operator.CleanBam">
+   <input>
+   <dedupedContigs />
+  </input>
+  <output>
+   <cleanedBAMs class="buffer.MultiFileBuffer" />
+  </output>
+ </CleanBams>
+
+<!-- GATK local realign -->
+<Realign class="operator.ParallelRealign">
+   <input>
+     <cleanedBAMs />
+     <reference />
+   </input>
+   <output>
+     <realignedBAMs class="buffer.MultiFileBuffer" />
+   </output>
+ </Realign>
+
+
+<MultiSort class="operator.samtools.MultiSort">
+   <input>
+    <reference />
+    <realignedBAMs />
+   </input>
+   <output>
+     <sortedBams class="buffer.MultiFileBuffer" />
+   </output>
+</MultiSort>
+
+<!-- Base Quality Score recalibration, ala GaTK -->
+<MultiRecal class="operator.gatk.MultiRecalibrate">
+  <input>
+     <reference  />	
+     <KnownDBSNP />
+     <sortedBams />
+  </input>
+ <output>
+   <recalBAMs class="buffer.MultiFileBuffer" />
+ </output>
+</MultiRecal>
+
+<Index3 class="operator.samtools.MultiIndex">
+   <input>
+     <recalBAMs />
+   </input>
+   <output>
+   </output>
+ </Index3>
+
+<!-- Actual variant calling, done independently on each chromosome -->
+<MultiGenotype class="operator.gatk.MultiGenotype">
+   <input>
+    <reference />
+    <recalBAMs />
+   </input>
+   <output>
+     <variants class="buffer.MultiFileBuffer" />
+   </output>
+</MultiGenotype>
+
+<!-- Merge variants together back into one big vcf file -->
+<AllVariants class="operator.gatk.MergeFiles">
+   <input>
+     <reference />
+     <variants />
+   </input>
+   <output>
+     <finalVariants class="buffer.VCFFile" filename="$$PREFIX_all_variants.vcf" />
+   </output>
+ </AllVariants>
+
+<!-- Perform variant quality score recalibration VQSR, using GaTK -->
+<VQSR class="operator.gatk.VariantRecalibrator" >
+ <input>
+  <reference />
+  <finalVariants />
+  <HapMap /> <!-- HAPMAP MUST BE  THIRD ARG! -->
+  <Omni />   <!-- OMNI MUST BE FOURTH ARG! -->
+  <KnownDBSNP />  <!-- DBSNP MUST BE FIFTH ARG! -->
+ </input>
+ <output>
+  <recalibratedVCF class="buffer.VCFFile" filename="$$PREFIX.vqsr.vcf" />
+ </output>
+</VQSR>
+
+<!-- Merge final, polished bams from each chromosome back together to make one big final bam -->
+ <MergeBAMs class="operator.samtools.MergeFiles">
+   <input>
+     <recalBAMs />
+   </input>
+   <output>
+     <finalBAM class="buffer.BAMFile" filename="$$PREFIX.final.bam" />
+   </output>
+ </MergeBAMs>
+
+<LastIndex class="operator.samtools.Index" >
+  <input>
+    <finalBAM />
+  </input>
+  <output />
+</LastIndex>
+
+<!-- Create a directory with a few of the useful files in it -->
+<MakeResults class="operator.MoveFiles" dest="results" >
+ <finalBAM />
+ <recalibratedVCF />
+</MakeResults>
+
+<!-- Move other files to temp folder to get them out of the way -->
+<Move class="operator.MoveFiles" dest="tempfiles">
+ <variants />
+ <targets class="buffer.GlobFileBuffer" filename="targets_.*" />
+ <recalData class="buffer.GlobFileBuffer" filename=".*.recal.csv" />
+</Move>
+
+<Cleanup class="operator.RemoveFile">
+  <outputSAMs />
+  <contigs />
+  <dedupedContigs />
+  <realignedBAMs />
+  <sortedBams />
+</Cleanup>
+
+
+<QC class="operator.qc.QCReport" filename="$$PREFIX.qcreport.html" >
+  <BigRawBAM  />
+  <finalBAM  />
+  <recalibratedVCF />
+</QC>
+
+
+</Pipeline>

@@ -93,6 +93,8 @@ public abstract class PipedCommandOp extends IOOperator {
 				
 				try {
 					if (p.waitFor() != 0) {
+						logger.info(" Piped operator " + getObjectLabel() + " exited with nonzero status! \n " + errStream.toString());
+						System.err.println("Piped operator " + getObjectLabel() + " exited with nonzero status! \n " + errStream.toString());
 						throw new OperationFailedException("Operator: " + getObjectLabel() + " terminated with nonzero exit value \n" + errStream.toString(), this);
 					}
 				} catch (InterruptedException e) {
@@ -105,7 +107,7 @@ public abstract class PipedCommandOp extends IOOperator {
 				
 			}
 			catch (IOException e1) {
-				throw new OperationFailedException("Operator: " + getObjectLabel() + " was encountered an IO exception : \n" + errStream.toString() + "\n" + e1.getLocalizedMessage(), this);
+				throw new OperationFailedException("Operator: " + getObjectLabel() + " encountered an IO exception : \n" + errStream.toString() + "\n" + e1.getLocalizedMessage(), this);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

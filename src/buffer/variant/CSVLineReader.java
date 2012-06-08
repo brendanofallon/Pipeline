@@ -4,6 +4,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Reads a CSV file and produces VariantRecords from it, typically one variant per line
@@ -17,15 +21,54 @@ public class CSVLineReader implements VariantLineReader {
 	protected BufferedReader reader;
 	protected String currentLine = null;
 	protected String[] headerToks = null;
+	//Contains a map for a column header to a column index
+	private Map<String, Integer> headerMap = new HashMap<String, Integer>();
+	protected File sourceFile = null;
 	
 	
 	public CSVLineReader(File csvFile) throws IOException {
 		reader = new BufferedReader(new FileReader(csvFile));
 		currentLine = reader.readLine();
+		this.sourceFile = csvFile;
 		if (currentLine.startsWith("#")) {
-			headerToks = currentLine.split("\t");
+			String[] rawToks = currentLine.split("\t");
+			List<String> tokList = new ArrayList<String>();
+			for(int i=0; i<rawToks.length; i++)
+				if (rawToks[i].trim().length()>0) {
+					tokList.add(rawToks[i].trim());
+				}
+			headerToks = tokList.toArray(new String[]{});
+			for(int i=0; i<tokList.size(); i++)
+				headerMap.put(tokList.get(i).trim(), i);
 			currentLine = reader.readLine();
 		}
+	}
+	
+	/**
+	 * Returns true if there is a column header that matches the given String 
+	 * @param colHeader
+	 * @return
+	 */
+	public boolean hasHeaderCol(String colHeader) {
+		return headerMap.get(colHeader) != null;
+	}
+	
+	/**
+	 * Returns the column index associated with the given header 
+	 * @param colHeader
+	 * @return
+	 */
+	public int getIndexForHeader(String colHeader) {
+		if (!hasHeader())
+			throw new IllegalArgumentException("No header was found for this file");
+		return headerMap.get(colHeader);
+	}
+	
+	
+	public String getValueForHeader(String colHeader, String[] toks) {
+		if (!hasHeader())
+			throw new IllegalArgumentException("No header was found for this file");
+		return toks[headerMap.get(colHeader)];
 	}
 	
 	/**
@@ -39,6 +82,9 @@ public class CSVLineReader implements VariantLineReader {
 	@Override
 	public boolean advanceLine() throws IOException {
 		currentLine = reader.readLine();
+		//Skip zero-length lines
+		while (currentLine != null && currentLine.length()==0)
+			currentLine = reader.readLine();
 		return currentLine != null;
 	}
 
@@ -48,41 +94,82 @@ public class CSVLineReader implements VariantLineReader {
 			return null;
 		
 		String[] toks = currentLine.split("\t");
+		VariantRec rec = null;
 		
-		String contig = getContig(toks);
-		Integer start = getStart(toks);
-		Integer end = getEnd(toks);
-		String ref = getRef(toks);
-		String alt = getAlt(toks);
-		Double qual = getQuality(toks);
-		Double depth = getDepth(toks); 
-		boolean isHet = getHet(toks);
-		Double genoQual = getGenotypeQuality(toks);
-		
-		VariantRec rec = new VariantRec(contig, start, start+ref.length(), ref, alt, qual, isHet);
-		rec.addProperty(VariantRec.DEPTH, depth);
-		rec.addProperty(VariantRec.GENOTYPE_QUALITY, genoQual);
-
-		//Parse additional annotations / properties from header
-		if (hasHeader() && toks.length > 8) {
-			for(int i=9; i<toks.length; i++) {
-				String key = headerToks[i];
-				if (toks[i].equals("-") || toks[i].equals("NA") || toks[i].equals("?"))
-					continue; 
-				
-				try {
-					Double val = Double.parseDouble(toks[i]);
-					rec.addProperty(key, val);
-				}
-				catch (NumberFormatException ex) {
-					//this is expected, we just assume it's an annotation, not a property
-				}
-				
-				rec.addAnnotation(key, toks[i]);
-			}
+		if (toks.length < 8) {
+			System.err.println("ERROR: could not parse variant from file : " + sourceFile.getName() + " line : \n " + currentLine);
+			return null;
 		}
 		
-		
+		try {
+			String contig = getContig(toks);
+			Integer start = getStart(toks);
+			Integer end = getEnd(toks);
+			String ref = getRef(toks);
+			String alt = getAlt(toks);
+			Double qual = getQuality(toks);
+			Double depth = getDepth(toks); 
+			boolean isHet = getHet(toks);
+			Double genoQual = getGenotypeQuality(toks);
+
+
+			if (alt.length() != ref.length()) {
+				//Remove initial characters if they are equal and add one to start position
+				if (alt.charAt(0) == ref.charAt(0)) {
+					alt = alt.substring(1);
+					ref = ref.substring(1);
+					if (alt.length()==0)
+						alt = "-";
+					if (ref.length()==0)
+						ref = "-";
+					start++;
+				}
+
+				if (ref.equals("-"))
+					end = start;
+				else
+					end = start + ref.length();
+			}
+
+			rec = new VariantRec(contig, start, start+ref.length(), ref, alt, qual, isHet);
+			rec.addProperty(VariantRec.DEPTH, depth);
+			rec.addProperty(VariantRec.GENOTYPE_QUALITY, genoQual);
+
+			//Parse additional annotations / properties from header
+			if (hasHeader() && toks.length > 8) {
+				if (toks.length != headerToks.length) {
+					for(int i=0; i<toks.length; i++) {
+						System.out.println(i + "\t" + headerToks[i] + " : " + toks[i]);
+					}
+					throw new IllegalArgumentException("Incorrect number of columns for variant, header shows " + headerToks.length + ", but this variant has: " + toks.length + "\n" + currentLine);
+
+				}
+				for(int i=9; i<toks.length; i++) {
+					String key = headerToks[i].trim();
+					//System.out.println("Adding annotation for key: " + key + " value:" + toks[i]);
+					if (toks[i].equals("-") || toks[i].equals("NA") || toks[i].equals("?"))
+						continue; 
+
+					try {
+						Double val = Double.parseDouble(toks[i]);
+						rec.addProperty(key, val);
+					}
+					catch (NumberFormatException ex) {
+						//this is expected, we just assume it's an annotation, not a property
+					}
+
+					rec.addAnnotation(key, toks[i]);
+				}
+			}
+
+			if (sourceFile != null)
+				rec.addAnnotation(VariantRec.SOURCE, sourceFile.getName());
+
+		}
+		catch (NumberFormatException nfe) {
+			System.err.println("ERROR: could not parse variant from file : " + sourceFile.getName() + " line : \n " + currentLine);
+
+		}
 		return rec;
 	}
 
@@ -91,11 +178,11 @@ public class CSVLineReader implements VariantLineReader {
 	}
 	
 	protected Integer getStart(String[] toks) {
-		return Integer.parseInt(toks[1]);
+		return Integer.parseInt(toks[1].trim());
 	}
 	
 	protected Integer getEnd(String[] toks) {
-		return Integer.parseInt(toks[2]);
+		return Integer.parseInt(toks[2].trim());
 	}
 	
 	protected String getRef(String[] toks) {
@@ -107,11 +194,26 @@ public class CSVLineReader implements VariantLineReader {
 	}
 	
 	protected Double getQuality(String[] toks) {
-		return Double.parseDouble(toks[5]);
+		if (toks.length < 6)
+			return 0.0;
+		String trimmed = toks[5].trim();
+		if (trimmed.length()>0)
+			return Double.parseDouble(trimmed);
+		else
+			return 0.0;
 	}
 	
 	protected Double getDepth(String[] toks) {
-		return Double.parseDouble(toks[6]);
+		if (toks.length < 7)
+			return 0.0;
+		String trimmed = toks[6].trim();
+		if (trimmed.length()>0)
+			if (trimmed.equals("-"))
+				return 0.0;
+			else
+				return Double.parseDouble(trimmed);
+		else
+			return 0.0;
 	}
 	
 	protected Boolean getHet(String[] toks) {
@@ -119,7 +221,16 @@ public class CSVLineReader implements VariantLineReader {
 	}
 	
 	protected Double getGenotypeQuality(String[] toks) {
-		return Double.parseDouble(toks[8]);
+		if (toks.length < 8)
+			return 0.0;
+		String trimmed = toks[8].trim();
+		if (trimmed.length()>0)
+			if (trimmed.equals("-"))
+				return 0.0;
+			else
+				return Double.parseDouble(trimmed);
+		else
+			return 0.0;
 	}
 	
 }

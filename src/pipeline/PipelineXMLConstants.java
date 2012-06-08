@@ -19,5 +19,5 @@ public class PipelineXMLConstants {
 	public static final String DOCUMENT_ROOT = "Pipeline";
 	public static final String CLASS_ATTR = "class";
 	public static final String THREADS_ATTR = "threads";
-	
+	public static final String MAIL_RECIPIENT = "brendan.d.ofallon@aruplab.com";
 }

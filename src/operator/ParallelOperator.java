@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import javax.swing.SwingWorker;
@@ -25,9 +28,17 @@ public class ParallelOperator extends Operator {
 
 	protected List<Operator> operators = new ArrayList<Operator>();
 	
+	
+	public int getPreferredThreadCount() {
+		return Pipeline.getPipelineInstance().getThreadCount();
+	}
+	
 	@Override
 	public void performOperation() throws OperationFailedException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+		
+		ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
+
 		
 		Date now = new Date();
 		long beginMillis = System.currentTimeMillis();
@@ -38,19 +49,17 @@ public class ParallelOperator extends Operator {
 		for(Operator op : operators)  {
 			OpWrapper opw = new OpWrapper(op);
 			wraps.add(opw);
-			opw.execute();
+			threadPool.submit(opw);
 		}
 		
-		//Wait for all operators to finish...
-		for(OpWrapper opw : wraps)  {
-			try {
-				opw.get();
-			} catch (InterruptedException e) {
-				throw new OperationFailedException("Operator " + opw.op.getObjectLabel() + " was interrupted during parallel execution", opw.op);
-			} catch (ExecutionException e) {
-				throw new OperationFailedException("Operator " + opw.op.getObjectLabel() + " failed due to execution exception during parallel execution, cause:" + e.getMessage(), opw.op);
-			}
-		}
+		
+		threadPool.shutdown(); //No new tasks will be submitted,
+		try {
+			threadPool.awaitTermination(7, TimeUnit.DAYS);
+		} catch (InterruptedException e1) {
+			throw new OperationFailedException("Parallel Operator " + this.getObjectLabel() + " was interrupted during parallel execution", this);
+		} //Wait until all tasks have completed
+
 		
 		now = new Date();
 		long endMillis = System.currentTimeMillis();

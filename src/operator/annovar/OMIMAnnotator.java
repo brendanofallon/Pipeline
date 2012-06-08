@@ -15,25 +15,15 @@ import operator.OperationFailedException;
 public class OMIMAnnotator extends Annotator {
 	
 	OMIMVariants omimVars = null;
-	
-	@Override
-	public void performOperation() throws OperationFailedException {
-		if (variants == null)
-			throw new OperationFailedException("Variant pool not initialized", this);
 
+	@Override
+	public void annotateVariant(VariantRec var) {
 		if (omimVars == null) 
 			omimVars = new OMIMVariants();
 		
-		
-		for(String contig : variants.getContigs()) {
-			List<VariantRec> vars = variants.getVariantsForContig(contig);
-			for(VariantRec rec : vars) {
-				VariantRec omimVar = omimVars.findRecordNoWarn(contig, rec.getStart());
-				if (omimVar != null) {
-					rec.addAnnotation(VariantRec.OMIM_ID, omimVar.getAnnotation(VariantRec.OMIM_ID));
-				}
-			}
-			
+		VariantRec omimVar = omimVars.findRecordNoWarn(var.getContig(), var.getStart());
+		if (omimVar != null) {
+			var.addAnnotation(VariantRec.OMIM_ID, omimVar.getAnnotation(VariantRec.OMIM_ID));
 		}
 	}
 	

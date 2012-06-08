@@ -16,6 +16,12 @@ public interface PipelineListener {
 	public void operatorBeginning(Operator op);
 	
 	/**
+	 * Called when an severe error occurred during pipeline execution
+	 * @param op
+	 */
+	public void errorEncountered(Operator op);
+	
+	/**
 	 * Called when the pipeline has finishing all operators
 	 */
 	public void pipelineFinished();

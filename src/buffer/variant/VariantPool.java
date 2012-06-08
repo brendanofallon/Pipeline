@@ -41,6 +41,32 @@ import util.VCFLineParser;
 public class VariantPool extends Operator  {
 
 	protected Map<String, List<VariantRec>>  vars = new HashMap<String, List<VariantRec>>();
+	private VariantRec qRec = new VariantRec("?", 0, 0, "x", "x", 0, false); 
+	/**
+	 * Build a new variant pool from the given list of variants
+	 * @param varList
+	 */
+	public VariantPool(List<VariantRec> varList) {
+		for(VariantRec v : varList) {
+			List<VariantRec> contig = vars.get(v.getContig());
+			if (contig == null) {
+				contig = new ArrayList<VariantRec>(512);
+				vars.put(v.getContig(), contig);
+			}
+			contig.add(v);
+		}
+	}
+	
+	/**
+	 * Construct a new variant pool with variants from the given file using the
+	 * provided CSVLineReader to interpret variants from the file
+	 * @param file
+	 * @param reader
+	 * @throws IOException
+	 */
+	public VariantPool(CSVLineReader reader) throws IOException {
+		importFromCSV(reader);
+	}
 
 	/**
 	 * Read a variant pool from a CSV-formatted file, the first 9 columns are assumed to be:
@@ -62,6 +88,7 @@ public class VariantPool extends Operator  {
 	 * @param file
 	 * @throws IOException if file cannot be read
 	 */
+	
 	public VariantPool(CSVFile file) throws IOException {
 		importFromCSV(file);
 	}
@@ -85,17 +112,30 @@ public class VariantPool extends Operator  {
 	 */
 	private void importFromCSV(CSVFile file) throws IOException {
 		CSVLineReader reader = new CSVLineReader(file.getFile());
-		//CSVLineReader reader = new GeneLineReader(file.getFile());
-		
-		
+		importFromCSV(reader);
+	}
+
+	/**
+	 * Import from the given CSV file using the given reader
+	 * @param file
+	 * @param reader
+	 * @throws IOException
+	 */
+	private void importFromCSV(CSVLineReader reader) throws IOException {
+		int lineNumber = 0;
 		do {
 			VariantRec rec = reader.toVariantRec();
-			addRecordNoSort(rec);
+			if (rec == null) {
+				System.err.println("Warning, could not import variant from line: " + lineNumber );
+			}
+			else {
+				this.addRecordNoSort(rec);
+			}
+			lineNumber++;
 		} while(reader.advanceLine());
 
-		sortAllContigs();
+		sortAllContigs();		
 	}
-		
 	/**
 	 * Import all variants from the given vcf file
 	 * @param file
@@ -103,11 +143,16 @@ public class VariantPool extends Operator  {
 	 */
 	private void importFromVCF(VCFFile file) throws IOException {
 		VCFLineParser vParser = new VCFLineParser(file);
-		int lineCount = countLines(file);
+		//int lineCount = countLines(file);
 		int lineNumber = 0;
 		do {
 			VariantRec rec = vParser.toVariantRec();
-			this.addRecordNoSort(rec);
+			if (rec == null) {
+				System.err.println("Warning, could not import variant from line: " + lineNumber );
+			}
+			else {
+				this.addRecordNoSort(rec);
+			}
 			lineNumber++;
 			//if (lineNumber % 10000 == 0) {
 				//double frac = 100.0*(double)lineNumber / (double)lineCount;
@@ -145,6 +190,8 @@ public class VariantPool extends Operator  {
 		//blank on purpose
 	}
 	
+	
+
 	/**
 	 * Search the 'vars' field for a VariantRec at the given contig and position
 	 * @param contig
@@ -158,22 +205,23 @@ public class VariantPool extends Operator  {
 			return null;
 		}
 		
-		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false);
+		qRec.setPosition(contig, pos, pos);
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {
-			System.out.println("Could not find variant at contig: " + contig + " pos:" + pos + " index is : " + index);
-			index *= -1;
-			index = Math.max(0, index-5);
-			for(int i=0; i<10; i++) {
-				System.out.println(varList.get(index+i));
-			}
+//			System.out.println("Could not find variant at contig: " + contig + " pos:" + pos + " index is : " + index);
+//			index *= -1;
+//			index = Math.max(0, index-5);
+//			for(int i=0; i<10; i++) {
+//				if ((index+i)==varList.size())
+//					break;
+//				System.out.println(varList.get(index+i));
+//			}
 			
 			return null;
 		}
 		
 		return varList.get(index);
-		
 	}
 	
 	/**
@@ -187,16 +235,18 @@ public class VariantPool extends Operator  {
 		double transversions = 0;
 		for(String contig : getContigs()) {
 			for(VariantRec rec : getVariantsForContig(contig)) {
-				if (rec.getRef().length()==1 && rec.getAlt().length()==1) {
+				if (rec.isSNP()) {
 					if (rec.isTransition())
 						transitions++;
 					if (rec.isTransversion())
 						transversions++;
 					
 					if (! (rec.isTransition() || rec.isTransversion())) {
-						System.out.println("Variant is neither a transition or transversion!" + rec.toSimpleString());
+						System.err.println("Variant is neither a transition or transversion!" + rec.toSimpleString());
 					}
-					total++;
+					else {
+						total++;
+					}
 				}
 			}
 		}
@@ -207,7 +257,7 @@ public class VariantPool extends Operator  {
 		int transitions = 0;
 		for(String contig : getContigs()) {
 			for(VariantRec rec : getVariantsForContig(contig)) {
-				if (rec.getRef().length()==1 && rec.getAlt().length()==1) {
+				if (rec.isSNP()) {
 					if (rec.isTransition())
 						transitions++;
 					
@@ -221,7 +271,7 @@ public class VariantPool extends Operator  {
 		int transversions = 0;
 		for(String contig : getContigs()) {
 			for(VariantRec rec : getVariantsForContig(contig)) {
-				if (rec.getRef().length()==1 && rec.getAlt().length()==1) {
+				if (rec.isSNP()) {
 					if (rec.isTransversion())
 						transversions++;
 					
@@ -256,10 +306,11 @@ public class VariantPool extends Operator  {
 	public VariantRec findRecordNoWarn(String contig, int pos) {
 		List<VariantRec> varList = vars.get(contig);
 		if (varList == null) {
-			System.err.println("Contig: " + contig + " not found");
+			System.err.println("Contig " + contig + " not found");
 			return null;
 		}
-		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false);
+		
+		qRec.setPosition(contig, pos, pos);
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {
@@ -269,6 +320,26 @@ public class VariantPool extends Operator  {
 		return varList.get(index);		
 	}
 	
+	/**
+	 * Returns the result of binary search for a record at the given position. If the 
+	 * record is found the result will be the index of the found record. If no record is
+	 * found the result is -1*insertionPoint -1 (ala Collectionc.binarySearch), where
+	 * insertionPoint is where the record would be inserted if it was added 
+	 * @param contig
+	 * @param pos
+	 * @return
+	 */
+	public int findInsertionPosition(String contig, int pos) {
+		List<VariantRec> varList = vars.get(contig);
+		if (varList == null) {
+			throw new IllegalArgumentException("No contig with name " + contig + " found");
+		}
+		
+		qRec.setPosition(contig, pos, pos);
+		
+		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
+		return index;
+	}
 	
 	/**
 	 * Add all variants from source to this pool
@@ -309,6 +380,46 @@ public class VariantPool extends Operator  {
 			count += this.getVariantsForContig(contig).size();
 		}
 		return count;
+	}
+	
+	/**
+	 * Returns the next variant in the list after the variant at the given variants
+	 * @param pos
+	 * @return
+	 */
+	public VariantRec nextVariant(VariantRec pos) {
+		List<VariantRec> vars = getVariantsForContig(pos.getContig());
+		if (vars == null || vars.size()==0) {
+			return null;
+		}
+		
+		
+		int index = this.findInsertionPosition(pos.getContig(), pos.getStart());
+		
+		//Record found, but points to last variant in the list
+		if (index == (vars.size()-1))
+			return null;
+		
+		//Record found and is not last variant, so return next one
+		if (index>=0) {
+			int start = index+1;
+			while (start < vars.size() && vars.get(start).getStart() == pos.getStart())
+				start++;
+			if (start == vars.size())
+				return null;
+			else
+				return vars.get(start);
+		}
+		
+		index = -1*index-1;
+		
+		//Not found, but after last item in list, return null
+		if (index > (vars.size()-2))
+			return null;
+		
+		//Not found, but not after last item, return next record
+		return vars.get(index);
+		
 	}
 	
 	/**
@@ -364,6 +475,10 @@ public class VariantPool extends Operator  {
 	 * @param out
 	 */
 	public void listAll(PrintStream out, List<String> keys) {
+		StringBuilder header = new StringBuilder( VariantRec.getSimpleHeader() );
+		for(String key : keys) 
+			header.append("\t" + key);
+		out.println( header );
 		for(String contig : getContigs() ) {
 			for(VariantRec rec : this.getVariantsForContig(contig)) {		
 				out.println(rec.toSimpleString() + rec.getPropertyString(keys));
@@ -384,8 +499,8 @@ public class VariantPool extends Operator  {
 		for(String contig : getContigs()) {
 			for(VariantRec rec : getVariantsForContig(contig)) {
 				count++;
-//				if (count % 5000 == 0)
-//					System.out.println("Finding variant " + count + " of " + size);
+				if (count % 5000 == 0)
+					System.out.println("Finding variant " + count + " of " + size);
 				VariantRec recB = varsB.findRecordNoWarn(rec.getContig(), rec.getStart());
 				if (recB != null && rec.getAlt().equals(recB.getAlt())) {
 					rec.addAnnotation(VariantRec.altB, recB.getAlt());
@@ -401,6 +516,28 @@ public class VariantPool extends Operator  {
 		}
 		return intersect;
 	}
+	
+	/**
+	 * Adjusts all indel variants in the following manner: Any indel that begins and ends with the same
+	 * base, the first base is moved to the last position and 1 is subtracted from the start and end position
+	 * So		: 117  - ACGTA
+	 * Becomes 	: 116  - CGTAA
+	 * 
+	 * That's because there's ambiguity in how such indels are written (the two above forms are indistinguishable)
+	 * and the GATK emits variants in the second way
+	 * 
+	 */
+//	public void rotateIndels() {
+//		for(String contig : getContigs()) {
+//			for(VariantRec rec : getVariantsForContig(contig)) {
+//				if (rec.isIndel())
+//					rec.rotateIndel();
+//			}
+//		}
+//		
+//		sortAllContigs();
+//	}
+	
 	
 	/**
 	 * Remove from this variant pool the variant at the given contig and pos whose ALT allele matches
@@ -470,6 +607,20 @@ public class VariantPool extends Operator  {
 	}
 	
 	/**
+	 * Remove the given VariantRec from this pool - this looks BY REFERENCE, NOT VALUE!
+	 * @param rec
+	 * @return
+	 */
+	public boolean removeVariant(VariantRec rec) {
+		List<VariantRec> contig = getVariantsForContig(rec.getContig());
+		if (contig == null)
+			return false;
+		else {
+			return contig.remove(rec);
+		}
+	}
+	
+	/**
 	 * Return total number of heterozygotes in pool
 	 * @return
 	 */
@@ -484,8 +635,59 @@ public class VariantPool extends Operator  {
 		}
 
 		return count;
-
 	}
+	
+	/**
+	 * Return total number of SNPs, in which both ref and alt have length = 1
+	 * @return
+	 */
+	public int countSNPs() {
+		int count = 0;
+		for(String contig : vars.keySet()) {
+			Collection<VariantRec> varRecs = this.getVariantsForContig(contig);
+			for(VariantRec rec : varRecs) {
+				if (rec.isSNP()) 
+					count++;
+			}
+		}
+
+		return count;		
+	}
+	
+	/**
+	 * Return total number of deletions
+	 * @return
+	 */
+	public int countDeletions() {
+		int count = 0;
+		for(String contig : vars.keySet()) {
+			Collection<VariantRec> varRecs = this.getVariantsForContig(contig);
+			for(VariantRec rec : varRecs) {
+				if (rec.isDeletion()) 
+					count++;
+			}
+		}
+
+		return count;
+	}
+	
+	/**
+	 * Return total number of insertions
+	 * @return
+	 */
+	public int countInsertions() {
+		int count = 0;
+		for(String contig : vars.keySet()) {
+			Collection<VariantRec> varRecs = this.getVariantsForContig(contig);
+			for(VariantRec rec : varRecs) {
+				if (rec.isInsertion()) 
+					count++;
+			}
+		}
+
+		return count;
+	}
+	
 	
 	public boolean removeRecordAtPos(String contig, int pos) {
 		List<VariantRec> varList = vars.get(contig);
@@ -535,6 +737,13 @@ public class VariantPool extends Operator  {
 
 	public Collection<String> getContigs() {
 		return vars.keySet();
+	}
+	
+	/**
+	 * Remove all variants from this pool
+	 */
+	public void clear() {
+		vars = new HashMap<String, List<VariantRec>>();
 	}
 	
 	/**
@@ -603,6 +812,23 @@ public class VariantPool extends Operator  {
 		}
 		pool.sortAllContigs();
 		return pool;
+	}
+	
+	/**
+	 * Remove from this variant pool all variants not in regions described by the BED file
+	 * @param bedFile
+	 * @throws IOException
+	 */
+	public void removeVariantNotInBED(BEDFile bedFile) throws IOException {
+		bedFile.buildIntervalsMap();
+		for(String contig : getContigs()) {
+			List<VariantRec> vars = getVariantsForContig(contig);
+			for(VariantRec rec : vars) {
+				if (! bedFile.contains(contig, rec.getStart(), false)) {
+					removeVariant(rec); 
+				}
+			}
+		}
 	}
 	
 	/**
@@ -692,12 +918,26 @@ public class VariantPool extends Operator  {
 		}
 	}
 
+	/**
+	 * Creates a new List with all of the variants in it
+	 * @return
+	 */
+	public List<VariantRec> toList() {
+		List<VariantRec> vars = new ArrayList<VariantRec>(this.size());
+		for(String contig : getContigs()){
+			for(VariantRec var : getVariantsForContig(contig)) {
+				vars.add(var);
+			}
+				
+		}
+		return vars;
+	}
 
 	@Override
 	public void performOperation() throws OperationFailedException {
-		if (inputVariants == null)
-			throw new OperationFailedException("No input variants specified", this);
-
+		if (inputVariants == null) 
+			return ; // Just make an empty pool
+		
 
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		logger.info("Building variant pool from variants in file " + inputVariants.getFilename());
@@ -714,6 +954,7 @@ public class VariantPool extends Operator  {
 		if (inputVariants instanceof CSVFile) {
 			try {
 				importFromCSV( (CSVFile)inputVariants );
+				//importFromCSV( new SimpleLineReader(inputVariants.getFile()));
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new OperationFailedException("IO error reading file: " + inputVariants.getAbsolutePath(), this);
@@ -726,6 +967,8 @@ public class VariantPool extends Operator  {
 	
 	
 	private FileBuffer inputVariants = null;
+	
+
 
 
 	

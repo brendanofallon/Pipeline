@@ -80,22 +80,22 @@ public abstract class IOOperator extends Operator {
 		return null;
 	}
 	
-	protected void checkContigs(MultiFileBuffer files) {
+	protected void checkContigs(List<FileBuffer> inputFiles) {
 		for(int j=1; j<24; j++) {
 			String contig = "" + j;
 			if (j == 23) 
 				contig = "X";
 			boolean found = false;
-			for(int i=0; i<files.getFileCount(); i++) {
-				if (files.getFile(i).getContig() != null && files.getFile(i).getContig().equals(contig)) {
+			for(int i=0; i<inputFiles.size(); i++) {
+				if (inputFiles.get(i).getContig() != null && inputFiles.get(i).getContig().equals(contig)) {
 					found = true;
 				}
 			}
 			
 			if (!found) {
 				System.err.println("Could not find contig " + contig + " in files!");
-				for(int i=0; i<files.getFileCount(); i++) {
-					FileBuffer buff = files.getFile(i);
+				for(int i=0; i<inputFiles.size(); i++) {
+					FileBuffer buff = inputFiles.get(i);
 					System.err.println(buff.getContig() + "\t" + buff.getAbsolutePath() );
 				}
 				throw new IllegalArgumentException("Could not find contig " + contig + " among files!");

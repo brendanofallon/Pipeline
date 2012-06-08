@@ -2,6 +2,7 @@ package operator.samtools;
 
 import java.io.File;
 
+import buffer.BAMFile;
 import buffer.FileBuffer;
 import operator.CommandOperator;
 import operator.OperationFailedException;
@@ -21,24 +22,31 @@ public class Sort extends CommandOperator {
 	
 	@Override
 	protected String getCommand() throws OperationFailedException {
+		
+		//Obtain path to the samtools executable from Pipeline class in static fashion
 		Object samPropsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samPropsPath != null)
 			samtoolsPath = samPropsPath.toString();
 	
+		//Now mostly obsolete, but if an alternative path is specified in this operator's 
+		//properties, it supercede's the path obtained above. 
 		String samPath = properties.get(PATH);
 		if (samPath != null) {
 			samtoolsPath = samPath;
 		}
 		
-		FileBuffer inputBuffer = inputBuffers.get(0);
+		//Take as the input file the first .bam file specified in the input files
+		//list, all others will be ignored
+		FileBuffer inputBuffer = getInputBufferForClass(BAMFile.class);
 		
-		FileBuffer outputBuffer = outputBuffers.get(0);
+		//Output file is just the first .bam file given in output files list
+		// ... but watch out for the confusing part below... we will need to change the name of the output file
+		FileBuffer outputBuffer = getOutputBufferForClass(BAMFile.class);
 		String path = outputBuffer.getAbsolutePath();
-		if (path.endsWith(".bam")) {
-			path = path.substring(0, path.length()-1);
-		}
+		path = path.replace(".bam", ""); //strip off trailing .bam from output file path 
 		
-		String command = samtoolsPath + " sort " + inputBuffer.getAbsolutePath() + " " + outputBuffer.getAbsolutePath();
+		//Build command string
+		String command = samtoolsPath + " sort " + inputBuffer.getAbsolutePath() + " " + path;
 		
 		//CONFUSING! : The last argument to sort is just a file prefix, the new file will be that prefix + .bam. So we
 		//need to make sure that the file with the correct name is associated with the outputbuffer...

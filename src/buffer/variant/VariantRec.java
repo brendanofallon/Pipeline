@@ -37,15 +37,14 @@ public class VariantRec {
 		this.ref = ref;
 		this.alt = alt;
 		this.qual = qual;
-		//this.isExonic = isExon;
 		this.isHetero = isHetero;
 	}
 	
-	public void addProperty(String key, Double val) {
+	public synchronized void addProperty(String key, Double val) {
 		props.put(key, val);
 	}
 	
-	public void addAnnotation(String key, String anno) {
+	public synchronized void addAnnotation(String key, String anno) {
 		annotations.put(key, anno);
 	}
 	
@@ -54,11 +53,59 @@ public class VariantRec {
 	}
 	
 	/**
-	 * Returns true if both the ref and alt allele have length 1
+	 * Set the start and end positions for this variant
+	 * @param start
+	 * @param end
+	 */
+	public void setPosition(String contig, int start, int end) {
+		this.contig = contig;
+		this.start = start;
+		this.end = end;
+	}
+	
+	/**
+	 * Returns true if both the ref and alt allele have length 1 and neither is '-'
 	 * @return
 	 */
 	public boolean isSNP() {
-		return ref.length()==1 && alt.length()==1;
+		return (ref.length()==1 && alt.length()==1 && ref.charAt(0) != '-' && alt.charAt(0) != '-');
+	}
+	
+	/**
+	 * Returns true if ref and alt are different lengths
+	 * @return
+	 */
+	public boolean isIndel() {
+		return isInsertion() || isDeletion();
+	}
+	
+	/**
+	 * Returns the length of the insertion / deletion, or 0 if this
+	 * is not an insertion or deletion
+	 * @return
+	 */
+	public int getIndelLength() {
+		if (isInsertion())
+			return alt.length();
+		if (isDeletion())
+			return ref.length();
+		return 0;
+	}
+	
+	/**
+	 * True if the ref length is 1 and the alt length is strictly greater than one
+	 * @return
+	 */
+	public boolean isInsertion() {
+		return ref.equals("-") && (!alt.equals("-"));
+	}
+	
+	/**
+	 * True if ref length > 1 and alt length is equal to 1
+	 * @return
+	 */
+	public boolean isDeletion() {
+		return alt.equals("-") && (!ref.equals("-"));
 	}
 	
 	public boolean isTransition() {
@@ -68,7 +115,9 @@ public class VariantRec {
 			throw new IllegalArgumentException("Ref or alt not defined");
 		}
 		if (ref.equals(alt)) {
-			throw new IllegalArgumentException("Ref is equal to alt, not a variant");
+			System.err.println("WARNING : ref is equal to alt, not a variant");
+			return false;
+			//throw new IllegalArgumentException("Ref is equal to alt, not a variant");
 		}
 		
 		if ( (ref.equals("A") && alt.equals("G"))
@@ -87,7 +136,9 @@ public class VariantRec {
 			throw new IllegalArgumentException("Ref or alt not defined");
 		}
 		if (ref.equals(alt)) {
-			throw new IllegalArgumentException("Ref is equal to alt, not a variant");
+			System.err.println("WARNING : ref is equal to alt, not a variant");
+			return false;
+			//throw new IllegalArgumentException("Ref is equal to alt, not a variant");
 		}
 		
 		if (ref.equals("A") || ref.equals("G")) {
@@ -105,6 +156,14 @@ public class VariantRec {
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Returns true if alt is not equal in value to ref
+	 * @return
+	 */
+	public boolean isVariant() {
+		return !getAlt().equals(getRef());
 	}
 	
 	public String getAlt() {
@@ -258,7 +317,7 @@ public class VariantRec {
 	 * @return
 	 */
 	public static String getSimpleHeader() {
-		return "#contig	\t start \t end \t ref \t alt \t quality \t depth \t zygosity \t genotype.quality ";
+		return "#contig\tstart \t end \t ref \t alt \t quality \t depth \t zygosity \t genotype.quality \t " + VariantRec.VAR_DEPTH;
 	}
 	
 	/**
@@ -270,8 +329,9 @@ public class VariantRec {
 	 * 5. alt
 	 * 6. variant quality
 	 * 7. total read depth
-	 * 8. het / hom
-	 * 9. genotype quality
+	 * 8. variant read depth
+	 * 9. het / hom
+	 * 10. genotype quality
 	 * @return
 	 */
 	public String toSimpleString() {
@@ -289,8 +349,41 @@ public class VariantRec {
 		if (genotypeQual != null)
 			gqStr = "" + genotypeQual;
 		
-		return contig + "\t" + start + "\t" + end + "\t" + getRef() + "\t" + getAlt() + "\t" + getQuality() + "\t" + depthStr + "\t" + het + "\t" + gqStr;  
+		Double varDepth = getProperty(VariantRec.VAR_DEPTH);
+		String varDepthStr = "-";
+		if (varDepth != null)
+			varDepthStr = varDepth + "";
+		
+		return contig + "\t" + start + "\t" + end + "\t" + getRef() + "\t" + getAlt() + "\t" + getQuality() + "\t" + depthStr + "\t" + het + "\t" + gqStr + "\t" + varDepthStr;  
 	}
+	
+	/**
+	 * Adjusts all indel variants in the following manner: Any indel that begins and ends with the same
+	 * base, the first base is moved to the last position and 1 is subtracted from the start and end position
+	 * So		: 117  - ACGTA
+	 * Becomes 	: 116  - CGTAA
+	 */
+//	public void rotateIndel() {
+//		if (isInsertion()) {
+//			int count = 0;
+//			while (count < 20 && alt.charAt(0) == alt.charAt(alt.length()-1)) {
+//				alt = alt.substring(1) + alt.charAt(0);
+//				start--;
+//				end--;
+//				count++;
+//			}
+//		}
+//		
+//		if (isDeletion()) {
+//			int count = 0;
+//			while (count < 20 && ref.charAt(0) == ref.charAt(ref.length()-1)) {
+//				ref = ref.substring(1) + ref.charAt(0);
+//				start--;
+//				end--;
+//				count++;
+//			}
+//		}
+//	}
 	
 	public String toString() {
 		String variantType = "-";
@@ -336,7 +429,8 @@ public class VariantRec {
 		if (gene == null)
 			gene = "-";
 		
-		return contig + "\t" + start + "\t" + end + "\t" + gene + "\t" + variantType + "\t" + exFunc + "\t" + freq + "\t" + het + "\t" + qual + "\t" + sift + "\t" + polyphen + "\t" + mt + "\t" + phylopStr;  
+		return contig + "\t" + start + "\t" + end + "\t" + ref + "\t" + alt;
+		//return contig + "\t" + start + "\t" + end + "\t" + gene + "\t" + variantType + "\t" + exFunc + "\t" + freq + "\t" + het + "\t" + qual + "\t" + sift + "\t" + polyphen + "\t" + mt + "\t" + phylopStr;  
 	}
 	
 	/**
@@ -357,7 +451,7 @@ public class VariantRec {
 	}
 	
 	
-	static class PositionComparator implements Comparator<VariantRec> {
+	public static class PositionComparator implements Comparator<VariantRec> {
 
 		@Override
 		public int compare(VariantRec o1, VariantRec o2) {
@@ -398,13 +492,16 @@ public class VariantRec {
 		
 	}
 	
-	
+	private final PositionComparator posComparator =  new PositionComparator();
 	
 	//A few oft-used property / annotation keys
+	public static final String EFFECT_PREDICTION = "effect.prediction";
+	public static final String EFFECT_PREDICTION2 = "effect.prediction2";
 	public static final String POP_FREQUENCY = "pop.freq";
 	public static final String SIFT_SCORE = "sift.score";
 	public static final String POLYPHEN_SCORE = "pp.score";
 	public static final String MT_SCORE = "mt.score";
+	public static final String GERP_SCORE = "gerp.score";
 	public static final String SIFT_QUARTILE = "sift.quartile";
 	public static final String MT_QUARTILE = "mt.quartile";
 	public static final String POLYPHEN_QUARTILE = "pp.quartile";
@@ -415,6 +512,7 @@ public class VariantRec {
 	public static final String EXON_NUMBER = "exon.number";
 	public static final String NM_NUMBER = "nm.number";
 	public static final String GENE_NAME = "gene";
+	public static final String FS_SCORE = "strand.bias.score";
 	public static final String DEPTH = "depth";
 	public static final String CDOT = "cdot";
 	public static final String PDOT = "pdot";
@@ -425,8 +523,19 @@ public class VariantRec {
 	public static final String GO_FUNCTION = "go.function";
 	public static final String GO_PROCESS = "go.process";
 	public static final String GO_COMPONENT = "go.component";
+	public static final String GO_SCORE = "go.score";
+	public static final String GO_EFFECT_PROD = "go.effect.prod";
+	public static final String SUMMARY_SCORE = "summary.score";
 	public static final String GENOTYPE_QUALITY = "genotype.quality";
-	
-
+	public static final String SOURCE = "source.file";
+	public static final String VAR_DEPTH = "var.depth";
+	public static final String FALSEPOS_PROB = "fp.prob";
+	public static final String VQSR = "vqsr.score";
+	public static final String EXOMES_FREQ = "exomes5400.frequency";
+	public static final String HGMD_INFO = "hgmd.info";
+	public static final String INTERACTION_SCORE = "interaction.score";
+	public static final String PUBMED_SCORE = "pubmed.score";
+	public static final String PUBMED_HIT = "pubmed.hit";
 	
 }
+

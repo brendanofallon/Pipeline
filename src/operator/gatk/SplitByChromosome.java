@@ -30,12 +30,15 @@ public class SplitByChromosome extends IOOperator {
 	protected ThreadPoolExecutor threadPool = null;
 	public static final String JVM_ARGS="jvmargs";
 	public static final String PATH = "path";
+	public static final String CHROMOSOMES = "chromosomes";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
 	protected String jvmARGStr = "";
 	protected String referencePath = null;
 	protected MultiFileBuffer multiBAM;
 	protected MultiFileBuffer outputFiles;
+	//Default list of chromosomes to split out, which is all of them
+	static final String[] defaultChrs = new String[]{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "X", "Y"}; 
 	
 	@Override
 	public boolean requiresReference() {
@@ -52,36 +55,41 @@ public class SplitByChromosome extends IOOperator {
 		referencePath = ((ReferenceFile) getInputBufferForClass(ReferenceFile.class)).getAbsolutePath();
 		inputBam = (BAMFile) getInputBufferForClass(BAMFile.class);
 		
+		if (inputBam == null)
+			throw new OperationFailedException("No input BAM file found", this);
+		
 		outputFiles = (MultiFileBuffer) getOutputBufferForClass(MultiFileBuffer.class);
 		
 		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
 		
-		String path = properties.get(PATH);
-		if (path != null) {
-			gatkPath = path;
+		String[] chromsToMake = parseChromosomes();		
+		if (chromsToMake == null) {
+			chromsToMake = defaultChrs;
 		}
-		
+		else {
+			StringBuilder strB = new StringBuilder("Extracting contigs : ");
+			for(int i=0; i<chromsToMake.length; i++)
+				strB.append(chromsToMake[i] + ", ");
+			logger.info(strB.toString());
+		}
 		
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
 		}
+		
 		//If it's still null then be sure to make it the empty string
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
 
 		//Submit all jobs to the thread pool
-		for(int i=1; i<25; i++) {
-			String contig = "" + i;
-			if (i == 23)
-				contig = "X";
-			if (i==24)
-				contig = "Y";
-
+		for(int i=0; i<chromsToMake.length; i++) {
+			System.out.println("Creating split job for contig "+ chromsToMake[i]);
+			String contig = chromsToMake[i];
 			Split job = new Split(contig);
 			threadPool.submit(job);
 		}
@@ -93,11 +101,32 @@ public class SplitByChromosome extends IOOperator {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		checkContigs(outputFiles); //Ensure all contigs have been created
+		
+		if (chromsToMake == defaultChrs)
+			checkContigs(outputFiles.getFileList()); //Ensure all contigs have been created
 		logger.info("Done with splitting operator " + getObjectLabel());		
 	}
 	
+	/**
+	 * Attempt to read and parse the "chromosomes" property, which specifies exactly which
+	 * chromosomes to split out. We look for a comma-separated list of chrs, such as 
+	 *   chromosomes="1,2,3,X,Y"
+	 * 
+	 * @return
+	 */
+	private String[] parseChromosomes() {
+		String chrStr = properties.get(CHROMOSOMES);
+		if (chrStr == null || chrStr.length()==0) {
+			return null;
+		}
+		
+		String[] toks = chrStr.split(",");
+		for(int i=0; i<toks.length; i++) {
+			toks[i] = toks[i].trim();
+		}
+		return toks;
+	}
+
 	protected void addOutputFile(FileBuffer outputFile) {
 		outputFiles.addFile(outputFile);
 	}
@@ -144,7 +173,11 @@ public class SplitByChromosome extends IOOperator {
 		
 		@Override
 		public void run() {
-			
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Split operator is splitting contig " + contig );		
+
+			Logger.getLogger(Pipeline.primaryLoggerName).info("input BAM is : " + inputBam);		
+			Logger.getLogger(Pipeline.primaryLoggerName).info("input BAM is : " + inputBam.getAbsolutePath());		
+
 			String inputPath = inputBam.getAbsolutePath();
 			int index = inputPath.lastIndexOf(".");
 			String prefix = inputPath;
@@ -158,12 +191,19 @@ public class SplitByChromosome extends IOOperator {
 					" -T PrintReads " +
 					" -o " + outputPath +
 					" -L " + contig;
-			
+
+			System.out.println("Full command is: " + command);
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Full command is : " + command);		
+
 			try {
 				Logger.getLogger(Pipeline.primaryLoggerName).info("Split operator is executing command " + command);		
 
 				executeCommand(command);
+
+				System.out.println("Done executing command: " + command);
 				addOutputFile(new BAMFile(new File(outputPath), contig));
+
+				System.out.println("done adding output file");
 			} catch (OperationFailedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
