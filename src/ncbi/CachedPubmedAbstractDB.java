@@ -35,9 +35,16 @@ public class CachedPubmedAbstractDB {
     private GenePubMedDB genePubMed; //Stores gene-pubmed id mapping
     private int missesSinceLastWrite = 0; //Number of cache misses since last writeToFile
     
-	public CachedPubmedAbstractDB() throws IOException {
-	    genePubMed = new GenePubMedDB(new File("/home/brendan/resources/gene2pubmed_human"));
+    public CachedPubmedAbstractDB(String pathToGene2PubmedFile) throws IOException {
+	    genePubMed = new GenePubMedDB(new File(pathToGene2PubmedFile));
+	    File pubmedFile = new File(pathToGene2PubmedFile);
+	    File baseDir = pubmedFile.getParentFile(); 
+	    cacheFilePath = baseDir + System.getProperty("file.separator") + ".pubmedcache";
 		buildMapFromFile();
+	}
+    
+	public CachedPubmedAbstractDB() throws IOException {
+		this("/home/brendan/resources/gene2pubmed_human");
 	}
 
 	/**

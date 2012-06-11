@@ -16,6 +16,7 @@ import org.w3c.dom.NodeList;
 
 import operator.OperationFailedException;
 import operator.Operator;
+import pipeline.ObjectHandler;
 import pipeline.Pipeline;
 
 /**
@@ -36,7 +37,8 @@ public class GOTerms extends Operator {
 	
 	private Map<String, GeneInfo> goMap = new HashMap<String, GeneInfo>();
 
-	public GOTerms() {
+	public GOTerms(ObjectHandler handler) {
+		setObjectHandler(handler);
 		initialize(null);
 	}
 

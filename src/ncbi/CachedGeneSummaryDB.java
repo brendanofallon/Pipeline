@@ -32,7 +32,14 @@ public class CachedGeneSummaryDB {
     private int missesSinceLastWrite = 0; //Number of cache misses since last writeToFile
     
 	public CachedGeneSummaryDB() throws IOException {
-	    geneInfo = new GeneInfoDB(new File("/home/brendan/resources/Homo_sapiens.gene_info"));
+	    this("/home/brendan/resources/Homo_sapiens.gene_info");
+	}
+
+	public CachedGeneSummaryDB(String pathToGeneInfoFile) throws IOException {
+	    geneInfo = new GeneInfoDB(new File(pathToGeneInfoFile));
+	    File geneInfoFile = new File(pathToGeneInfoFile);
+	    File parentDir = geneInfoFile.getParentFile();
+	    cacheFilePath =  parentDir + System.getProperty("file.separator") + ".geneinfocache";
 		buildMapFromFile();
 	}
 	

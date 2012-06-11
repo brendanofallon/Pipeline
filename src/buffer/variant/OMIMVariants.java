@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
+import pipeline.ObjectHandler;
 import pipeline.Pipeline;
 
 /**
@@ -19,7 +20,8 @@ public class OMIMVariants extends VariantPool {
 	public static final String OMIM_DIR = "omim.dir";
 	File baseDir = null;
 	
-	public OMIMVariants() {
+	public OMIMVariants(ObjectHandler handler) {
+		this.setObjectHandler(handler);
 		String omimDir = (String) getPipelineProperty(OMIM_DIR);
 		if (omimDir == null || omimDir.length()==0) {
 			throw new IllegalArgumentException("OMIM base directory not specified (use omim.dir in pipelineprops file)");	

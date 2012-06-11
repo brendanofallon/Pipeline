@@ -35,6 +35,13 @@ public abstract class PipelineObject {
 	}
 	
 	/**
+	 * Obtain a reference to the ObjectHandler object that created this PipelineObject
+	 */
+	public ObjectHandler getObjectHandler() {
+		return objectHandler;
+	}
+	
+	/**
 	 * Obtain the value of a 'global' property housed in the Pipeline object that
 	 * owns this object. These properties are the ones defined in the properties file 
 	 * that is '.pipelineprops.xml' by default, or whatever the user specifies on the command line.

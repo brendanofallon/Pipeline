@@ -26,6 +26,7 @@ import pipeline.PipelineObject;
  */
 public class GeneSummaryRanker extends Annotator {
 
+	public static final String GENE_INFO_PATH = "gene.info.path";
 	protected TextBuffer termsFile = null;
 	protected CachedGeneSummaryDB summaryDB = null;
 	protected Map<String, Integer> rankingMap;
@@ -112,7 +113,13 @@ public class GeneSummaryRanker extends Annotator {
 	private void initializeDB() {
 		try {
 			buildRankingMap();
-			summaryDB = new CachedGeneSummaryDB();
+			String pathToGeneInfo = this.getAttribute(GENE_INFO_PATH);
+			if (pathToGeneInfo != null) {
+				summaryDB = new CachedGeneSummaryDB(pathToGeneInfo);
+			}
+			else {
+				summaryDB = new CachedGeneSummaryDB();
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
