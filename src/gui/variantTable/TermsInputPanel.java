@@ -4,6 +4,7 @@ import java.awt.Dimension;
 import java.util.Arrays;
 
 import gui.variantTable.flexList.FlexList;
+import gui.variantTable.geneList.GeneListPanel;
 import gui.widgets.LabelFactory;
 
 import javax.swing.BorderFactory;
@@ -34,10 +35,8 @@ public class TermsInputPanel extends JPanel {
 		termsPanel.add(Box.createVerticalGlue());
 		
 		
-		JPanel genesPanel = new JPanel();
+		GeneListPanel genesPanel = new GeneListPanel();
 		genesPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		genesPanel.setLayout(new BoxLayout(genesPanel, BoxLayout.Y_AXIS));
-		genesPanel.add(LabelFactory.makeLabel("Enter genes below", 14f));
 		
 		
 		this.add(termsPanel);

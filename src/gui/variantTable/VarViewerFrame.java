@@ -63,6 +63,7 @@ public class VarViewerFrame extends JFrame {
 		this.add(filePanel, BorderLayout.NORTH);
 		
 		TermsInputPanel termsPanel = new TermsInputPanel();
+		termsPanel.setPreferredSize(new Dimension(300, 400));
 		this.add(termsPanel, BorderLayout.CENTER);
 		
 		//variantPanel = new VariantTablePanel();
