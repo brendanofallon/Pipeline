@@ -1,10 +1,12 @@
 package gui.variantTable;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.Arrays;
 
 import gui.variantTable.flexList.FlexList;
 import gui.variantTable.geneList.GeneListPanel;
+import gui.widgets.BorderlessButton;
 import gui.widgets.LabelFactory;
 
 import javax.swing.BorderFactory;
@@ -35,12 +37,27 @@ public class TermsInputPanel extends JPanel {
 		termsPanel.add(Box.createVerticalGlue());
 		
 		
+		JPanel rightPanel = new JPanel();
+		rightPanel.setLayout(new BorderLayout());
+		rightPanel.add(LabelFactory.makeLabel("Enter genes", 14f), BorderLayout.NORTH);
+		
 		GeneListPanel genesPanel = new GeneListPanel();
-		genesPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		genesPanel.setData(Arrays.asList(new String[]{"ENG", "A!@", "ASKDJ", "ASLDK"}));
+		rightPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		rightPanel.add(genesPanel, BorderLayout.CENTER);
 		
 		
 		this.add(termsPanel);
-		this.add(genesPanel);
+		this.add(rightPanel);
+		
+		JPanel bottomPanel = new JPanel();
+		BorderlessButton beginButton= new BorderlessButton("Begin");
+		bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.X_AXIS));
+		bottomPanel.add(Box.createHorizontalGlue());
+		bottomPanel.add(beginButton);
+		bottomPanel.add(Box.createRigidArea(new Dimension(30, 30)));
+		this.add(bottomPanel, BorderLayout.SOUTH);
+		
 	}
 
 }

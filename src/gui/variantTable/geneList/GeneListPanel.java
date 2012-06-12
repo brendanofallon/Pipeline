@@ -37,6 +37,7 @@ public class GeneListPanel extends JPanel {
 		this.add(topPanel, BorderLayout.NORTH);
 		
 		listPanel = new JPanel();
+		listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
 		JScrollPane scrollPane = new JScrollPane(listPanel);
 		this.add(scrollPane, BorderLayout.CENTER);
 		

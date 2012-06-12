@@ -1,5 +1,6 @@
 package gui.variantTable.geneList;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -8,6 +9,7 @@ import gui.widgets.BorderlessButton;
 import gui.widgets.LabelFactory;
 import gui.widgets.PrettyLabel;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
@@ -25,6 +27,9 @@ public class GeneItemRenderer extends JPanel {
 		this.list = list;
 		
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+		this.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+		this.setBackground(Color.white);
+
 		PrettyLabel label = LabelFactory.makeLabel(geneName);
 		this.add(label);
 		this.add(Box.createHorizontalGlue());
@@ -38,7 +43,7 @@ public class GeneItemRenderer extends JPanel {
 			}
 			
 		});
-		
+		this.add(button);
 
 	}
 

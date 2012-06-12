@@ -35,6 +35,7 @@ public class FlexListCellRenderer extends JPanel {
 	public FlexListCellRenderer(final FlexList list, String text) {
 		this.list = list;
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+		this.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
 		this.setBackground(Color.white);
 		this.text = new JTextArea(text);
 		this.text.setEditable(true);
