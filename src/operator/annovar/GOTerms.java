@@ -16,6 +16,7 @@ import org.w3c.dom.NodeList;
 
 import operator.OperationFailedException;
 import operator.Operator;
+import pipeline.ObjectHandler;
 import pipeline.Pipeline;
 
 /**
@@ -36,13 +37,14 @@ public class GOTerms extends Operator {
 	
 	private Map<String, GeneInfo> goMap = new HashMap<String, GeneInfo>();
 
-	public GOTerms() {
+	public GOTerms(ObjectHandler handler) {
+		setObjectHandler(handler);
 		initialize(null);
 	}
 
 	@Override
 	public void initialize(NodeList children) {
-		String goDir = (String) Pipeline.getPipelineInstance().getProperty(GO_DIR);
+		String goDir = (String) getPipelineProperty(GO_DIR);
 		if (goDir == null || goDir.length()==0) {
 			throw new IllegalArgumentException("G.O. info base directory not specified (use goinfo.dir in pipelineprops file)");	
 		}

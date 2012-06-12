@@ -31,12 +31,16 @@ import pipeline.PipelineObject;
  */
 public class PubmedRanker extends Annotator {
 
+	//String constants for some XML properties we may use
+	public static final String DISABLE_CACHE_WRITES = "disable.cache.writes";
+	public static final String GENE_INFO_PATH = "gene.info.path";
+	public static final String PUBMED_PATH = "pubmed.path";
+
 	CachedPubmedAbstractDB abstractDB = null; //DB for abstracts that we query
 	GenePubMedDB geneToPubmed = null; //Look up pub med id's associated with a certain gene
 	GeneInfoDB geneInfo = null; //Look up gene IDs for gene symbols
 	TextBuffer termsFile = null; //Stores key terms we use to score pub med records (abstracts)
 	Map<String, Integer> rankingMap = null;
-	public static final String disableWrites = "disable.cache.writes";
 	private boolean disableCacheWrites = false; //Disable writing of new variants to cache, useful if we have multiple instances running
 	
 	
@@ -50,7 +54,7 @@ public class PubmedRanker extends Annotator {
 	
 	public void performOperation() throws OperationFailedException {
 		
-		String disableStr = properties.get(disableWrites);
+		String disableStr = properties.get(DISABLE_CACHE_WRITES);
 		if (disableStr != null) {
 			Boolean disable = Boolean.parseBoolean(disableStr);
 			disableCacheWrites = disable;
@@ -72,7 +76,12 @@ public class PubmedRanker extends Annotator {
 	public void annotateVariant(VariantRec var) {
 		if (abstractDB == null) {
 			try {
-				abstractDB = new CachedPubmedAbstractDB();
+				String pathToPubmedDB = "/home/brendan/resources/gene2pubmed_human";
+				String pubmedAttr = this.getAttribute(PUBMED_PATH);
+				if (pubmedAttr != null) {
+					pathToPubmedDB = pubmedAttr;
+				}
+				abstractDB = new CachedPubmedAbstractDB(pathToPubmedDB);
 			} catch (IOException e) {
 				throw new IllegalStateException("IO error reading cached abstract db : " + e.getMessage());
 			}
@@ -89,7 +98,12 @@ public class PubmedRanker extends Annotator {
 		
 		if (geneInfo == null) {
 			try {
-				geneInfo = new GeneInfoDB(new File("/home/brendan/resources/Homo_sapiens.gene_info"));
+				String geneInfoPath = "/home/brendan/resources/Homo_sapiens.gene_info";
+				String geneInfoAttr = this.getAttribute(GENE_INFO_PATH);
+				if (geneInfoAttr != null) {
+					geneInfoPath = geneInfoAttr;
+				}
+				geneInfo = new GeneInfoDB(new File(geneInfoPath));
 			} catch (IOException e) {
 				throw new IllegalStateException("Error opening gene info file : " + e.getMessage());
 			}
@@ -103,7 +117,12 @@ public class PubmedRanker extends Annotator {
 		
 		if (geneToPubmed == null) {
 			try {
-				geneToPubmed = new GenePubMedDB(new File("/home/brendan/resources/gene2pubmed_human"));
+				String pubmedPath = "/home/brendan/resources/gene2pubmed_human";
+				String pubmedAttr = this.getAttribute(PUBMED_PATH);
+				if (pubmedAttr != null) {
+					pubmedPath = pubmedAttr;
+				}
+				geneToPubmed = new GenePubMedDB(new File(pubmedPath));
 			} catch (IOException e) {
 				throw new IllegalStateException("Error opening gene2pubmed file : " + e.getMessage());
 			}
@@ -111,10 +130,10 @@ public class PubmedRanker extends Annotator {
 		
 		String idStr = geneInfo.idForSymbol(geneName);
 		if (idStr == null) {
-			System.err.println("Could not find gene id for symbol: " + geneName);
+			if (geneName.length() < 8)
+				System.err.println("Could not find gene id for symbol: " + geneName);
 			return;
 		}
-		
 		
 		Integer geneID = Integer.parseInt( idStr );
 		

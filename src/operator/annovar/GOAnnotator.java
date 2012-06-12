@@ -21,7 +21,7 @@ public class GOAnnotator extends Annotator {
 	@Override
 	public void annotateVariant(VariantRec rec) {
 		if (goTerms == null)
-			goTerms = new GOTerms();
+			goTerms = new GOTerms(getObjectHandler());
 		
 		String gene = rec.getAnnotation(VariantRec.GENE_NAME);
 		if (gene == null) {

@@ -1,0 +1,27 @@
+<Pipeline>
+
+<reference class="buffer.ReferenceFile" filename="/home/brendan/resources/human_g1k_v37.fasta" />
+
+<contigs class="buffer.GlobFileBuffer" filename=".*.realigned.bam" />
+
+<MultiSort class="operator.picard.MultiCoordSort">
+   <input>
+    <reference />
+    <contigs />
+   </input>
+   <output>
+     <sortedBams class="buffer.MultiFileBuffer" />
+   </output>
+</MultiSort>
+
+<MultiGenotype class="operator.gatk.MultiGenotype">
+   <input>
+    <reference />
+    <sortedBAMs />
+   </input>
+   <output>
+     <variants class="buffer.MultiFileBuffer" />
+   </output>
+</MultiGenotype>
+
+</Pipeline>

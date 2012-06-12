@@ -1,0 +1,80 @@
+
+<!-- Uses annovar to annotate the given VCF file. This will produce lots of different output files... -->
+<Pipeline>
+
+<InputVCF class="buffer.VCFFile" filename="$$INPUTFILE" />
+
+<MakeInput class="operator.annovar.ConvertVCFAnnovar">
+ <input>
+	<InputVCF />
+ </input>
+ <output>
+	<AnnoInput class="buffer.AnnovarInputFile" filename="$$PREFIX.annovar.input" />
+ </output>
+</MakeInput>
+
+<VariantPool class="buffer.variant.VariantPool">
+	<InputVCF />
+</VariantPool>
+
+<GeneAnnotate class="operator.annovar.GeneAnnotator">
+	<AnnoInput />
+	<VariantPool />
+</GeneAnnotate>
+
+<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PopFreqAnnotate>
+
+<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
+ <AnnoInput />
+ <VariantPool />
+</DBSNPAnnotate>
+
+<OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
+  <AnnoInput />
+  <VariantPool />
+</OMIMAnnotate>
+
+<SiftAnnotate class="operator.annovar.SiftAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</SiftAnnotate>
+
+<PolyphenAnnotate class="operator.annovar.PolyphenAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PolyphenAnnotate>
+
+<MTAnnotate class="operator.annovar.MTAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</MTAnnotate>
+
+<PhyloPAnnotate class="operator.annovar.PhyloPAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PhyloPAnnotate>
+
+<GOAnnotate class="operator.annovar.GOAnnotator" >
+  <VariantPool />
+</GOAnnotate>
+
+<HGMDAnnotate class="operator.annovar.HGMDAnnotator">
+  <VariantPool />
+</HGMDAnnotate>
+
+
+<EffectAnnotate class="operator.annovar.EffectPredictionAnnotator">
+        <VariantPool />
+</EffectAnnotate>
+
+
+
+<ToFile class="operator.variant.ExcelWriter">
+	<VariantPool />
+	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.annotated2.csv" />
+</ToFile>
+
+</Pipeline>

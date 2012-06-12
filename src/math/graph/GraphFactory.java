@@ -5,6 +5,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.List;
+
+import stringdb.FetchInteractions;
+import stringdb.FetchInteractions.InteractionNode;
 
 
 /**
@@ -20,6 +24,31 @@ import java.io.IOException;
  */
 public class GraphFactory {
 
+	/**
+	 * Construct a Graph object from the given list of InteractionNodes, which are produced by
+	 * from the StringDB class FetchInteractions 
+	 * @param nodeList
+	 * @return
+	 * @throws IOException
+	 */
+	public static Graph constructGraphFromList(List<FetchInteractions.InteractionNode> nodeList) throws IOException {
+		Graph graph = new Graph();
+		
+		for(InteractionNode node : nodeList) {
+			graph.createNodesAndEdge(node.first, node.second, node.score);
+		}
+		return graph;
+	}
+	
+	/**
+	 * Construct a Graph object from text stored in a file, the file is supposed to look like
+	 * label1	label2	weight
+	 * label1	label3	weight
+	 * etc.
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 */
 	public static Graph constructGraphFromFile(File file) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(file));
 		Graph graph = new Graph();

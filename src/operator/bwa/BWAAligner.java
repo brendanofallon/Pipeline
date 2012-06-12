@@ -20,7 +20,7 @@ public class BWAAligner extends PipedCommandOp {
 	@Override
 	protected String getCommand() {
 		
-		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.BWA_PATH);
+		Object propsPath = getPipelineProperty(PipelineXMLConstants.BWA_PATH);
 		if (propsPath != null)
 			pathToBWA = propsPath.toString();
 		

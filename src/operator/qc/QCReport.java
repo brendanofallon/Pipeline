@@ -54,7 +54,7 @@ public class QCReport extends Operator {
 	@Override
 	public void performOperation() throws OperationFailedException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		File homeDir = new File( Pipeline.getPipelineInstance().getProjectHome() );
+		File homeDir = new File( getProjectHome() );
 		if ( (! homeDir.exists()) || (! homeDir.isDirectory()) ) {
 			throw new OperationFailedException("Could not open project home directory : " + homeDir.getAbsolutePath(), this);
 		}
@@ -84,7 +84,7 @@ public class QCReport extends Operator {
 		
 		logger.info("Creating qc report for raw bam file:" + rawBAMFile.getAbsolutePath() + "\n final BAM: " + finalBAMFile.getAbsolutePath() + " variants file:" + variantsFile.getAbsolutePath());
 		
-		String projHome = Pipeline.getPipelineInstance().getProjectHome();				
+		String projHome = getProjectHome();				
 		try {
 			File outputDir = new File(projHome + "qc-report");
 			outputDir.mkdir();
@@ -96,7 +96,7 @@ public class QCReport extends Operator {
 			
 			//Write summary (index) page
 			StringWriter summary = new StringWriter();
-			writeSummary(summary, Pipeline.getPipelineInstance());
+			writeSummary(summary, getPipelineOwner());
 			pageWriter.writePage(writer, summary.toString());
 			writer.close();
 			
@@ -124,7 +124,7 @@ public class QCReport extends Operator {
 			writer.close();
 			
 			//Finally, copy style sheet to directory...
-			String styleSheetPath = (String)Pipeline.getPipelineInstance().getProperty(QC_STYLE_SHEET);
+			String styleSheetPath = getPipelineProperty(QC_STYLE_SHEET);
 
 			if (styleSheetPath != null) {
 
@@ -200,7 +200,7 @@ public class QCReport extends Operator {
 		
 		String figName = "vardepthfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
 		String figPath = outputDir.getAbsolutePath() + "/" + figName;
-		CreateFigure.generateFigure(histo, "Fraction", "Allele fraction", "Frequency", figPath);
+		CreateFigure.generateFigure(getPipelineOwner(), histo, "Fraction", "Allele fraction", "Frequency", figPath);
 		writer.write("<h2> Distribution of variant depths: " + " </h2>" +lineSep);
 		writer.write("<img src=\"" + figName + "\">");
 		
@@ -222,7 +222,7 @@ public class QCReport extends Operator {
 		if (histo.getCount() > 0) {
 			figName = "varqualfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
 			figPath = outputDir.getAbsolutePath() + "/" + figName;
-			CreateFigure.generateFigure(histos, labels, "Allele fraction", "Frequency", figPath);
+			CreateFigure.generateFigure(getPipelineOwner(), histos, labels, "Allele fraction", "Frequency", figPath);
 			writer.write("<h2> Distribution of variant qualities: " + " </h2>" +lineSep);
 			writer.write("<img src=\"" + figName + "\">");
 		}
@@ -254,7 +254,7 @@ public class QCReport extends Operator {
 		
 		String bqFigStr =  "bqfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
 		String bqFigFullPath = outputDir.getAbsolutePath() + "/" + bqFigStr;
-		CreateFigure.generateFigure(metrics.baseQualityHistogram, "Quality score", "Base qualities", "Frequency", bqFigFullPath);
+		CreateFigure.generateFigure(getPipelineOwner(), metrics.baseQualityHistogram, "Quality score", "Base qualities", "Frequency", bqFigFullPath);
 		writer.write("<h2> Distribution of base qualities: " + " </h2>" +lineSep);
 		writer.write("<img src=\"" + bqFigStr + "\">");
 	}
@@ -363,7 +363,7 @@ public class QCReport extends Operator {
 
 		String figStr =  "metricsfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
 		String figFullPath = outputDir.getAbsolutePath() + "/" + figStr;
-		CreateFigure.generateFigure(metrics.insertSizeHistogram, "Insert size (bp)", "Insert size", "Frequency", figFullPath);
+		CreateFigure.generateFigure(getPipelineOwner(), metrics.insertSizeHistogram, "Insert size (bp)", "Insert size", "Frequency", figFullPath);
 		
 		writer.write("<img src=\"" + figStr + "\">");		
 		

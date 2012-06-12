@@ -30,7 +30,7 @@ public class ParallelOperator extends Operator {
 	
 	
 	public int getPreferredThreadCount() {
-		return Pipeline.getPipelineInstance().getThreadCount();
+		return getPipelineOwner().getThreadCount();
 	}
 	
 	@Override

@@ -47,7 +47,7 @@ public class SplitByChromosome extends IOOperator {
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
-		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(Pipeline.getPipelineInstance().getThreadCount());
+		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(getPipelineOwner().getThreadCount());
 		
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		logger.info("Beginning splitting operation for operator " + getObjectLabel());		
@@ -60,7 +60,7 @@ public class SplitByChromosome extends IOOperator {
 		
 		outputFiles = (MultiFileBuffer) getOutputBufferForClass(MultiFileBuffer.class);
 		
-		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
+		Object propsPath = getPipelineProperty(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
 		
@@ -78,7 +78,7 @@ public class SplitByChromosome extends IOOperator {
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
-			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+			jvmARGStr = (String) getPipelineProperty(JVM_ARGS);
 		}
 		
 		//If it's still null then be sure to make it the empty string

@@ -30,6 +30,11 @@ public class AnalysisFilter extends Operator {
 	protected GeneInteractionGraph graph = null;
 	protected VariantPool outputPool = null;
 	
+	public static final String POP_FREQ_CUTOFF = "pop.freq.cutoff";
+	public static final String COVERAGE_CUTOFF = "coverage.cutoff";
+	public static final String VQSR_CUTOFF = "vqsr.cutoff";
+	public static final String VAR_FREQ_CUTOFF = "var.freq.cutoff";
+	
 	protected double popFreqCutoff = 0.01; //Ignore variants with pop freqs greater than the given value
 	protected double coverageCutoff = 5.0; //Ignore variants with less coverage than this
 	protected double varFreqCutoff = 0.15; //Ignore variants with variant allele freqs less than this
@@ -46,6 +51,27 @@ public class AnalysisFilter extends Operator {
 		
 		outputPool.clear();
 		
+		String attr = this.getAttribute(POP_FREQ_CUTOFF);
+		if (attr != null) {
+			popFreqCutoff = Double.parseDouble(attr);
+		}
+		
+		attr = this.getAttribute(COVERAGE_CUTOFF);
+		if (attr != null) {
+			coverageCutoff = Double.parseDouble(attr);
+		}
+		
+		attr = this.getAttribute(VQSR_CUTOFF);
+		if (attr != null) {
+			vqsrCutoff = Double.parseDouble(attr);
+		}
+		
+		attr = this.getAttribute(VAR_FREQ_CUTOFF);
+		if (attr != null) {
+			varFreqCutoff = Double.parseDouble(attr);
+		}
+		
+		logger.info("Initializing filter with following cutoffs: \n pop. freq :" + popFreqCutoff + "\n coverage :" + coverageCutoff + "\n vqsr:" + vqsrCutoff + "\n var. freq cutoff :" + varFreqCutoff);
 		//First we filter by the gene pool, if not null
 
 		for(String contig : inputVars.getContigs()) {
@@ -161,7 +187,7 @@ public class AnalysisFilter extends Operator {
 		}
 		
 		
-		Double goEffectProd = effectPred * (goVal + sumVal + 5*interactionVal + pubmedScore/2.0);
+		Double goEffectProd = effectPred * (goVal + sumVal + 10*interactionVal + pubmedScore/2.0);
 		var.addProperty(VariantRec.GO_EFFECT_PROD, goEffectProd);
 		
 		return true;

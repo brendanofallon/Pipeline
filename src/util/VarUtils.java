@@ -199,7 +199,7 @@ public class VarUtils {
 			for(String contig : vPool.getContigs()) {
 				for(VariantRec var : vPool.getVariantsForContig(contig)) {
 					Double prod = var.getProperty(VariantRec.GO_EFFECT_PROD); 
-					if (prod != null && prod > 0) {
+					if (prod != null && prod > 50) {
 						genePool.addRecordNoWarn(var);
 						found++;
 					}
@@ -223,12 +223,18 @@ public class VarUtils {
 		annoKeys.add(VariantRec.RSNUM);
 		annoKeys.add(VariantRec.POP_FREQUENCY);
 		annoKeys.add(VariantRec.EXOMES_FREQ);
-		annoKeys.add(VariantRec.EFFECT_PREDICTION);
+		annoKeys.add(VariantRec.EFFECT_PREDICTION2);
 		annoKeys.add(VariantRec.SUMMARY_SCORE);
 		annoKeys.add(VariantRec.PUBMED_SCORE);
 		annoKeys.add(VariantRec.PUBMED_HIT);
 		annoKeys.add(VariantRec.GO_EFFECT_PROD);
 		annoKeys.add(VariantRec.VQSR);
+		annoKeys.add(VariantRec.SIFT_SCORE);
+		annoKeys.add(VariantRec.POLYPHEN_SCORE);
+		annoKeys.add(VariantRec.MT_SCORE);
+		annoKeys.add(VariantRec.PHYLOP_SCORE);
+		annoKeys.add(VariantRec.GERP_SCORE);
+		
 		
 		genePool.listGenesWithMultipleVars(System.out, 2, annoKeys);
 		
@@ -509,7 +515,7 @@ public class VarUtils {
 				annos.add(VariantRec.EXOMES_FREQ);
 				annos.add(VariantRec.CDOT);
 				annos.add(VariantRec.PDOT);
-				annos.add(VariantRec.VQSR);
+				//annos.add(VariantRec.VQSR);
 				geneVars.listAll(System.out, annos);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -653,6 +659,8 @@ public class VarUtils {
 				return;
 			}
 	
+			DecimalFormat formatter = new DecimalFormat("#0.000");
+
 			try {
 				VariantPool hapmap = getPool(new File(args[1]));
 				VariantPool sample = getPool(new File(args[2]));
@@ -699,14 +707,19 @@ public class VarUtils {
 				
 				System.out.println("Found " + hapmap.size() + " sites from hapmap");
 				System.out.println("Of these " + totHapMapVar + " were non-reference");
-				System.out.println("True positives: " + truePoz);
-				System.out.println("True negatives: " + trueNeg);
-				System.out.println("False positives: " + falsePoz);
-				System.out.println("False negatives: " + falseNeg);
-				System.out.println("True positives, but wrong zygosity : " + wrongZygosity);
+				System.out.println("Total true positives: " + truePoz);
+				System.out.println("Total true negatives: " + trueNeg);
+				System.out.println("Total false positives: " + falsePoz);
+				System.out.println("Total false negatives: " + falseNeg);
+				System.out.println("Total true positives, but wrong zygosity : " + wrongZygosity);
 				
-				System.out.println("False positives:");
-				falsePosPool.listAll(System.out);
+				double falsePosRate = (double)falsePoz / (double)(hapmap.size() - totHapMapVar);
+				double falseNegRate = (double)falseNeg / (double)(totHapMapVar);
+				System.out.println(" False positive percentage : " + formatter.format(100* falsePosRate) + "%" );
+				System.out.println(" False negative percentage : " + formatter.format(100* falseNegRate) + "%" );
+				
+				System.out.println("False positives TT ratio : " + falsePosPool.computeTTRatio());
+				//falsePosPool.listAll(System.out);
 				
 				return;
 			} catch (IOException e) {

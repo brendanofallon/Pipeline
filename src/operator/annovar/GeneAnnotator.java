@@ -47,6 +47,8 @@ public class GeneAnnotator extends AnnovarAnnotator {
 		int totalVars =0 ;
 		int errorVars = 0;
 		BufferedReader reader = new BufferedReader(new FileReader(variantFilePath));
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+		logger.info("Reading annovar variant output from file " + variantFilePath);
 		String line = reader.readLine();
 		while (line != null) {
 			String[] toks = line.split("\\t");
@@ -78,6 +80,7 @@ public class GeneAnnotator extends AnnovarAnnotator {
 		
 		//Add exonic variants functions to records where applicable 
 		reader = new BufferedReader(new FileReader(exonicFuncFilePath));
+		logger.info("Reading annovar exonic variants from file " + exonicFuncFilePath);
 		line = reader.readLine();
 		while(line != null) {
 			if (line.length()>1) {

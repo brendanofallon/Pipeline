@@ -29,11 +29,13 @@ public class ObjectHandler {
 	protected List<Operator> operatorList = null;
 	
 	protected Map<String, PipelineObject> objectMap = new HashMap<String, PipelineObject>();
-	protected String projectHome = null; //Base directory for all files without absolute pathnames specified
+	//protected String projectHome = null; //Base directory for all files without absolute pathnames specified
 
 	private final boolean verbose = true;
+	private Pipeline pipelineOwner = null;
 	
-	public ObjectHandler(Document doc) {
+	public ObjectHandler(Pipeline pipeline, Document doc) {
+		this.pipelineOwner = pipeline;
 		this.doc = doc;
 	}
 
@@ -45,6 +47,15 @@ public class ObjectHandler {
 	public PipelineObject getObjectForLabel(String label) {
 		return objectMap.get(label);
 	}
+	
+	/**
+	 * Return a reference to the Pipeline object that 'owns' this ObjectHandler 
+	 * @return
+	 */
+	public Pipeline getPipelineOwner() {
+		return pipelineOwner;
+	}
+	
 	
 	public void readObjects() throws ObjectCreationException {
 		
@@ -75,21 +86,22 @@ public class ObjectHandler {
 		}
 	}
 	
-	/**
-	 * Get base directory of files 
-	 * @return
-	 */
-	public String getProjectHome() {
-		return projectHome;
-	}
-
-	/**
-	 * Set base directory for files created without an absolute path
-	 * @param projectHome
-	 */
-	public void setProjectHome(String projectHome) {
-		this.projectHome = projectHome;
-	}
+	//Removed since this was entirely redundant with Pipeline.getProjectHome() stuff
+//	/**
+//	 * Get base directory of files 
+//	 * @return
+//	 */
+//	public String getProjectHome() {
+//		return projectHome;
+//	}
+//
+//	/**
+//	 * Set base directory for files created without an absolute path
+//	 * @param projectHome
+//	 */
+//	public void setProjectHome(String projectHome) {
+//		this.projectHome = projectHome;
+//	}
 	
 	/**
 	 * Get the list of Operators defined at top level in the xml file 
@@ -161,8 +173,8 @@ public class ObjectHandler {
 					obj.setAttribute(attrs.item(i).getNodeName(), attrs.item(i).getNodeValue());
 				}
 
-				if (projectHome != null)
-					obj.setAttribute(Pipeline.PROJECT_HOME, projectHome);
+				if (pipelineOwner.getProjectHome() != null)
+					obj.setAttribute(Pipeline.PROJECT_HOME, pipelineOwner.getProjectHome());
 
 				if (verbose) {
 					System.out.println("Creating object with label : " + obj.getObjectLabel() + " and class " + obj.getClass());

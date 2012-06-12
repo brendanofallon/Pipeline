@@ -67,7 +67,7 @@ public abstract class MultiOperator extends IOOperator {
 		if (userThreadCount != null)
 			return userThreadCount;
 		else
-			return Pipeline.getPipelineInstance().getThreadCount();
+			return getPipelineOwner().getThreadCount();
 	}
 	
 	/**

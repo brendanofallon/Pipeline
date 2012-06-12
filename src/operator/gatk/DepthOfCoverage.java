@@ -26,7 +26,8 @@ public class DepthOfCoverage extends IOOperator {
 	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
-	protected static int[] cutoffs = new int[]{5, 8, 10, 15, 20, 50};
+	final static int[] cutoffs = new int[]{5, 8, 10, 15, 20, 50};
+	private DOCMetrics metrics = null;
 	
 	public boolean requiresReference() {
 		return true;
@@ -35,7 +36,7 @@ public class DepthOfCoverage extends IOOperator {
 	
 	public void performOperation() throws OperationFailedException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
+		Object propsPath = getPipelineProperty(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
 		
@@ -47,7 +48,7 @@ public class DepthOfCoverage extends IOOperator {
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
-			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+			jvmARGStr = (String) getPipelineProperty(JVM_ARGS);
 		}
 		//If it's still null then be sure to make it the empty string
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
@@ -57,6 +58,12 @@ public class DepthOfCoverage extends IOOperator {
 		
 		FileBuffer inputBuffer = getInputBufferForClass(BAMFile.class);
 		FileBuffer referenceFile = getInputBufferForClass(ReferenceFile.class);
+		FileBuffer metricsFile = getOutputBufferForClass(DOCMetrics.class);
+		if (metricsFile == null) {
+			throw new OperationFailedException("No DOC metrics output file found", this);
+		}
+		metrics = (DOCMetrics) metricsFile;
+		
 		String inputPath = inputBuffer.getAbsolutePath();
 			
 		FileBuffer bedFile = getInputBufferForClass(BEDFile.class);
@@ -68,7 +75,7 @@ public class DepthOfCoverage extends IOOperator {
 		String outputPrefix = inputBuffer.getFile().getName();
 		outputPrefix = outputPrefix.replace("_final", "");
 		outputPrefix = outputPrefix.replace(".bam", ".DOC");
-		String projHome = Pipeline.getPipelineInstance().getProjectHome();
+		String projHome = getProjectHome();
 		if (projHome != null && projHome.length() > 0) {
 			outputPrefix = projHome + outputPrefix;
 		}
@@ -102,7 +109,6 @@ public class DepthOfCoverage extends IOOperator {
 		
 		//Read output from summary file
 		File summaryFile = new File(outputPrefix + ".sample_summary");
-		DOCMetrics metrics = new DOCMetrics();
 		metrics.setSourceFile( inputBuffer.getFile().getName() );
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(summaryFile));
@@ -129,8 +135,6 @@ public class DepthOfCoverage extends IOOperator {
 			throw new OperationFailedException("Error reading output file : " + summaryFile.getAbsolutePath(), this);
 		}
 		
-		System.out.println("Computed metrics : " + metrics);
-		super.addOutputBuffer( metrics );
 	}
 
 }

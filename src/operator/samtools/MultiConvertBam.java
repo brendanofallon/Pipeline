@@ -19,7 +19,7 @@ public class MultiConvertBam extends MultiOperator {
 	
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
-		Object samPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+		Object samPath = getPipelineProperty(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samPath != null)
 			samtoolsPath = samPath.toString();
 		

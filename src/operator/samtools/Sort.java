@@ -24,7 +24,7 @@ public class Sort extends CommandOperator {
 	protected String getCommand() throws OperationFailedException {
 		
 		//Obtain path to the samtools executable from Pipeline class in static fashion
-		Object samPropsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+		Object samPropsPath = getPipelineProperty(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samPropsPath != null)
 			samtoolsPath = samPropsPath.toString();
 	

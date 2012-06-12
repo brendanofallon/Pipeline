@@ -25,7 +25,7 @@ public class MultiCoordSort extends MultiOperator {
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		Object path = Pipeline.getPropertyStatic(PipelineXMLConstants.PICARD_PATH);
+		Object path = getPipelineProperty(PipelineXMLConstants.PICARD_PATH);
 		if (path != null)
 			picardDir = path.toString();
 		
@@ -58,7 +58,7 @@ public class MultiCoordSort extends MultiOperator {
 //		}
 		
 		//Make a temporary directory with a unique name in proj-home for java temp io
-		String projHome = Pipeline.getPipelineInstance().getProjectHome();
+		String projHome = getProjectHome();
 		String tmpDirName = projHome + ".io.tmp." + (int)Math.round( (1e9)*Math.random());
 		File tmpDir = new File(tmpDirName);
 		while (tmpDir.exists()) {

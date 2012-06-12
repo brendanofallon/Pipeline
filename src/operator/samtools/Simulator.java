@@ -20,7 +20,7 @@ public class Simulator extends PipedCommandOp {
 	@Override
 	protected String getCommand() {
 	
-		Object samPropPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+		Object samPropPath = getPipelineProperty(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samPropPath != null)
 			samtoolsPath = samPropPath.toString();
 		

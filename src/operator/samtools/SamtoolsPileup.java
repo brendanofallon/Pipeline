@@ -20,7 +20,7 @@ public class SamtoolsPileup extends PipedCommandOp {
 	@Override
 	protected String getCommand() throws OperationFailedException {
 	
-		Object samPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+		Object samPath = getPipelineProperty(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samPath != null)
 			samtoolsPath = samPath.toString();
 		

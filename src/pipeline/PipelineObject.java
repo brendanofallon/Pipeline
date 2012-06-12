@@ -9,19 +9,58 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
- * All objects that can be mapped onto XML 
+ * Base class for all objects that can be created from XML by an ObjectHandler. Mostly just a marker 
+ * class, but there's a little functionality having to do with setting a label for each object, maintaining
+ * references to the Pipeline and ObjectHandler 'owner' objects, and keeping track of whether the
+ * object has been initialized.   
  * @author brendan
  *
  */
 public abstract class PipelineObject {
 
-	protected String objectLabel = null;
-	private boolean initialized = false;
-	
-	private ObjectHandler objectHandler;
+	protected String objectLabel = null; //Label for XML element that begat this object
+	private boolean initialized = false; //If initialized() has been called. 
+	private ObjectHandler objectHandler = null; //Reference to ObjectHandler that manages initialization steps for this object
 	
 	public void setObjectHandler(ObjectHandler handler) {
 		this.objectHandler = handler;
+	}
+	
+	/**
+	 * Obtain a reference to the Pipeline object that created this object.  
+	 * @return
+	 */
+	public Pipeline getPipelineOwner() {
+		return objectHandler.getPipelineOwner();
+	}
+	
+	/**
+	 * Obtain a reference to the ObjectHandler object that created this PipelineObject
+	 */
+	public ObjectHandler getObjectHandler() {
+		return objectHandler;
+	}
+	
+	/**
+	 * Obtain the value of a 'global' property housed in the Pipeline object that
+	 * owns this object. These properties are the ones defined in the properties file 
+	 * that is '.pipelineprops.xml' by default, or whatever the user specifies on the command line.
+	 * Don't confuse these with the attributes that are defined in the XML that defined 
+	 * these objects - those are specific to individual PipelineObjects and obtained via get- and setAttribute 
+	 * @param propertyKey
+	 * @return
+	 */
+	public String getPipelineProperty(String propertyKey) {
+		return (String) getPipelineOwner().getProperty(propertyKey);
+	}
+	
+	/**
+	 * Obtain from the PipelineOwner the path describing the base directory of this project.
+	 * This may be null if it has not been specified, in which case typically user.dir will be used
+	 * @return
+	 */
+	public String getProjectHome() {
+		return getPipelineOwner().getProjectHome();
 	}
 	
 	/**

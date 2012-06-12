@@ -35,7 +35,7 @@ public class MultiGenotype extends MultiOperator {
 	
 	public int getPreferredThreadCount() {
 		//Dont use more than 12 threads...
-		return Math.min(Pipeline.getPipelineInstance().getThreadCount(), 12);
+		return Math.min(getPipelineOwner().getThreadCount(), 12);
 	}
 	
 	@Override
@@ -46,7 +46,7 @@ public class MultiGenotype extends MultiOperator {
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		Object propsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.GATK_PATH);
+		Object propsPath = getPipelineProperty(PipelineXMLConstants.GATK_PATH);
 		if (propsPath != null)
 			gatkPath = propsPath.toString();
 		
@@ -58,7 +58,7 @@ public class MultiGenotype extends MultiOperator {
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
-			jvmARGStr = (String) Pipeline.getPropertyStatic(JVM_ARGS);
+			jvmARGStr = (String) getPipelineProperty(JVM_ARGS);
 		}
 		//If it's still null then be sure to make it the empty string
 		if (jvmARGStr == null || jvmARGStr.length()==0) {

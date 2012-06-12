@@ -60,7 +60,7 @@ public class Pipeline {
 	protected Properties props;
 	public static final String defaultPropertiesPath = ".pipelineprops.xml";
 	private String propertiesPath = defaultPropertiesPath;
-	public static Pipeline pipelineInstance;
+	//public static Pipeline pipelineInstance;
 	private Date startTime = null;
 	
 	public Pipeline(File inputFile) {
@@ -70,7 +70,7 @@ public class Pipeline {
 		
 	public Pipeline(File inputFile, String propsPath) {
 		this.source = inputFile;
-		pipelineInstance = this;
+
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder;
 		try {
@@ -99,7 +99,6 @@ public class Pipeline {
 	 */
 	public Pipeline(Document doc) {
 		this.source = null;
-		pipelineInstance = this;
 		xmlDoc = doc;
 		initializeLogger();
 		loadProperties();	
@@ -109,9 +108,9 @@ public class Pipeline {
 	 * Static getter for main application object
 	 * @return
 	 */
-	public static Pipeline getPipelineInstance() {
-		return pipelineInstance;
-	}
+//	public static Pipeline getPipelineInstance() {
+//		return pipelineInstance;
+//	}
 	
 	/**
 	 * Get preferred size of thread pools
@@ -136,9 +135,9 @@ public class Pipeline {
 	 * @param key
 	 * @return Value associated with key provided
 	 */
-	public static Object getPropertyStatic(String key) {
-		return pipelineInstance.getProperty(key);
-	}
+//	public static Object getPropertyStatic(String key) {
+//		return pipelineInstance.getProperty(key);
+//	}
 	
 	/**
 	 * Returns the value of the PROJECT_HOME property
@@ -357,12 +356,12 @@ public class Pipeline {
 		
 		primaryLogger.info("XML Document found and parsed, attempting to read objects");
 				
-		handler = new ObjectHandler(xmlDoc);
+		handler = new ObjectHandler(this, xmlDoc);
 		
 		//Set the project home field
 		String projHome = props.getProperty(PROJECT_HOME);
 		if (projHome != null && projHome.length()>0 && (!projHome.equals(System.getProperty("user.dir")))) {
-			handler.setProjectHome(projHome);
+			
 			try {
 				if (!projHome.endsWith("/"))
 					projHome = projHome + "/";

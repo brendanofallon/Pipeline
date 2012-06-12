@@ -3,6 +3,7 @@ package operator.annovar;
 import java.io.File;
 
 import buffer.variant.GVFFile;
+import buffer.variant.VariantRec;
 import operator.OperationFailedException;
 import pipeline.Pipeline;
 
@@ -12,7 +13,7 @@ public class DBVarAnnotator extends Annotator {
 	
 	public DBVarAnnotator() {
 		//Read initial list of structural variants...
-		String path = (String) Pipeline.getPipelineInstance().getProperty(DBVAR_PATH);
+		String path = (String) getPipelineProperty(DBVAR_PATH);
 		if (path == null)
 			throw new IllegalArgumentException("Could not initialize DBVarAnnotator, DBVAR_PATH not specified");
 		
@@ -24,6 +25,13 @@ public class DBVarAnnotator extends Annotator {
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void annotateVariant(VariantRec var) {
 		// TODO Auto-generated method stub
 		
 	}

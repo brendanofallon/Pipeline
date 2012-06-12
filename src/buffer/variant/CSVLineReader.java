@@ -158,7 +158,7 @@ public class CSVLineReader implements VariantLineReader {
 						//this is expected, we just assume it's an annotation, not a property
 					}
 
-					rec.addAnnotation(key, toks[i]);
+					rec.addAnnotation(key, toks[i].trim());
 				}
 			}
 

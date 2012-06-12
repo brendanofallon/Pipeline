@@ -233,6 +233,11 @@ public class GenePool extends Operator {
 	}
 
 	public void listGenesWithMultipleVars(PrintStream out, int cutoff, List<String> annoKeys) {
+		StringBuilder headerB = new StringBuilder();
+		for(String key : annoKeys)
+			headerB.append("\t" + key);
+		
+		out.println(VariantRec.getBasicHeader() + headerB);
 		for(String key : pool.keySet()) {
 			List<VariantRec> vars = pool.get(key);
 			int sourceCount =  countSources(key);

@@ -21,7 +21,7 @@ public class Index extends CommandOperator {
 	@Override
 	protected String getCommand() throws OperationFailedException {
 		//Obtain samtools path from static Pipeline properties
-		Object samPropsPath = Pipeline.getPropertyStatic(PipelineXMLConstants.SAMTOOLS_PATH);
+		Object samPropsPath = getPipelineProperty(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samPropsPath != null)
 			samtoolsPath = samPropsPath.toString();
 	

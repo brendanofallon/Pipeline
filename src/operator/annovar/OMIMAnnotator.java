@@ -19,7 +19,7 @@ public class OMIMAnnotator extends Annotator {
 	@Override
 	public void annotateVariant(VariantRec var) {
 		if (omimVars == null) 
-			omimVars = new OMIMVariants();
+			omimVars = new OMIMVariants(this.getObjectHandler());
 		
 		VariantRec omimVar = omimVars.findRecordNoWarn(var.getContig(), var.getStart());
 		if (omimVar != null) {
