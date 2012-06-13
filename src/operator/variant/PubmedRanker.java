@@ -128,6 +128,7 @@ public class PubmedRanker extends Annotator {
 			}
 		}
 		
+		
 		String idStr = geneInfo.idForSymbol(geneName);
 		if (idStr == null) {
 			if (geneName.length() < 8)
@@ -156,6 +157,8 @@ public class PubmedRanker extends Annotator {
 			end += 500;
 		}
 		
+
+		this.getPipelineOwner().fireMessage("Examining " + records.size() + " abstracts for gene : " + geneName);
 		
 		//System.out.println("Found " + records.size() + " records for " + pubmedIDs.size() + " ids for for gene : " + geneName);
 		//We take the *maximum* score found among all abstracts

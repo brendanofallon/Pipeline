@@ -30,7 +30,7 @@ public class PrettyLabel extends JPanel {
 		this.text = text;
 		this.textAln = textAln;
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-		int estimatedWidth = font.getSize() * text.length();
+		int estimatedWidth = (int)Math.round( font.getSize() * text.length() *0.65 );
 		add(Box.createRigidArea(new Dimension(estimatedWidth, 30)));
 	}
 	
@@ -42,6 +42,10 @@ public class PrettyLabel extends JPanel {
 		this.font = font;
 	}
 
+	public void setText(String text) {
+		this.text = text;
+		repaint();
+	}
 	
 	public void paintComponent(Graphics g) {
 		Graphics2D g2d = (Graphics2D)g;
@@ -68,5 +72,7 @@ public class PrettyLabel extends JPanel {
 		g2d.drawString(text, leftEdge, bottomEdge);
 		
 	}
+
+	
 	
 }

@@ -50,7 +50,7 @@ public class Pipeline {
 	
 	
 	//Default number of threads to use
-	protected int threadCount = 12;
+	protected int threadCount = 8;
 	
 	
 	//Right now DEBUG just emits all log messages to std out
@@ -60,7 +60,6 @@ public class Pipeline {
 	protected Properties props;
 	public static final String defaultPropertiesPath = ".pipelineprops.xml";
 	private String propertiesPath = defaultPropertiesPath;
-	//public static Pipeline pipelineInstance;
 	private Date startTime = null;
 	
 	public Pipeline(File inputFile) {
@@ -93,24 +92,25 @@ public class Pipeline {
 		loadProperties();	
 	}
 	
+	public Pipeline(Document doc) {
+		this(doc, null);
+	}
+	
 	/**
 	 * Create a new Pipeline object that will attempt to execute the Document provided
 	 * @param doc
 	 */
-	public Pipeline(Document doc) {
+	public Pipeline(Document doc, String propsPath) {
 		this.source = null;
 		xmlDoc = doc;
+
+		if (propsPath != null)
+			setPropertiesPath(propsPath);
+
 		initializeLogger();
 		loadProperties();	
 	}
-	
-	/**
-	 * Static getter for main application object
-	 * @return
-	 */
-//	public static Pipeline getPipelineInstance() {
-//		return pipelineInstance;
-//	}
+
 	
 	/**
 	 * Get preferred size of thread pools
@@ -120,6 +120,10 @@ public class Pipeline {
 		return threadCount;
 	}
 	
+	public ObjectHandler getObjectHandler() {
+		return handler;
+	}
+	
 	/**
 	 * Get the input file from which the pipeline was 
 	 * @return
@@ -127,17 +131,7 @@ public class Pipeline {
 	public File getSourceFile() {
 		return source;
 	}
-	
-	/**
-	 * Obtain the value of the property associated with the given key, or null
-	 * if no such property exists or if the properties were not successfully loaded
-	 * (for instance, if no properties file was found)
-	 * @param key
-	 * @return Value associated with key provided
-	 */
-//	public static Object getPropertyStatic(String key) {
-//		return pipelineInstance.getProperty(key);
-//	}
+
 	
 	/**
 	 * Returns the value of the PROJECT_HOME property
@@ -184,7 +178,6 @@ public class Pipeline {
 	 * @param pathToPropsFile
 	 */
 	public void setPropertiesPath(String pathToPropsFile) {
-		System.out.println("Setting properties path to : " + pathToPropsFile);
 		propertiesPath = pathToPropsFile;
 	}
 	
@@ -560,7 +553,7 @@ public class Pipeline {
 				
 				//Set project home
 				if (projHome != null && projHome.length()>0)
-					pipeline.setProperty("home", projHome);
+					pipeline.setProperty(Pipeline.PROJECT_HOME, projHome);
 				
 				//Set preferred thread count
 				if (threads > -1) {

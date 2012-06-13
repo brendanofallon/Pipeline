@@ -63,6 +63,7 @@ public class GeneSummaryRanker extends Annotator {
 		if (gene == null)
 			return;
 		
+		this.getPipelineOwner().fireMessage("Examining summary for gene : " + gene);
     	String summary = summaryDB.getSummaryForGene( gene );
     	if (summary == null)
     		return;

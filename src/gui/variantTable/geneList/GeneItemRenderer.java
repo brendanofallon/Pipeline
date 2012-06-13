@@ -22,10 +22,11 @@ import javax.swing.JPanel;
 public class GeneItemRenderer extends JPanel {
 	
 	final GeneListPanel list;
+	String gene = null;
 
 	public GeneItemRenderer(GeneListPanel list, String geneName) {
 		this.list = list;
-		
+		this.gene = geneName;
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 		this.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
 		this.setBackground(Color.white);
@@ -47,6 +48,10 @@ public class GeneItemRenderer extends JPanel {
 
 	}
 
+	public String getGene() {
+		return gene;
+	}
+	
 	protected void removeThisItem() {
 		list.removeItem(this);
 	}

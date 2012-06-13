@@ -29,7 +29,6 @@ public class ObjectHandler {
 	protected List<Operator> operatorList = null;
 	
 	protected Map<String, PipelineObject> objectMap = new HashMap<String, PipelineObject>();
-	//protected String projectHome = null; //Base directory for all files without absolute pathnames specified
 
 	private final boolean verbose = true;
 	private Pipeline pipelineOwner = null;
@@ -86,22 +85,6 @@ public class ObjectHandler {
 		}
 	}
 	
-	//Removed since this was entirely redundant with Pipeline.getProjectHome() stuff
-//	/**
-//	 * Get base directory of files 
-//	 * @return
-//	 */
-//	public String getProjectHome() {
-//		return projectHome;
-//	}
-//
-//	/**
-//	 * Set base directory for files created without an absolute path
-//	 * @param projectHome
-//	 */
-//	public void setProjectHome(String projectHome) {
-//		this.projectHome = projectHome;
-//	}
 	
 	/**
 	 * Get the list of Operators defined at top level in the xml file 

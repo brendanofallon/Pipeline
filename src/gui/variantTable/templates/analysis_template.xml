@@ -1,0 +1,153 @@
+
+<Pipeline>
+
+<!--  Required substitutions:
+  CAPTUREBED : bed file targeting regions we want to report
+  INPUTFILE : input vcf
+  PREFIX : Prefix to use for output files
+  GOTERMSFILE : Ranked go terms
+  KEYTERMS : ranked terms for abstracts & gene summaries
+  SOURCEGENES : comma-separated list of source genes for gene graph and distance calculations
+  GRAPHSIZE : Number of extra nodes to include in graph -->
+
+<!-- capture class="buffer.BEDFile" filename="${CAPTUREBED}" / -->
+
+<InputVCF class="buffer.VCFFile" filename="${INPUTFILE}" />
+
+<GOTermsList class="buffer.TextBuffer" filename="${GOTERMSFILE}" />
+<rankedSummaryTerms class="buffer.TextBuffer" filename="${KEYTERMS}" />
+
+<InteractionMatrix class="buffer.GeneInteractionGraph" key.genes="${SOURCEGENES}" graph.size="${GRAPHSIZE}" />
+
+
+<!--  filterByCapture class="operator.variant.FilterVCFByBED">
+ <input>
+   <InputVCF />
+   <capture />
+  </input>
+  <output>
+   <captureVCF class="buffer.VCFFile" filename="${PREFIX}.capture.vcf" />
+ </output>
+</filterByCapture -->
+
+
+<MakeInput class="operator.annovar.ConvertVCFAnnovar">
+ <input>
+	<InputVCF />
+ </input>
+ <output>
+	<AnnoInput class="buffer.AnnovarInputFile" filename="annovar.input" />
+ </output>
+</MakeInput>
+
+<VariantPool class="buffer.variant.VariantPool">
+	<InputVCF />
+</VariantPool>
+
+<GeneAnnotate class="operator.annovar.GeneAnnotator">
+	<AnnoInput />
+	<VariantPool />
+</GeneAnnotate>
+
+<FPAnnotate class="operator.variant.FPComputer">
+  <VariantPool />
+</FPAnnotate>
+
+<ParallelAnnotator class="operator.ParallelOperator">
+
+<SiftAnnotate class="operator.annovar.SiftAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</SiftAnnotate>
+
+<PolyphenAnnotate class="operator.annovar.PolyphenAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PolyphenAnnotate>
+
+<MTAnnotate class="operator.annovar.MTAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</MTAnnotate>
+
+<PhyloPAnnotate class="operator.annovar.PhyloPAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PhyloPAnnotate>
+
+<GERPAnnotate class="operator.annovar.GERPAnnotator">
+  <AnnoInput />
+  <VariantPool />
+</GERPAnnotate>
+
+<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PopFreqAnnotate>
+
+<ESPAnnotate class="operator.annovar.Exomes5400Annotator">
+   <AnnoInput />
+   <VariantPool />
+</ESPAnnotate>
+
+<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
+ <AnnoInput />
+ <VariantPool />
+</DBSNPAnnotate>
+
+</ParallelAnnotator>
+
+<EffectPred class="operator.annovar.EffectPredictionAnnotator">
+ <VariantPool />
+</EffectPred>
+
+<GOAnnotate class="operator.annovar.GOAnnotator" >
+  <VariantPool />
+</GOAnnotate>
+
+<GoRank class="operator.variant.GOTermRanker">
+ <VariantPool />
+ <GOTermsList />
+</GoRank>
+
+<SummaryRank class="operator.variant.GeneSummaryRanker">
+	<VariantPool />
+	<rankedSummaryTerms />
+</SummaryRank>
+
+
+<InteractionRank class="operator.variant.InteractionRanker" source="${SOURCEGENES}">
+  <VariantPool />
+  <InteractionMatrix />
+</InteractionRank>
+
+
+<PubmedRank class="operator.variant.PubmedRanker">
+  <VariantPool />
+  <rankedSummaryTerms />
+</PubmedRank>
+
+
+
+<Analysis class="operator.AnalysisFilter">
+ <input>
+   <VariantPool />
+   <genesOfInterest />
+ </input>
+ <output>
+  <filteredVariants class="buffer.variant.VariantPool" />
+ </output>
+</Analysis>
+
+<EverythingToFile class="operator.variant.ExcelWriter">
+  <VariantPool />
+  <CSVFileAll class="buffer.CSVFile" filename="${PREFIX}.all.csv" />
+</EverythingToFile>
+
+<ToFile class="operator.variant.ExcelWriter">
+	<filteredVariants />
+	<CSVFile class="buffer.CSVFile" filename="${PREFIX}.ranking.analysis.csv" />
+</ToFile>
+
+
+</Pipeline>

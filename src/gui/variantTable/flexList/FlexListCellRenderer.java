@@ -69,6 +69,14 @@ public class FlexListCellRenderer extends JPanel {
 		list.removeListItem(this);
 	}
 	
+	public Integer getScore() {
+		return (Integer)valSpinner.getValue();
+	}
+	
+	public String getText() {
+		return text.getText();
+	}
+	
 	
 	private JSpinner valSpinner;
 	private JTextArea text;

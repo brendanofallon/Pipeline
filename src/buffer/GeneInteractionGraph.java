@@ -34,8 +34,6 @@ public class GeneInteractionGraph extends PipelineObject {
 	public static final String KEY_GENES = "key.genes";
 	public static final String GRAPH_SIZE = "graph.size";
 	
-	
-	
 	public Graph getGraph() throws IOException {
 		if (graph == null) {
 			constructGraph();

@@ -27,7 +27,7 @@ import util.ElapsedTimeFormatter;
 public class ParallelOperator extends Operator {
 
 	protected List<Operator> operators = new ArrayList<Operator>();
-	
+	private int completedOperators = 0;
 	
 	public int getPreferredThreadCount() {
 		return getPipelineOwner().getThreadCount();
@@ -43,7 +43,7 @@ public class ParallelOperator extends Operator {
 		Date now = new Date();
 		long beginMillis = System.currentTimeMillis();
 		logger.info("[" + now + "] ParallelOperator is launching " + operators.size() + " simultaneous jobs");
-		
+		this.getPipelineOwner().fireMessage("ParallelOperator is launching " + operators.size() + " jobs");
 		List<OpWrapper> wraps = new ArrayList<OpWrapper>();
 		
 		for(Operator op : operators)  {
@@ -51,7 +51,6 @@ public class ParallelOperator extends Operator {
 			wraps.add(opw);
 			threadPool.submit(opw);
 		}
-		
 		
 		threadPool.shutdown(); //No new tasks will be submitted,
 		try {
@@ -111,6 +110,8 @@ public class ParallelOperator extends Operator {
 		protected Object doInBackground() throws Exception {
 			
 			op.performOperation();
+			completedOperators++;
+			op.getPipelineOwner().fireMessage("Operator " + op.getObjectLabel() + " has completed (" + completedOperators + " of " + operators.size() + ")");
 			return op;
 		}
 		

@@ -3,9 +3,11 @@ package gui.variantTable.geneList;
 import gui.widgets.BorderlessButton;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.Box;
@@ -65,6 +67,18 @@ public class GeneListPanel extends JPanel {
 	}
 
 	private JPanel listPanel;
+
+	public List<String> getGenes() {
+		List<String> list= new ArrayList<String>();
+		
+		for(int i=0; i<listPanel.getComponentCount(); i++) {
+			Component comp = listPanel.getComponent(i);
+			if (comp instanceof GeneItemRenderer) {
+				list.add( ((GeneItemRenderer)comp).getGene() );
+			}
+		}
+		return list;
+	}
 
 
 	

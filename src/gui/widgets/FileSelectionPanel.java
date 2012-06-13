@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -20,7 +21,7 @@ import javax.swing.JTextField;
  *
  */
 public class FileSelectionPanel extends JPanel {
-
+	
 	private JLabel label;
 	private JTextField field;
 	private JButton browseButton;
@@ -30,7 +31,7 @@ public class FileSelectionPanel extends JPanel {
 	private List<FileSelectionListener> listeners = new ArrayList<FileSelectionListener>();
 	
 	public FileSelectionPanel(String labelText, String fieldText, JFileChooser chooser) {
-		this.setLayout(new FlowLayout(FlowLayout.RIGHT));
+		this.setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 		this.fileChooser = chooser;
 		label = new JLabel(labelText == null ? "" : labelText);
 		add(label);
@@ -49,6 +50,7 @@ public class FileSelectionPanel extends JPanel {
 		});
 		add(browseButton);
 	}
+
 
 	/**
 	 * Add a new listener to be notified of file selection events

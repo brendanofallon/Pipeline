@@ -674,6 +674,7 @@ public class VarUtils {
 				
 				VariantPool falsePosPool = new VariantPool();
 				VariantPool falseNegPool = new VariantPool();
+				List<String> falseNegList = new ArrayList<String>();
 				
 				for(String contig : hapmap.getContigs()) {
 					for(VariantRec var : hapmap.getVariantsForContig(contig)) {
@@ -681,6 +682,7 @@ public class VarUtils {
 						if (var.isVariant() && sampleVar == null) {
 							totHapMapVar++;
 							falseNeg++;
+							falseNegList.add(contig + "\t" + var.getStart() + "\t" + var.getRef() + "\t" + var.getAlt());
 						}
 						if (var.isVariant() && sampleVar != null) {
 							totHapMapVar++;
@@ -719,7 +721,13 @@ public class VarUtils {
 				System.out.println(" False negative percentage : " + formatter.format(100* falseNegRate) + "%" );
 				
 				System.out.println("False positives TT ratio : " + falsePosPool.computeTTRatio());
-				//falsePosPool.listAll(System.out);
+				
+				System.out.println("False negatives:");
+				for(String str : falseNegList) {
+					System.out.println(str);
+				}
+				
+				falsePosPool.listAll(System.out);
 				
 				return;
 			} catch (IOException e) {
@@ -936,6 +944,8 @@ public class VarUtils {
 				annoKeys.add(VariantRec.CDOT);
 				annoKeys.add(VariantRec.PDOT);
 				annoKeys.add(VariantRec.VQSR);
+				annoKeys.add(VariantRec.DEPTH);
+				annoKeys.add(VariantRec.VAR_DEPTH);
 				annoKeys.add(VariantRec.FALSEPOS_PROB);
 				annoKeys.add(VariantRec.FS_SCORE);
 				filteredVars.listAll(outputStream, annoKeys);
@@ -1024,7 +1034,11 @@ public class VarUtils {
 			
 			annoKeys.add(VariantRec.OMIM_ID);
 			annoKeys.add(VariantRec.HGMD_INFO);
-			
+			annoKeys.add(VariantRec.SIFT_SCORE);
+			annoKeys.add(VariantRec.POLYPHEN_SCORE);
+			annoKeys.add(VariantRec.MT_SCORE);
+			annoKeys.add(VariantRec.PHYLOP_SCORE);
+			annoKeys.add(VariantRec.GERP_SCORE);
 			//annoKeys.add(VariantRec.VQSR);
 			//annoKeys.add(VariantRec.FALSEPOS_PROB);
 			//annoKeys.add(VariantRec.FS_SCORE);
@@ -1034,7 +1048,7 @@ public class VarUtils {
 			System.out.println( header );
 			
 			try {
-				double frequencyCutoff = 0.05;
+				double frequencyCutoff = 0.01;
 				boolean hasUserCutoff = false;
 				//See if we can parse a double from args[1]
 				try {
@@ -1067,7 +1081,7 @@ public class VarUtils {
 						String exonFunc = var.getAnnotation(VariantRec.EXON_FUNCTION);
 						
 						//Exclude variants that are not in exons or splicing 
-						if (passes && !(varType != null && varType.contains("exon") || varType.contains("splic"))) {
+						if (passes && !(varType != null && (varType.contains("exon") || varType.contains("splic")))) {
 							passes = false;
 						}
 						
@@ -1110,7 +1124,20 @@ public class VarUtils {
 				VariantPool filteredVars = new VariantPool();
 				for(String contig : pool.getContigs()) {
 					for(VariantRec var : pool.getVariantsForContig(contig)) {
-						Double varVal = var.getProperty(prop);
+						Double varVal;
+						if (prop.startsWith("quality"))
+							varVal = var.getQuality();
+						else
+							varVal = var.getProperty(prop);
+						
+						if (prop.startsWith("var.freq")) {
+							Double totDepth = var.getProperty(VariantRec.DEPTH);
+							Double varDepth = var.getProperty(VariantRec.VAR_DEPTH);
+							if (totDepth != null && varDepth != null) {
+								varVal = varDepth / totDepth;
+							}
+						}
+						
 						if (varVal == null) {
 							filteredVars.addRecord(var);
 						}
@@ -1134,7 +1161,13 @@ public class VarUtils {
 				annoKeys.add(VariantRec.CDOT);
 				annoKeys.add(VariantRec.PDOT);
 				annoKeys.add(VariantRec.VQSR);
+				annoKeys.add(VariantRec.DEPTH);
+				annoKeys.add(VariantRec.VAR_DEPTH);
 				annoKeys.add(prop);
+				if (greater)
+					System.err.println("Found " + filteredVars.size() + " vars with " + prop + " above " + val);
+				else 
+					System.err.println("Found " + filteredVars.size() + " vars with " + prop + " below " + val);
 				filteredVars.listAll(System.out, annoKeys);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
