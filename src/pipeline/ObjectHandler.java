@@ -1,5 +1,6 @@
 package pipeline;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +14,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import buffer.VCFFile;
+import pipeline.PipelineObject;
 
 /**
  * This class is responsible for reading an xml DOM document and creating Pipeline objects based
@@ -32,6 +35,8 @@ public class ObjectHandler {
 
 	private final boolean verbose = true;
 	private Pipeline pipelineOwner = null;
+	
+	private ClassLoader classLoader = null;
 	
 	public ObjectHandler(Pipeline pipeline, Document doc) {
 		this.pipelineOwner = pipeline;
@@ -145,7 +150,24 @@ public class ObjectHandler {
 				}
 				
 				Object instance = clz.newInstance();
-
+				if (verbose) {
+					System.out.println("Successfully created object of " + instance.getClass() );
+				}
+				if (! (instance.getClass().isAssignableFrom(PipelineObject.class))) {
+					System.err.println("Object of class " + instance.getClass() + " is not a pipeline object, cannot create it");
+				}
+				
+				
+				VCFFile test2 = (VCFFile) loadClass("buffer.VCFFile").newInstance();
+				
+				if (! (PipelineObject.class.isAssignableFrom(test2.getClass()))) {
+					System.err.println("TestVCF2 class " + test2.getClass() + " is not a pipeline object, cannot create it");
+				}
+				else {
+					System.out.println("TestVCF2 class is OK, has name: "+ VCFFile.class.getCanonicalName() );
+				}
+				
+				
 				PipelineObject obj = (PipelineObject) instance;
 				obj.setObjectLabel(el.getNodeName());
 				obj.setObjectHandler(this);
@@ -192,11 +214,17 @@ public class ObjectHandler {
 
 	private Class<?> loadClass(String classStr) throws ClassNotFoundException {
 		//TODO We'd like to be able to search other paths, not just already loaded classes
-		ClassLoader systemLoader = ClassLoader.getSystemClassLoader();
-		Class<?> clazz = systemLoader.loadClass(classStr);
+		if (classLoader == null)
+			classLoader = ClassLoader.getSystemClassLoader();
+		System.out.println("Attempting to instantiate " + classStr + " from loader :" + classLoader);
+		Class<?> clazz = classLoader.loadClass(classStr);
 		return clazz;
 	}
 
+	public void setClassLoader(ClassLoader loader) {
+		this.classLoader = loader;
+	}
+	
 	/**
 	 * Returns the value of the attribute associated with the key CLASS_ATTR, or 
 	 * an *EMPTY STRING* (not null) if no such attribute exists 

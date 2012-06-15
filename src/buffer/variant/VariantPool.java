@@ -64,8 +64,8 @@ public class VariantPool extends Operator  {
 	 * @param reader
 	 * @throws IOException
 	 */
-	public VariantPool(CSVLineReader reader) throws IOException {
-		importFromCSV(reader);
+	public VariantPool(VariantLineReader reader) throws IOException {
+		importFromVariantReader(reader);
 	}
 
 	/**
@@ -90,11 +90,11 @@ public class VariantPool extends Operator  {
 	 */
 	
 	public VariantPool(CSVFile file) throws IOException {
-		importFromCSV(file);
+		importFromVariantReader(new CSVLineReader(file.getFile()));
 	}
 
 	public VariantPool(VCFFile file) throws IOException {
-		importFromVCF(file);
+		importFromVariantReader(new VCFLineParser(file));
 	}
 
 	/**
@@ -110,10 +110,10 @@ public class VariantPool extends Operator  {
 	 * 8: genotype quality
 	 * @throws IOException
 	 */
-	private void importFromCSV(CSVFile file) throws IOException {
-		CSVLineReader reader = new CSVLineReader(file.getFile());
-		importFromCSV(reader);
-	}
+//	private void importFromCSV(CSVFile file) throws IOException {
+//		CSVLineReader reader = new CSVLineReader(file.getFile());
+//		importFromCSV(reader);
+//	}
 
 	/**
 	 * Import from the given CSV file using the given reader
@@ -121,7 +121,51 @@ public class VariantPool extends Operator  {
 	 * @param reader
 	 * @throws IOException
 	 */
-	private void importFromCSV(CSVLineReader reader) throws IOException {
+//	private void importFromCSV(CSVLineReader reader) throws IOException {
+//		int lineNumber = 0;
+//		do {
+//			VariantRec rec = reader.toVariantRec();
+//			if (rec == null) {
+//				System.err.println("Warning, could not import variant from line: " + lineNumber );
+//			}
+//			else {
+//				this.addRecordNoSort(rec);
+//			}
+//			lineNumber++;
+//		} while(reader.advanceLine());
+//
+//		sortAllContigs();		
+//	}
+	/**
+	 * Import all variants from the given vcf file
+	 * @param file
+	 * @throws IOException
+	 */
+//	private void importFromVCF(VCFFile file) throws IOException {
+//		VCFLineParser vParser = new VCFLineParser(file);
+//		//int lineCount = countLines(file);
+//		int lineNumber = 0;
+//		do {
+//			VariantRec rec = vParser.toVariantRec();
+//			if (rec == null) {
+//				System.err.println("Warning, could not import variant from line: " + lineNumber );
+//			}
+//			else {
+//				this.addRecordNoSort(rec);
+//			}
+//			lineNumber++;
+//			//if (lineNumber % 10000 == 0) {
+//				//double frac = 100.0*(double)lineNumber / (double)lineCount;
+//				//DecimalFormat formatter = new DecimalFormat("#0.00");
+//				//System.out.println(file.getFile().getName() + " : line " + lineNumber + " of " + lineCount + " ( " + formatter.format(frac) + "% )");
+//			//}
+//		} while (vParser.advanceLine());
+//	//	System.out.println("Done reading variants, now sorting...");
+//		sortAllContigs();
+//	//	System.out.println("Done sorting.");
+//	}
+	
+	private void importFromVariantReader(VariantLineReader reader) throws IOException {
 		int lineNumber = 0;
 		do {
 			VariantRec rec = reader.toVariantRec();
@@ -132,37 +176,8 @@ public class VariantPool extends Operator  {
 				this.addRecordNoSort(rec);
 			}
 			lineNumber++;
-		} while(reader.advanceLine());
-
-		sortAllContigs();		
-	}
-	/**
-	 * Import all variants from the given vcf file
-	 * @param file
-	 * @throws IOException
-	 */
-	private void importFromVCF(VCFFile file) throws IOException {
-		VCFLineParser vParser = new VCFLineParser(file);
-		//int lineCount = countLines(file);
-		int lineNumber = 0;
-		do {
-			VariantRec rec = vParser.toVariantRec();
-			if (rec == null) {
-				System.err.println("Warning, could not import variant from line: " + lineNumber );
-			}
-			else {
-				this.addRecordNoSort(rec);
-			}
-			lineNumber++;
-			//if (lineNumber % 10000 == 0) {
-				//double frac = 100.0*(double)lineNumber / (double)lineCount;
-				//DecimalFormat formatter = new DecimalFormat("#0.00");
-				//System.out.println(file.getFile().getName() + " : line " + lineNumber + " of " + lineCount + " ( " + formatter.format(frac) + "% )");
-			//}
-		} while (vParser.advanceLine());
-	//	System.out.println("Done reading variants, now sorting...");
+		} while (reader.advanceLine());
 		sortAllContigs();
-	//	System.out.println("Done sorting.");
 	}
 	
 	/**
@@ -944,7 +959,7 @@ public class VariantPool extends Operator  {
 		
 		if (inputVariants instanceof VCFFile) {
 			try {
-				importFromVCF( (VCFFile)inputVariants );
+				importFromVariantReader(new VCFLineParser( (VCFFile)inputVariants ) );
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new OperationFailedException("IO error reading file: " + inputVariants.getAbsolutePath(), this);
@@ -953,7 +968,7 @@ public class VariantPool extends Operator  {
 		
 		if (inputVariants instanceof CSVFile) {
 			try {
-				importFromCSV( (CSVFile)inputVariants );
+				importFromVariantReader(new CSVLineReader( ((CSVFile)inputVariants).getFile() ));
 				//importFromCSV( new SimpleLineReader(inputVariants.getFile()));
 			} catch (IOException e) {
 				e.printStackTrace();

@@ -23,6 +23,14 @@ import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import operator.OperationFailedException;
 import operator.Operator;
@@ -47,6 +55,7 @@ public class Pipeline {
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
 	protected String defaultLogFilename = "pipelinelog";
 	protected ObjectHandler handler = null;
+	private ClassLoader loader = null;
 	
 	
 	//Default number of threads to use
@@ -106,7 +115,7 @@ public class Pipeline {
 
 		if (propsPath != null)
 			setPropertiesPath(propsPath);
-
+		
 		initializeLogger();
 		loadProperties();	
 	}
@@ -350,6 +359,7 @@ public class Pipeline {
 		primaryLogger.info("XML Document found and parsed, attempting to read objects");
 				
 		handler = new ObjectHandler(this, xmlDoc);
+		handler.setClassLoader(loader);
 		
 		//Set the project home field
 		String projHome = props.getProperty(PROJECT_HOME);
@@ -376,7 +386,7 @@ public class Pipeline {
 				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());
 			}
 			
-			
+			initialized = true;
 		}
 
 	
@@ -406,9 +416,11 @@ public class Pipeline {
 		startTime = new Date();
 		
 		primaryLogger.info("Executing pipeline");
+		executeStarted = true;
 		
 		for(Operator op : handler.getOperatorList()) {
 			try {
+				currentOperator = op;
 				Date opStart = new Date();
 				fireOperatorBeginning(op);
 				op.setAttribute(START_TIME, "" + opStart.getTime());
@@ -430,12 +442,44 @@ public class Pipeline {
 			}
 		}
 		
+		executeCompleted = true;
 		firePipelineFinished();
 		long endTime = System.currentTimeMillis();
 		
 		primaryLogger.info("Finished executing all operators, pipeline is done. \n Total elapsed time " + ElapsedTimeFormatter.getElapsedTime(startTime.getTime(), endTime ));
 	}
 	
+	/**
+	 * Obtain the currently executing operator. This is null until .execute() is called. 
+	 * @return
+	 */
+	public Operator getCurrentOperator() {
+		return currentOperator;
+	}
+	
+	/**
+	 * True if initialize() has been called
+	 * @return
+	 */
+	public boolean isInitialized() {
+		return initialized;
+	}
+	
+	/**
+	 * True if execute() has been called
+	 * @return
+	 */
+	public boolean isExecuteStarted() {
+		return executeStarted;
+	}
+	
+	/**
+	 * True if all operators have completed execution. 
+	 * @return
+	 */
+	public boolean isExecuteCompleted() {
+		return executeCompleted;
+	}
 	
 	/**
 	 * Add a new listener to be notified of various pipeline events
@@ -504,7 +548,9 @@ public class Pipeline {
 		}
 	}
 	
-	
+	public void setClassLoader(ClassLoader loader) {
+		this.loader = loader;
+	}
 	
 	public static void main(String[] args) {
 		
@@ -589,6 +635,10 @@ public class Pipeline {
 	
 	
 	private List<PipelineListener> listeners = new ArrayList<PipelineListener>();
+	private Operator currentOperator = null;
+	private boolean initialized = false;
+	private boolean executeStarted = false;
+	private boolean executeCompleted = false;
 
 
 }

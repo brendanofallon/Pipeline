@@ -10,13 +10,13 @@ import java.util.Map;
  */
 public class AnalysisSettings {
 
-	List<String> genes = null;
-	Map<String, Integer> goTerms = null;
-	Map<String, Integer> summaryTerms = null;
-	Integer graphSize = null;
-	String rootPath = null;
-	String pathToVCF = null;
-	String prefix = null;
-	String pathToPipelineProperties = null;
+	public List<String> genes = null;
+	public Map<String, Integer> goTerms = null;
+	public Map<String, Integer> summaryTerms = null;
+	public Integer graphSize = null;
+	public String rootPath = null;
+	public String pathToVCF = null;
+	public String prefix = null;
+	public String pathToPipelineProperties = null;
 	
 }

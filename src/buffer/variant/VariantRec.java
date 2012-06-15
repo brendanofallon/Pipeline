@@ -502,10 +502,6 @@ public class VariantRec {
 	public static final String POLYPHEN_SCORE = "pp.score";
 	public static final String MT_SCORE = "mt.score";
 	public static final String GERP_SCORE = "gerp.score";
-	public static final String SIFT_QUARTILE = "sift.quartile";
-	public static final String MT_QUARTILE = "mt.quartile";
-	public static final String POLYPHEN_QUARTILE = "pp.quartile";
-	public static final String PHYLOP_QUARTILE = "phylop.quartile";
 	public static final String PHYLOP_SCORE = "phylop.score";
 	public static final String VARIANT_TYPE = "variant.type";
 	public static final String EXON_FUNCTION = "exon.function";
@@ -524,6 +520,7 @@ public class VariantRec {
 	public static final String GO_PROCESS = "go.process";
 	public static final String GO_COMPONENT = "go.component";
 	public static final String GO_SCORE = "go.score";
+	public static final String GO_HITS = "go.hits";
 	public static final String GO_EFFECT_PROD = "go.effect.prod";
 	public static final String SUMMARY_SCORE = "summary.score";
 	public static final String GENOTYPE_QUALITY = "genotype.quality";

@@ -104,8 +104,8 @@ public class GeneSummaryRanker extends Annotator {
 				line = reader.readLine();
 				continue;
 			}
-			Integer score = Integer.parseInt(toks[1]);
-			rankingMap.put(toks[0], score);
+			Integer score = Integer.parseInt(toks[1].trim());
+			rankingMap.put(toks[0].trim().toLowerCase(), score);
 			line = reader.readLine();
 		}
 	}

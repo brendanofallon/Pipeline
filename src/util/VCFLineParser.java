@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.logging.Logger;
 
 import pipeline.Pipeline;
@@ -21,7 +23,6 @@ import buffer.variant.VariantRec;
  */
 public class VCFLineParser implements VariantLineReader {
 
-		private File file;
 		private BufferedReader reader;
 		private int currentLineNumber = -1;
 		private String currentLine = null;
@@ -35,16 +36,25 @@ public class VCFLineParser implements VariantLineReader {
 		private int sampleColumn = -1; //Column that stores information for the given sample
 		
 		public VCFLineParser(File file, String sample) throws IOException {
-			this.file = file;
 			this.reader = new BufferedReader(new FileReader(file));
 			currentLine = reader.readLine();
 			this.sample = sample; //Sample must be specified before header is read
 			readHeader();
-
+		}
+		
+		/**
+		 * Create a VCFLineReader to read variants from the given input stream
+		 * @param stream
+		 * @throws IOException
+		 */
+		public VCFLineParser(InputStream stream) throws IOException {
+			this.reader = new BufferedReader(new InputStreamReader(stream));
+			currentLine = reader.readLine();
+			sampleColumn = 9; //First column with info, this is the default when no sample is specified
+			readHeader();
 		}
 		
 		public VCFLineParser(File file) throws IOException {
-			this.file = file;
 			this.reader = new BufferedReader(new FileReader(file));
 			currentLine = reader.readLine();
 			sampleColumn = 9; //First column with info, this is the default when no sample is specified

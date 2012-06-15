@@ -2,6 +2,7 @@ package buffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -76,8 +77,12 @@ public class GeneInteractionGraph extends PipelineObject {
 
 
 	private List<String> parseGenes(String genesAttr) {
-		String[] arr = genesAttr.split("\t");
-		return Arrays.asList(arr);
+		String[] arr = genesAttr.split(",");
+		List<String> genes = new ArrayList<String>();
+		for(int i=0; i<arr.length; i++) {
+			genes.add( arr[i].trim().toUpperCase() );
+		}
+		return genes;
 	}
 
 

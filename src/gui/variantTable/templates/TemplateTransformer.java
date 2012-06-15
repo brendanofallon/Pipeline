@@ -74,6 +74,9 @@ public class TemplateTransformer {
 			for(String key : substitutions.keySet()) {
 				String tag = keyToTag(key);
 				String repStr = substitutions.get(key);
+				if (repStr == null) {
+					throw new IllegalArgumentException("Found null value for key:" + key);
+				}
 				tLine = tLine.replace(tag, repStr);
 				
 			}

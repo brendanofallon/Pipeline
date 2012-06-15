@@ -40,7 +40,12 @@ public class RankingService {
 	//Path to analysis template that stores the steps of the analysis
 	public static final String ANALYSIS_TEMPLATE_PATH = "variantTable/templates/analysis_template.xml"; 
 	
+
 	
+	public static RankingServiceJob submitRankingJob(AnalysisSettings settings) throws IOException, ParserConfigurationException, SAXException {
+		return submitRankingJob(settings, null);
+	}
+
 	/**
 	 * Create a new RankingServiceJob that can conduct a ranking analysis and produce a RankingResults
 	 * object to store the results. Note that the job is ready to run, but not running yet. Call
@@ -52,12 +57,14 @@ public class RankingService {
 	 * @throws ParserConfigurationException
 	 * @throws SAXException
 	 */
-	public static RankingServiceJob submitRankingJob(AnalysisSettings settings) throws IOException, ParserConfigurationException, SAXException {
+	public static RankingServiceJob submitRankingJob(AnalysisSettings settings, ClassLoader loader) throws IOException, ParserConfigurationException, SAXException {
 		Map<String, String> substitutions = createSubsFromSettings(settings);
 		
 		Document inputDoc = TemplateTransformer.transformTemplate( getTemplateInputStream(), substitutions);
 		
 		Pipeline pipeline = new Pipeline(inputDoc, settings.pathToPipelineProperties);
+		if (loader != null)
+			pipeline.setClassLoader(loader);
 		
 		pipeline.setProperty(Pipeline.PROJECT_HOME, settings.rootPath + System.getProperty("file.separator"));
 

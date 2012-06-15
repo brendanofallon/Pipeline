@@ -189,6 +189,11 @@ public class PubmedRanker extends Annotator {
 		String title = rec.getTitle();
 		String abs = rec.getAbstract();
 		
+		if (title != null)
+			title = title.toLowerCase();
+		if (abs != null)
+			abs = abs.toLowerCase();
+		
 		double score = 0;
 		for(String term : rankingMap.keySet()) {
 			if (title != null && title.contains(term)) {
@@ -218,8 +223,8 @@ public class PubmedRanker extends Annotator {
 				line = reader.readLine();
 				continue;
 			}
-			Integer score = Integer.parseInt(toks[1]);
-			rankingMap.put(toks[0], score);
+			Integer score = Integer.parseInt(toks[1].trim());
+			rankingMap.put(toks[0].trim().toLowerCase(), score);
 			line = reader.readLine();
 		}
 	}

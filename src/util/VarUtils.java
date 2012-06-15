@@ -1089,7 +1089,7 @@ public class VarUtils {
 							passes = false;
 						}
 						
-						if (var.getAnnotation(VariantRec.OMIM_ID) != null || var.getAnnotation(VariantRec.HGMD_INFO) != null) {
+						if ((var.getAnnotation(VariantRec.OMIM_ID) != null && var.getAnnotation(VariantRec.OMIM_ID).length()>3) || (var.getAnnotation(VariantRec.HGMD_INFO) != null && var.getAnnotation(VariantRec.HGMD_INFO).length()>3)) {
 							passes = true;
 						}
 						

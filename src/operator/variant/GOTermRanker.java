@@ -49,30 +49,34 @@ public class GOTermRanker extends Annotator {
 	
 	private double computeScore(VariantRec var) {
 
-		String goComponent = var.getAnnotation(VariantRec.GO_COMPONENT);
-		String goProcess = var.getAnnotation(VariantRec.GO_PROCESS);
-		String goFunction = var.getAnnotation(VariantRec.GO_FUNCTION);
+		String goComponent = var.getAnnotation(VariantRec.GO_COMPONENT).toLowerCase();
+		String goProcess = var.getAnnotation(VariantRec.GO_PROCESS).toLowerCase();
+		String goFunction = var.getAnnotation(VariantRec.GO_FUNCTION).toLowerCase();
 		
 		double score = 0;
 		
+		StringBuilder hitStr = new StringBuilder();
 		for(String term : rankingMap.keySet()) {
 			
 			if (goComponent != null && goComponent.contains(term)) {
 				score += rankingMap.get(term);
+				hitStr.append(term + "(" + score + "), ");
 			}
 			
 			if (goProcess != null && goProcess.contains(term)) {
 				score += rankingMap.get(term);
+				hitStr.append(term + "(" + score + "), ");
 			}
 			
 			if (goFunction != null && goFunction.contains(term)) {
 				score += rankingMap.get(term);
+				hitStr.append(term + "(" + score + "), ");
 			}
 			
 		}
 		
 		if (score > 0)
-			System.out.println("Found go score hit: " + var.toSimpleString() + " \n score: " + score);
+			var.addAnnotation(VariantRec.GO_HITS, hitStr.toString());
 		return score;
 	}
 
@@ -91,8 +95,8 @@ public class GOTermRanker extends Annotator {
 				System.err.println("Warning : could not parse GO term from this line: " + line);
 			}
 			else {
-				Integer score = Integer.parseInt(toks[1]);
-				rankingMap.put(toks[0], score);
+				Integer score = Integer.parseInt(toks[1].trim());
+				rankingMap.put(toks[0].trim().toLowerCase(), score);
 			}
 			line = reader.readLine();
 		}
