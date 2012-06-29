@@ -75,7 +75,8 @@ public class FileAnnotator extends PipelineObject {
 			line = reader.readLine();
 		}
 		
-		Logger.getLogger(Pipeline.primaryLoggerName).info(errorVars + " of " + totalVars + " could not be associated with a variant record");
+		if (errorVars > 0)
+			Logger.getLogger(Pipeline.primaryLoggerName).info(errorVars + " of " + totalVars + " could not be associated with a variant record");
 		if (errorVars > totalVars*0.01) {
 			throw new IllegalArgumentException("Too many variants not found for file annotation, " + errorVars + " of " + totalVars + " total variants");
 		}

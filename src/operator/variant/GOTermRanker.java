@@ -49,15 +49,21 @@ public class GOTermRanker extends Annotator {
 	
 	private double computeScore(VariantRec var) {
 
-		String goComponent = var.getAnnotation(VariantRec.GO_COMPONENT).toLowerCase();
-		String goProcess = var.getAnnotation(VariantRec.GO_PROCESS).toLowerCase();
-		String goFunction = var.getAnnotation(VariantRec.GO_FUNCTION).toLowerCase();
+		String goComponent = var.getAnnotation(VariantRec.GO_COMPONENT);
+		if (goComponent != null) 
+			goComponent = goComponent.toLowerCase();
+		String goProcess = var.getAnnotation(VariantRec.GO_PROCESS);
+		if (goProcess != null)
+			goProcess = goProcess.toLowerCase();
+		
+		String goFunction = var.getAnnotation(VariantRec.GO_FUNCTION);
+		if (goFunction != null)
+			goFunction = goFunction.toLowerCase();
 		
 		double score = 0;
 		
 		StringBuilder hitStr = new StringBuilder();
 		for(String term : rankingMap.keySet()) {
-			
 			if (goComponent != null && goComponent.contains(term)) {
 				score += rankingMap.get(term);
 				hitStr.append(term + "(" + score + "), ");
@@ -72,7 +78,6 @@ public class GOTermRanker extends Annotator {
 				score += rankingMap.get(term);
 				hitStr.append(term + "(" + score + "), ");
 			}
-			
 		}
 		
 		if (score > 0)

@@ -11,7 +11,7 @@ import buffer.variant.VariantRec;
  */
 public class ExcelWriter extends VariantPoolWriter {
 
-	String[] keys = new String[]{VariantRec.GENE_NAME,
+	public final static String[] keys = new String[]{VariantRec.GENE_NAME,
 								 VariantRec.NM_NUMBER,
 								 VariantRec.CDOT,
 								 VariantRec.PDOT,
@@ -22,6 +22,7 @@ public class ExcelWriter extends VariantPoolWriter {
 								 VariantRec.GO_SCORE,
 								 VariantRec.SUMMARY_SCORE,
 								 VariantRec.INTERACTION_SCORE,
+								 VariantRec.GENE_RELEVANCE,
 								 VariantRec.GO_EFFECT_PROD,
 								 VariantRec.PUBMED_SCORE,
 								 VariantRec.POP_FREQUENCY,
@@ -38,7 +39,9 @@ public class ExcelWriter extends VariantPoolWriter {
 								 VariantRec.POLYPHEN_SCORE, 
 								 VariantRec.PHYLOP_SCORE, 
 								 VariantRec.MT_SCORE,
-								 VariantRec.GERP_SCORE  };
+								 VariantRec.GERP_SCORE,
+								 VariantRec.LRT_SCORE,
+								 VariantRec.SIPHY_SCORE};
 	
 	@Override
 	public void writeHeader(PrintStream outputStream) {

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.SwingWorker;
@@ -16,6 +17,7 @@ import operator.qc.BamMetrics;
 import operator.qc.BamMetrics.BAMMetrics;
 import operator.variant.CompareVCF;
 import operator.variant.CompoundHetFinder;
+import operator.variant.ExcelWriter;
 import operator.variant.FPComputer;
 
 import buffer.BAMFile;
@@ -26,6 +28,7 @@ import buffer.variant.CSVLineReader;
 import buffer.variant.GeneLineReader;
 import buffer.variant.SimpleLineReader;
 import buffer.variant.VariantFilter;
+import buffer.variant.VariantLineReader;
 import buffer.variant.VariantPool;
 import buffer.variant.GenePool;
 import buffer.variant.VarFilterUtils;
@@ -187,7 +190,7 @@ public class VarUtils {
 	 * @param pools
 	 * @throws IOException 
 	 */
-	public static void compareGeneSets(List<File> variantFiles) throws IOException {
+	public static void compareGeneSets(int cutoff, List<File> variantFiles) throws IOException {
 		
 		GenePool genePool = new GenePool();
 		for(File file : variantFiles) {
@@ -198,8 +201,22 @@ public class VarUtils {
 			int found = 0;
 			for(String contig : vPool.getContigs()) {
 				for(VariantRec var : vPool.getVariantsForContig(contig)) {
-					Double prod = var.getProperty(VariantRec.GO_EFFECT_PROD); 
-					if (prod != null && prod > 50) {
+					//Double prod = var.getProperty(VariantRec.GO_EFFECT_PROD);
+					boolean passes = false;
+					
+					String func = var.getAnnotation(VariantRec.EXON_FUNCTION); 
+					if (func != null && (func.contains("nonsyn") 
+							|| func.contains("splic")
+							|| func.contains("stopgain")
+							|| func.contains("stoploss")
+							|| func.contains("frameshift"))) {
+						
+						Double freq = var.getProperty(VariantRec.POP_FREQUENCY);
+						if (freq == null || freq < 0.01)
+							passes = true;
+					}
+					
+					if (passes) {
 						genePool.addRecordNoWarn(var);
 						found++;
 					}
@@ -222,7 +239,6 @@ public class VarUtils {
 		annoKeys.add(VariantRec.PDOT);
 		annoKeys.add(VariantRec.RSNUM);
 		annoKeys.add(VariantRec.POP_FREQUENCY);
-		annoKeys.add(VariantRec.EXOMES_FREQ);
 		annoKeys.add(VariantRec.EFFECT_PREDICTION2);
 		annoKeys.add(VariantRec.SUMMARY_SCORE);
 		annoKeys.add(VariantRec.PUBMED_SCORE);
@@ -234,12 +250,25 @@ public class VarUtils {
 		annoKeys.add(VariantRec.MT_SCORE);
 		annoKeys.add(VariantRec.PHYLOP_SCORE);
 		annoKeys.add(VariantRec.GERP_SCORE);
+		annoKeys.add(VariantRec.LRT_SCORE);
+		annoKeys.add(VariantRec.SIPHY_SCORE);
 		
-		
-		genePool.listGenesWithMultipleVars(System.out, 2, annoKeys);
+		genePool.listGenesWithMultipleVars(System.out, cutoff, annoKeys);
 		
 	}
 
+
+	private static VariantLineReader getReader(String filename) throws IOException {
+		VariantLineReader reader = null;
+		if (filename.endsWith("vcf")) {
+			reader = new VCFLineParser(new File(filename));
+		}
+		if (filename.endsWith("csv")) {
+			reader = new CSVLineReader(new File(filename));
+		}
+		return reader;
+	}
+	
 	/**
 	 * Compare the variants in the given files and emit a bunch of info describing their 
 	 * differences
@@ -816,22 +845,7 @@ public class VarUtils {
 				}
 				
 				List<String> annos = new ArrayList<String>();
-				annos.add(VariantRec.GENE_NAME);
-				annos.add(VariantRec.NM_NUMBER);
-				annos.add(VariantRec.EXON_FUNCTION);
-				annos.add(VariantRec.VARIANT_TYPE);
-				annos.add(VariantRec.RSNUM);
-				annos.add(VariantRec.POP_FREQUENCY);
-				annos.add(VariantRec.EXOMES_FREQ);
-				annos.add(VariantRec.EFFECT_PREDICTION);
-				annos.add(VariantRec.EFFECT_PREDICTION2);
-				annos.add(VariantRec.SUMMARY_SCORE);
-				annos.add(VariantRec.GO_SCORE);
-				annos.add(VariantRec.GO_EFFECT_PROD);
-				annos.add(VariantRec.VQSR);
-				annos.add(VariantRec.CDOT);
-				annos.add(VariantRec.PDOT);
-				annos.add(VariantRec.HGMD_INFO);
+				annos.addAll(Arrays.asList(ExcelWriter.keys));
 
 				PrintStream outputStream = System.out;
 
@@ -1001,12 +1015,24 @@ public class VarUtils {
 			}
 			
 			List<File> varFiles = new ArrayList<File>();
-			for(int i=1; i<args.length; i++) {
+			
+			int cutoff = 2;
+			int startIndex = 1;
+			try {
+				cutoff = Integer.parseInt(args[1]);
+				startIndex = 2;
+				System.err.println("Found cutoff : " + cutoff);
+			}
+			catch (NumberFormatException nfe) {
+				
+			}
+			
+			for(int i=startIndex; i<args.length; i++) {
 				varFiles.add(new File(args[i]));
 			}
 			
 			try {
-				compareGeneSets(varFiles);
+				compareGeneSets(cutoff, varFiles);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -1067,15 +1093,20 @@ public class VarUtils {
 				else
 					pool = getPool(new File(args[1]));
 				
-				//List<VariantRec> novelVars = pool.filterPool(VarFilterUtils.getPopFreqFilter(frequencyCutoff));
-				
 				for(String contig : pool.getContigs()) {
 					for(VariantRec var : pool.getVariantsForContig(contig)) {
 						boolean passes = false;
 						
 						if (var.getProperty(VariantRec.POP_FREQUENCY) == null || (var.getProperty(VariantRec.POP_FREQUENCY) != null && var.getProperty(VariantRec.POP_FREQUENCY) < frequencyCutoff)) {
 							passes = true;
+							
+							//If variant was found in ESP5400 and with a relatively high frequency, it doesn't pass
+							if (var.getProperty(VariantRec.EXOMES_FREQ) != null && var.getProperty(VariantRec.EXOMES_FREQ) > frequencyCutoff) {
+								passes = false;
+							}
 						}
+						
+						
 						
 						String varType = var.getAnnotation(VariantRec.VARIANT_TYPE);
 						String exonFunc = var.getAnnotation(VariantRec.EXON_FUNCTION);
@@ -1103,6 +1134,26 @@ public class VarUtils {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			return;
+		}
+		
+		//Extract property or annotation and emit to stdout
+		if (firstArg.equals("ex") || firstArg.equals("extract")) {
+			String prop = args[1];
+			VariantPool pool;
+			try {
+				pool = getPool(new File(args[2]));
+				for(String contig : pool.getContigs()) {
+					for(VariantRec var : pool.getVariantsForContig(contig)) {
+						String val = var.getPropertyOrAnnotation(prop);
+						System.out.println(val);
+					}
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 			return;
 		}
 		
@@ -1139,7 +1190,7 @@ public class VarUtils {
 						}
 						
 						if (varVal == null) {
-							filteredVars.addRecord(var);
+							//filteredVars.addRecord(var);
 						}
 						else {
 							if ( (!greater) && varVal < val) {
@@ -1162,7 +1213,7 @@ public class VarUtils {
 				annoKeys.add(VariantRec.PDOT);
 				annoKeys.add(VariantRec.VQSR);
 				annoKeys.add(VariantRec.DEPTH);
-				annoKeys.add(VariantRec.VAR_DEPTH);
+				annoKeys.add(VariantRec.PUBMED_SCORE);
 				annoKeys.add(prop);
 				if (greater)
 					System.err.println("Found " + filteredVars.size() + " vars with " + prop + " above " + val);
@@ -1177,6 +1228,51 @@ public class VarUtils {
 			return;
 		}
 		
+		
+		if (firstArg.equals("combine") || firstArg.equals("union")) {
+			if (args.length < 2) {
+				System.out.println("Enter the names of one or more variant (vcf or csv) files to combine");
+				return;
+			}
+			
+			try {
+				VariantPool pool = getPool(new File(args[1]));
+				for(int i=2; i<args.length; i++) {
+					System.err.println("Adding file : " + args[i]);
+					VariantLineReader reader = getReader(args[i]);
+					do {
+						VariantRec var = reader.toVariantRec();
+						pool.addRecordNoSort(var);
+					} while(reader.advanceLine());
+					pool.sortAllContigs();
+				}
+				
+				
+				PrintStream outputStream = System.out;
+				
+				List<String> annoKeys = new ArrayList<String>();
+				annoKeys.add(VariantRec.RSNUM);
+				annoKeys.add(VariantRec.POP_FREQUENCY);
+				annoKeys.add(VariantRec.GENE_NAME);
+				annoKeys.add(VariantRec.VARIANT_TYPE);
+				annoKeys.add(VariantRec.EXON_FUNCTION);
+				annoKeys.add(VariantRec.CDOT);
+				annoKeys.add(VariantRec.PDOT);
+				annoKeys.add(VariantRec.VQSR);
+				annoKeys.add(VariantRec.DEPTH);
+				annoKeys.add(VariantRec.VAR_DEPTH);
+				annoKeys.add(VariantRec.FALSEPOS_PROB);
+				annoKeys.add(VariantRec.FS_SCORE);
+				pool.listAll(outputStream, annoKeys);
+				outputStream.close();
+				System.err.println("Final pool has " + pool.size() + " variants");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			return;
+		}
 		
 		if (firstArg.equals("summary") || firstArg.equals("sum")) {
 			if (args.length < 2) {
@@ -1304,44 +1400,5 @@ public class VarUtils {
 		emitUsage();
 	}
 	
-
-
-
-	class ReadVariants extends SwingWorker {
-		
-		private final File inputFile;
-		private VariantPool variants = null;
-		private boolean done = false;
-		
-		public ReadVariants(File inputFile) {
-			this.inputFile = inputFile;
-		}
-		
-		public VariantPool getVariantPool() {
-			if (! isDone()) {
-				throw new IllegalArgumentException("Not done yet!");
-			}
-			
-			return variants;
-		}
-		
-		@Override
-		protected Object doInBackground() throws Exception {
-			if (inputFile.getName().endsWith(".csv")) {
-				variants = new VariantPool(new CSVFile(inputFile));	
-			} else {
-				if (inputFile.getName().endsWith(".vcf")) {
-					variants = new VariantPool(new VCFFile(inputFile));	
-				}
-				else {
-					throw new IllegalArgumentException("Unrecognized file suffix for input file: " + inputFile.getName());
-				}
-			}
-			
-			done = true;
-			return null;
-		}
-		
-	}
 }
 

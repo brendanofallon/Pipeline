@@ -503,6 +503,8 @@ public class VariantRec {
 	public static final String MT_SCORE = "mt.score";
 	public static final String GERP_SCORE = "gerp.score";
 	public static final String PHYLOP_SCORE = "phylop.score";
+	public static final String LRT_SCORE = "lrt.score";
+	public static final String SIPHY_SCORE = "siphy.score";
 	public static final String VARIANT_TYPE = "variant.type";
 	public static final String EXON_FUNCTION = "exon.function";
 	public static final String EXON_NUMBER = "exon.number";
@@ -516,6 +518,7 @@ public class VariantRec {
 	public static final String altB = "altB"; //Alternate allele in other pool when performing intersections
 	public static final String RSNUM = "rsnum"; // rs# from dbSNP
 	public static final String OMIM_ID = "omim.id";
+	public static final String GENE_RELEVANCE = "relevance.score";
 	public static final String GO_FUNCTION = "go.function";
 	public static final String GO_PROCESS = "go.process";
 	public static final String GO_COMPONENT = "go.component";

@@ -8,6 +8,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
+
+import pipeline.Pipeline;
 
 /**
  * A class that stores Gene Summaries that have been downloaded from NCBI (using the FetchGeneInfo class)
@@ -28,21 +31,37 @@ public class CachedGeneSummaryDB {
 	private FetchGeneInfo fetcher = new FetchGeneInfo(); //Fetches gene summaries from ncbi
     private GeneInfoDB geneInfo; //Stores symbol / refgene id information so we can look genes up by symbol
     
-    public static final int expirationDays = 30; // Force re-downloading of records older than one month
+    public static final int expirationDays = 60; // Force re-downloading of records older than a few months
     private int missesSinceLastWrite = 0; //Number of cache misses since last writeToFile
     
+    private boolean prohibitNewDownloads = false; //If true, nothing new will be downloaded
+    
 	public CachedGeneSummaryDB() throws IOException {
-	    this("/home/brendan/resources/Homo_sapiens.gene_info");
+	    this( GeneInfoDB.defaultDBPath );
 	}
 
 	public CachedGeneSummaryDB(String pathToGeneInfoFile) throws IOException {
-	    geneInfo = new GeneInfoDB(new File(pathToGeneInfoFile));
+	    geneInfo = GeneInfoDB.getDB();
+	    if (geneInfo == null)
+	    	geneInfo = new GeneInfoDB(new File(pathToGeneInfoFile));
 	    File geneInfoFile = new File(pathToGeneInfoFile);
 	    File parentDir = geneInfoFile.getParentFile();
 	    cacheFilePath =  parentDir + System.getProperty("file.separator") + ".geneinfocache";
+	    
+	    Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+	    logger.info("Creating gene summary cache from : " + pathToGeneInfoFile + " and using cache in : " + cacheFilePath);
+	    
 		buildMapFromFile();
 	}
 	
+	/**
+	 * If true, nothing new will be downloaded and only local cache will be used
+	 * @param prohibitNewDownloads
+	 */
+	public void setProhibitNewDownloads(boolean prohibitNewDownloads) {
+		this.prohibitNewDownloads = prohibitNewDownloads;
+	}
+
 	/**
 	 * Obtain the full string containing ncbi's summary for the given gene symbol (i.e. 'RASA1'). 
 	 * If the summary is already in the local cache and has not expired, just return it. If not, we 
@@ -50,7 +69,17 @@ public class CachedGeneSummaryDB {
 	 * @param symbol
 	 * @return
 	 */
-	public String getSummaryForGene(String symbol) {
+	public String getSummaryForGene(String syn) {
+		if (syn==null || syn.length()<2 || syn.length() > 8) {
+			return null;
+		}
+		
+		String symbol = geneInfo.symbolForSynonym(syn);
+		if (symbol == null) {
+			//System.err.println("** No official symbol found for gene : " + syn + " : cannot find summary");
+			return null;
+		}
+		
 		GeneSummary summary = map.get(symbol);
 		
 		//Sweet, cache hit. Return the info right away
@@ -66,29 +95,30 @@ public class CachedGeneSummaryDB {
 			return null;
 		}
 		
-        try {
+		if (! prohibitNewDownloads) {
+			try {
 
-			System.out.println("Fetching summary from NCBI for gene : " + symbol);
-			GeneRecord rec = fetcher.fetchInfoForGene(id);
-			String summaryString = rec.getSummary();
-			//Sanity check
-			if (! rec.getSymbol().equals(symbol)) {
-				throw new IllegalArgumentException("Obtained symbol does not match requested symbol!");
+				//System.out.println("Fetching summary from NCBI for gene : " + symbol);
+				GeneRecord rec = fetcher.fetchInfoForGene(id);
+				String summaryString = rec.getSummary();
+				//Sanity check
+				if (! rec.getSymbol().equals(symbol)) {
+					throw new IllegalArgumentException("Obtained symbol does not match requested symbol!");
+				}
+
+				summary= new GeneSummary();
+				summary.symbol = symbol;
+				summary.date = "" + System.currentTimeMillis();
+				summary.summary = summaryString;
+				map.put(symbol, summary);
+				missesSinceLastWrite++;
+				if (missesSinceLastWrite > 10)
+					writeMapToFile();
+				return summaryString;
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-			
-			summary= new GeneSummary();
-			summary.symbol = symbol;
-			summary.date = "" + System.currentTimeMillis();
-			summary.summary = summaryString;
-			map.put(symbol, summary);
-			missesSinceLastWrite++;
-			if (missesSinceLastWrite > 10)
-				writeMapToFile();
-			return summaryString;
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
-        
 		return null;        
 		
 	}

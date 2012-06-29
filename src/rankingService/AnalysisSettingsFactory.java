@@ -8,12 +8,13 @@ package rankingService;
  */
 public class AnalysisSettingsFactory {
 
+	public static final String propsPath = System.getProperty("user.home") + "/.pipelineprops.xml";
 	
 	public static AnalysisSettings getDefaultAnalysisSettings() {
 		AnalysisSettings settings = new AnalysisSettings();
 		
 		settings.graphSize = 200;
-		settings.pathToPipelineProperties = "/home/brendan/.pipelineprops.xml";
+		settings.pathToPipelineProperties = propsPath;
 
 		
 		return settings;

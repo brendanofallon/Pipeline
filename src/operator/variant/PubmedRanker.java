@@ -5,9 +5,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -20,6 +24,7 @@ import buffer.TextBuffer;
 import buffer.variant.VariantRec;
 import operator.OperationFailedException;
 import operator.annovar.Annotator;
+import pipeline.Pipeline;
 import pipeline.PipelineObject;
 
 /**
@@ -35,6 +40,7 @@ public class PubmedRanker extends Annotator {
 	public static final String DISABLE_CACHE_WRITES = "disable.cache.writes";
 	public static final String GENE_INFO_PATH = "gene.info.path";
 	public static final String PUBMED_PATH = "pubmed.path";
+	public static final String NO_DOWNLOADS = "no.downloads";
 
 	CachedPubmedAbstractDB abstractDB = null; //DB for abstracts that we query
 	GenePubMedDB geneToPubmed = null; //Look up pub med id's associated with a certain gene
@@ -42,6 +48,7 @@ public class PubmedRanker extends Annotator {
 	TextBuffer termsFile = null; //Stores key terms we use to score pub med records (abstracts)
 	Map<String, Integer> rankingMap = null;
 	private boolean disableCacheWrites = false; //Disable writing of new variants to cache, useful if we have multiple instances running
+	
 	
 	
 	/**
@@ -59,10 +66,33 @@ public class PubmedRanker extends Annotator {
 			Boolean disable = Boolean.parseBoolean(disableStr);
 			disableCacheWrites = disable;
 		}
+			
+		try {
+			if (abstractDB == null) {
+				String pathToPubmedDB = System.getProperty("user.home") + "/resources/gene2pubmed_human";
+				String pubmedAttr = this.getAttribute(PUBMED_PATH);
+				if (pubmedAttr != null) {
+					pathToPubmedDB = pubmedAttr;
+				}
+				
+				abstractDB = CachedPubmedAbstractDB.getDB(pathToPubmedDB);
+				
+
+				String dlAttr = this.getAttribute(NO_DOWNLOADS);
+				if (dlAttr != null) {
+					Logger.getLogger(Pipeline.primaryLoggerName).info("Abstract ranker is setting prohibit downloads to : " + dlAttr);
+					Boolean prohibitDLs = Boolean.parseBoolean(dlAttr);
+					abstractDB.setProhibitNewDownloads(prohibitDLs);
+				}
+			}
+		} catch (IOException e) {
+			throw new IllegalStateException("IO error reading cached abstract db : " + e.getMessage());
+		}
+
 		
 		super.performOperation();
 		
-		if (abstractDB != null) {
+		if (abstractDB != null && abstractDB.getMapSize() > 500) {
 			try {
 				abstractDB.writeMapToFile();
 			} catch (IOException e) {
@@ -74,19 +104,6 @@ public class PubmedRanker extends Annotator {
 	
 	@Override
 	public void annotateVariant(VariantRec var) {
-		if (abstractDB == null) {
-			try {
-				String pathToPubmedDB = "/home/brendan/resources/gene2pubmed_human";
-				String pubmedAttr = this.getAttribute(PUBMED_PATH);
-				if (pubmedAttr != null) {
-					pathToPubmedDB = pubmedAttr;
-				}
-				abstractDB = new CachedPubmedAbstractDB(pathToPubmedDB);
-			} catch (IOException e) {
-				throw new IllegalStateException("IO error reading cached abstract db : " + e.getMessage());
-			}
-		}
-		
 		if (rankingMap == null) {
 			try {
 				buildRankingMap();
@@ -98,12 +115,15 @@ public class PubmedRanker extends Annotator {
 		
 		if (geneInfo == null) {
 			try {
-				String geneInfoPath = "/home/brendan/resources/Homo_sapiens.gene_info";
+				String geneInfoPath = GeneInfoDB.defaultDBPath;
 				String geneInfoAttr = this.getAttribute(GENE_INFO_PATH);
 				if (geneInfoAttr != null) {
 					geneInfoPath = geneInfoAttr;
 				}
-				geneInfo = new GeneInfoDB(new File(geneInfoPath));
+				
+				geneInfo = GeneInfoDB.getDB();
+				if (geneInfo == null)
+					geneInfo = new GeneInfoDB(new File(geneInfoPath));
 			} catch (IOException e) {
 				throw new IllegalStateException("Error opening gene info file : " + e.getMessage());
 			}
@@ -117,19 +137,20 @@ public class PubmedRanker extends Annotator {
 		
 		if (geneToPubmed == null) {
 			try {
-				String pubmedPath = "/home/brendan/resources/gene2pubmed_human";
-				String pubmedAttr = this.getAttribute(PUBMED_PATH);
-				if (pubmedAttr != null) {
-					pubmedPath = pubmedAttr;
-				}
-				geneToPubmed = new GenePubMedDB(new File(pubmedPath));
+				geneToPubmed = GenePubMedDB.getDB(new File(System.getProperty("user.home") + "/resources/gene2pubmed_human"));
+				//String pubmedPath = System.getProperty("user.home") + "/resources/gene2pubmed_human";
+//				String pubmedAttr = this.getAttribute(PUBMED_PATH);
+//				if (pubmedAttr != null) {
+//					pubmedPath = pubmedAttr;
+//				}
+//				geneToPubmed = new GenePubMedDB(new File(pubmedPath));
 			} catch (IOException e) {
 				throw new IllegalStateException("Error opening gene2pubmed file : " + e.getMessage());
 			}
 		}
 		
 		
-		String idStr = geneInfo.idForSymbol(geneName);
+		String idStr = geneInfo.idForSymbolOrSynonym(geneName);
 		if (idStr == null) {
 			if (geneName.length() < 8)
 				System.err.println("Could not find gene id for symbol: " + geneName);
@@ -162,20 +183,50 @@ public class PubmedRanker extends Annotator {
 		
 		//System.out.println("Found " + records.size() + " records for " + pubmedIDs.size() + " ids for for gene : " + geneName);
 		//We take the *maximum* score found among all abstracts
-		Double maxScore = 0.0;
-		String maxHit = "-";
+		
+		int recordListSize = 10;
+		List<ScoredRecord> scoredRecs = new ArrayList<ScoredRecord>(recordListSize);
+		
+		//Double maxScore = 0.0;
+		//String maxHit = "-";
 		for(PubMedRecord rec : records) {
 			if (rec != null) {
-				Double abstractScore = computeScore( rec );	
-				if (abstractScore > maxScore) {
-					maxScore = abstractScore;
-					maxHit = rec.getTitle() + "," + rec.getCitation();
+				Double abstractScore = computeScore( rec );
+			
+				
+				if (abstractScore > 0) {
+					ScoredRecord sRec = new ScoredRecord();
+					sRec.score = abstractScore;
+					sRec.rec = rec;
+					scoredRecs.add(sRec);
+					Collections.sort(scoredRecs, new ScoreComparator());
+					while (scoredRecs.size() > recordListSize) {
+						scoredRecs.remove(scoredRecs.size()-1);
+					}
 				}
+				
+//				if (abstractScore > maxScore) {
+//					maxScore = abstractScore;
+//					maxHit = rec.getTitle() + "," + rec.getCitation();
+//				}
 			}
 		}
 		 
-		var.addProperty(VariantRec.PUBMED_SCORE, maxScore);
-		if (maxScore > 0) {
+		
+		Double finalScore = 0.0;
+		if (scoredRecs.size() > 0) {
+			for(int i=0; i<scoredRecs.size(); i++) {
+				double weight = Math.exp(-0.25 * i);
+				double rawScore = scoredRecs.get(i).score;
+				double modScore = weight*rawScore;
+				finalScore += modScore;
+			}
+		}
+		
+		var.addProperty(VariantRec.PUBMED_SCORE, finalScore);
+		if (scoredRecs.size() > 0) {
+			PubMedRecord rec = scoredRecs.get(0).rec;
+			String maxHit = rec.getTitle() + "," + rec.getCitation();
 			var.addAnnotation(VariantRec.PUBMED_HIT, maxHit);
 		}
 	}
@@ -203,6 +254,21 @@ public class PubmedRanker extends Annotator {
 				score += rankingMap.get(term);
 			}
 		}
+		
+		//Discount older papers
+		Double mod = 1.0;
+		Integer year = rec.getYear();
+		if (year != null) {
+			int age = Calendar.getInstance().get(Calendar.YEAR) - year;
+			if (age > 8)
+				mod = 0.75;
+			if (age > 12) {
+				mod = 0.5;
+			}
+			
+		}
+		score *= mod;
+		
 		return score;
 	}
 
@@ -224,7 +290,14 @@ public class PubmedRanker extends Annotator {
 				continue;
 			}
 			Integer score = Integer.parseInt(toks[1].trim());
+			if (toks[0].trim().length()<2) {
+				System.err.println("Warning : could not parse line for pubmed key terms : " + line);
+				line = reader.readLine();
+				continue;
+			}
+			//System.err.println("Ranking map adding term: " + toks[0].trim().toLowerCase() + " score:" + score);
 			rankingMap.put(toks[0].trim().toLowerCase(), score);
+			
 			line = reader.readLine();
 		}
 	}
@@ -242,5 +315,25 @@ public class PubmedRanker extends Annotator {
 				}
 			}
 		}
+	}
+	
+	
+	class ScoredRecord {
+		PubMedRecord rec;
+		double score;
+	}
+	
+	class ScoreComparator implements Comparator<ScoredRecord> {
+
+		@Override
+		public int compare(ScoredRecord arg0, ScoredRecord arg1) {
+			if (arg0.score == arg1.score)
+				return 0;
+			if (arg0.score < arg1.score)
+				return 1;
+			else 
+				return -1;
+		}
+		
 	}
 }

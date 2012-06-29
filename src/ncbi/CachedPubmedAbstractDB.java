@@ -12,12 +12,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import javax.xml.parsers.ParserConfigurationException;
 
 import ncbi.PubMedFetcher.XMLParseException;
 
 import org.xml.sax.SAXException;
+
+import pipeline.Pipeline;
 
 /**
  * Analagous to CachedGeneSUmmaryDB, this stores pubmed abstract information locally so we're not always
@@ -35,28 +38,81 @@ public class CachedPubmedAbstractDB {
     private GenePubMedDB genePubMed; //Stores gene-pubmed id mapping
     private int missesSinceLastWrite = 0; //Number of cache misses since last writeToFile
     
+    public static final String defaultDBPath = System.getProperty("user.home") + "/resources/gene2pubmed_human";
+    
+    private boolean prohibitNewDownloads = false; //Prevent new downloads if true
+    
+    private static CachedPubmedAbstractDB db = null;
+
+    public static CachedPubmedAbstractDB getDB(String pathToPubmedDB) throws IOException {
+    	if (db == null) {
+    		db = new CachedPubmedAbstractDB(pathToPubmedDB);
+    	}
+    	return db;
+    }
+    
+    public static CachedPubmedAbstractDB getDB() throws IOException {
+    	if (db == null) {
+    		db = new CachedPubmedAbstractDB(defaultDBPath);
+    	}
+    	return db;
+    }
+    
     public CachedPubmedAbstractDB(String pathToGene2PubmedFile) throws IOException {
+    	Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+    	logger.info("Creating NEW Pubmed abstract db");
+    	db = this;
 	    genePubMed = new GenePubMedDB(new File(pathToGene2PubmedFile));
 	    File pubmedFile = new File(pathToGene2PubmedFile);
 	    File baseDir = pubmedFile.getParentFile(); 
 	    cacheFilePath = baseDir + System.getProperty("file.separator") + ".pubmedcache";
+	    
+	    logger.info("Creating pubmed cache from : " + pathToGene2PubmedFile + " and using cache in : " + cacheFilePath);
+	    
 		buildMapFromFile();
+		logger.info("..done initializing pubmed cache");
 	}
     
 	public CachedPubmedAbstractDB() throws IOException {
-		this("/home/brendan/resources/gene2pubmed_human");
+		this( defaultDBPath );
 	}
 
+	/**
+	 * Get the number of entries in the map
+	 * @return
+	 */
+	public int getMapSize() {
+		if (map == null)
+			return 0;
+		else 
+			return map.size();
+	}
 	/**
 	 * Obtain a list of pubmed records for the given ids. If you're downloading lots of records
 	 * this is a lot more efficient than getting them one at a time. 
 	 * @param pubmedIDs
 	 * @return 
 	 */
-	public List<PubMedRecord> getRecordForIDs(List<Integer> pubmedIDs) {
+	public synchronized List<PubMedRecord> getRecordForIDs(List<Integer> pubmedIDs) {
 		return getRecordForIDs(pubmedIDs, false);
 	}
 	
+	/**
+	 * Whether or not we're set to download new records if there's not one in the local cache
+	 * @return
+	 */
+	public boolean isProhibitNewDownloads() {
+		return prohibitNewDownloads;
+	}
+
+	/**
+	 * Turn on/off downloading of new records if none are found in local cache
+	 * @param prohibitNewDownloads
+	 */
+	public void setProhibitNewDownloads(boolean prohibitNewDownloads) {
+		this.prohibitNewDownloads = prohibitNewDownloads;
+	}
+
 	/**
 	 * Obtain a list of pubmed records for the given ids. If you're downloading lots of records
 	 * this is a lot more efficient than getting them one at a time. 
@@ -64,7 +120,7 @@ public class CachedPubmedAbstractDB {
 	 * @param disableCacheWrites If true we will not write newly downloaded records to local cache
 	 * @return 
 	 */
-	public List<PubMedRecord> getRecordForIDs(List<Integer> pubmedIDs, boolean disableCacheWrites) {
+	public synchronized List<PubMedRecord> getRecordForIDs(List<Integer> pubmedIDs, boolean disableCacheWrites) {
 		
 		//Make a list of all the ids we need to grab
 		List<Integer> idsToGrab = new ArrayList<Integer>();
@@ -75,7 +131,7 @@ public class CachedPubmedAbstractDB {
 		}
 		
 		//Grab the list of ids in an efficient way
-		if (idsToGrab.size() > 0) {
+		if ((! prohibitNewDownloads) && idsToGrab.size() > 0) {
 			int recordsDownloaded = forceFetchIDs(idsToGrab);
 			missesSinceLastWrite += recordsDownloaded;
 		}
@@ -146,43 +202,43 @@ public class CachedPubmedAbstractDB {
 	 * @param symbol
 	 * @return
 	 */
-	public PubMedRecord getRecordForID(Integer pubmedID) {
+	public synchronized PubMedRecord getRecordForID(Integer pubmedID) {
 		PubMedRecord rec = map.get(pubmedID);
 		
 		//Sweet, cache hit. Return the info right away
 		if (rec != null) {
-			//System.out.println("Got cache hit for gene : " + symbol);
 			return rec;
 		}
 
-		
-        try {
-			//System.out.println("Fetching abstract #" + pubmedID);
-			
-			rec = fetcher.getPubMedRecordForID(pubmedID);
+		if (! prohibitNewDownloads) {
+			try {
+				rec = fetcher.getPubMedRecordForID(pubmedID);
 
-			//Sanity check
-			if (!(rec.pubMedID == pubmedID)) {
-				throw new IllegalArgumentException("Obtained pubmedID does not match requested ID!");
+				//Sanity check
+				if (!(rec.pubMedID == pubmedID)) {
+					throw new IllegalArgumentException("Obtained pubmedID does not match requested ID!");
+				}
+
+				map.put(pubmedID, rec);
+				missesSinceLastWrite++;
+				if (missesSinceLastWrite > 20)
+					writeMapToFile();
+				return rec;
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-			
-			map.put(pubmedID, rec);
-			missesSinceLastWrite++;
-			if (missesSinceLastWrite > 20)
-				writeMapToFile();
-			return rec;
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
-        
 		return null;        
 		
 	}
 	
-	public void writeMapToFile() throws IOException {
+	public synchronized void writeMapToFile() throws IOException {
 		//System.out.println("Writing cached gene summaries to " + cacheFilePath);
 		if (map == null) //Map may not have been initialized
 			return;
+		if (map.size() < 500) {
+			return; 
+		}
 		
 		File cache = new File(cacheFilePath);
 		if (!cache.exists()) {

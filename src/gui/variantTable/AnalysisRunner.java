@@ -1,7 +1,6 @@
 package gui.variantTable;
 
 import gui.ErrorWindow;
-import gui.variantTable.templates.TemplateTransformer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -39,6 +38,7 @@ import pipeline.Pipeline;
 import pipeline.PipelineDocException;
 import pipeline.PipelineListener;
 import rankingService.AnalysisSettings;
+import rankingService.templates.TemplateTransformer;
 
 public class AnalysisRunner {
 

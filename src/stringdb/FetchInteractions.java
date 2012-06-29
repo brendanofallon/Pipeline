@@ -57,7 +57,7 @@ public class FetchInteractions {
         	if (index < 0)
         		index = scoreStr.length();
         	String scoreSub = scoreStr.substring(6, index);
-        	System.out.println("Found gene1: " + geneID1 + " gene2: " + geneID2 + ", score:" + scoreSub);
+        	//System.out.println("Found gene1: " + geneID1 + " gene2: " + geneID2 + ", score:" + scoreSub);
         	Double score = Double.parseDouble(scoreSub);
         	InteractionNode node = new InteractionNode();
         	node.first = geneID1;
@@ -82,20 +82,20 @@ public class FetchInteractions {
 		public double score;
 	}
 	
-	public static void main(String[] args) {
-		List<String> ids = new ArrayList<String>();
-		ids.add("ENG");
-		ids.add("ACVRL1");
-		ids.add("BMP9");
-		ids.add("SMAD4");
-		
-		FetchInteractions fetcher = new FetchInteractions();
-		try {
-			fetcher.getInteractionsList(ids);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
+//	public static void main(String[] args) {
+//		List<String> ids = new ArrayList<String>();
+//		ids.add("ENG");
+//		ids.add("ACVRL1");
+//		ids.add("BMP9");
+//		ids.add("SMAD4");
+//		
+//		FetchInteractions fetcher = new FetchInteractions();
+//		try {
+//			fetcher.getInteractionsList(ids);
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//	}
 }

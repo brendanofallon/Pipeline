@@ -99,6 +99,7 @@ public abstract class AnnovarAnnotator extends Annotator {
 		catch (IOException e1) {
 			throw new OperationFailedException("Task encountered an IO exception : " + System.err.toString() + "\n" + e1.getLocalizedMessage(), this);
 		}
+		logger.info(getObjectLabel() + " has completed ");
 	}
 	
 	/**

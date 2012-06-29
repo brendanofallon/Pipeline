@@ -39,7 +39,7 @@ public class Optimizer implements MultivariateFunction {
 	
 
 	RandomEngine rng = new MersenneTwister();
-	Normal sanity = new Normal(0, 25, rng); //Just used to calculate normal pdf
+	Normal sanity = new Normal(0, 50, rng); //Just used to calculate normal pdf
 	
 	/**
 	 * Return the probability that a variant with the given scores is in group A
@@ -60,33 +60,7 @@ public class Optimizer implements MultivariateFunction {
 //				index++;
 //			}
 //		}
-		//include one interaction term...
-//		int interactor1 = 2; //0 = sift, 1 = pp, 2=mt, 3=phylop, 4=gerp
-//		int interactor2 = 0; //4 = gerp
-//		sum += weights[5] * vec[interactor1] * vec[interactor2];
-//		
-//		interactor1 = 2; //0 = sift, 1 = pp, 2=mt, 3=phylop, 4=gerp
-//		interactor2 = 1; //4 = gerp
-//		sum += weights[6] * vec[interactor1] * vec[interactor2];
-//		
-//		interactor1 = 2; //0 = sift, 1 = pp, 2=mt, 3=phylop, 4=gerp
-//		interactor2 = 3; //4 = gerp
-//		sum += weights[7] * vec[interactor1] * vec[interactor2];
-//		
-//		interactor1 = 2; //0 = sift, 1 = pp, 2=mt, 3=phylop, 4=gerp
-//		interactor2 = 4; //4 = gerp
-//		sum += weights[8] * vec[interactor1] * vec[interactor2];
-//		
-//		interactor1 = 2; //0 = sift, 1 = pp, 2=mt, 3=phylop, 4=gerp
-//		interactor2 = 5; //4 = gerp
-//		sum += weights[9] * vec[interactor1] * vec[interactor2];
-//		
-//		interactor1 = 4; //0 = sift, 1 = pp, 2=mt, 3=phylop, 4=gerp
-//		interactor2 = 3; //4 = gerp
-//		sum += weights[10] * vec[interactor1] * vec[interactor2];
-//		
-//		interactor1 = 5; //0 = sift, 1 = pp, 2=mt, 3=phylop, 4=gerp
-//		interactor2 = 4; //4 = gerp
+
 //		sum += weights[11] * vec[interactor1] * vec[interactor2];
 
 		return sum;
@@ -107,22 +81,46 @@ public class Optimizer implements MultivariateFunction {
 	private void loadData(File file, List<double[]> vals) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(file));
 		String line = reader.readLine();
+		
+		double gerpMean = 3.053;
+		double gerpStdev = 3.106;
+		
+		double siftMean = 0.226;
+		double siftStdev = 0.2923;
+		
+		double ppMean = 0.584;
+		double ppStdev = 0.4323;
+		
+		double mtMean = 0.5604;
+		double mtStdev = 0.4318;
+		
+		double phylopMean = 1.2932;
+		double phylopStdev = 1.1921;
+		
+		double siphyMean = 11.1355;
+		double siphyStdev = 5.1848;
+		
+		double lrtMean = 0.08391;
+		double lrtStdev = 0.20298;
+		
 		while(line != null) {
 			String[] toks= line.split("\t");
 			try {
-				Double sift = Double.parseDouble(toks[14]);
-				Double pp = Double.parseDouble(toks[15]);
-				Double mt = Double.parseDouble(toks[16]);
-				Double phylop = Double.parseDouble(toks[17]);
-				Double gerp = Double.parseDouble(toks[18]);
-				Double fx = Double.parseDouble(toks[19]);
-				double[] arr = new double[6];
-				arr[0] = sift;
-				arr[1] = pp;
-				arr[2] = mt;
-				arr[3] = phylop;
-				arr[4] = gerp;
-				arr[5] = fx;
+				Double sift = Double.parseDouble(toks[33]);
+				Double pp = Double.parseDouble(toks[34]);
+				Double phylop = Double.parseDouble(toks[35]);
+				Double mt = Double.parseDouble(toks[36]);
+				Double gerp = Double.parseDouble(toks[37]);
+				Double lrt = Double.parseDouble(toks[38]);
+				Double siphy = Double.parseDouble(toks[39]);
+				double[] arr = new double[7];
+				arr[0] = (sift-siftMean)/siftStdev;
+				arr[1] = (pp-ppMean)/ppStdev;
+				arr[2] = (phylop-phylopMean)/phylopStdev;
+				arr[3] = (mt-mtMean)/mtStdev;
+				arr[4] = (gerp-gerpMean)/gerpStdev;
+				arr[5] = (lrt-lrtMean)/lrtStdev;
+				arr[6] = (siphy-siphyMean)/siphyStdev;
 				vals.add(arr);
 			}
 			catch (NumberFormatException nfe) {
@@ -160,7 +158,7 @@ public class Optimizer implements MultivariateFunction {
 		double stdEvB = histoB.getStdev();
 		
 		double res = (stdEvA + stdEvB+0.1)/(Math.abs(meanA - meanB) + 0.1) + penalty ;
-		
+		//double res = computeHistoOverlap(histoA, histoB);
 		
 		return res;
 	}
@@ -253,7 +251,7 @@ public class Optimizer implements MultivariateFunction {
 		double bestVal = 1000.0;
 		
 		//double[] startVals = new double[21];
-		double[] startVals = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+		double[] startVals = new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
 		
 		DecimalFormat formatter = new DecimalFormat("#0.0#");
 		
@@ -265,8 +263,8 @@ public class Optimizer implements MultivariateFunction {
 			//func.loadDataA(new File("/home/brendan/hgmd_test/hgmd.analysis.csv"));
 			//func.loadDataB(new File("/home/brendan/hgmd_test/highfreqs.0.1.analysis.csv"));
 	
-			func.loadDataA(new File("/home/brendan/hgmd_test/hgmd.dmonly.analysis.csv"));
-			func.loadDataB(new File("/home/brendan/hgmd_test/tgk.esp5400.combo.analysis.csv"));
+			func.loadDataA(new File("/home/brendan/hgmd_test/hgmd.dmonly.nonans.csv"));
+			func.loadDataB(new File("/home/brendan/hgmd_test/tgk.nonans.csv"));
 			
 			//func.emit(new double[]{0, 0, 0, 0, 1, 0}); 
 			//func.emit(new double[]{-8, -0.1, 23, -7.8, 0.6, 3.9}); //This one is good for no interaction term
@@ -287,7 +285,17 @@ public class Optimizer implements MultivariateFunction {
 			//Linear only, new function ... this one is almost exactly equivalent to the all-interactions version,
 			//and is slightly better than linear-only histogram-overlap function 
 			//func.emit(new double[]{-0.05,1.46,6.29,-1.48,-0.03,0.87});	
-			func.emit(new double[]{-0.5,1.46,6.29,-1.48,-0.3,0.87});
+			//func.emit(new double[]{-0.5,1.46,6.29,-1.48,-0.3,0.87});
+			//System.exit(0);
+			
+			//New version, score based on means + stdevs with penalty
+			//func.emit(new double[]{-2.33, 1.74,	1.74, 7.75,	0.055,	-0.271,	0.176});
+			//System.exit(0);
+			
+			
+			//func.emit(new double[]{-2.22,4.98,1.52,11.29,-0.485,-0.22,2.68}); //best so far, basically
+			func.emit(new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}); 
+			//func.emit(new double[]{-1859.67,4183.4,463.13,26201.1,-410.62,-184.6,2250.07}); //no penalty test
 			System.exit(0);
 			
 			for(int i=0; i<1000; i++) {
@@ -341,3 +349,4 @@ public class Optimizer implements MultivariateFunction {
 	
 	
 }
+

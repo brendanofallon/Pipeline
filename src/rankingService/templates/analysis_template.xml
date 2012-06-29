@@ -19,17 +19,10 @@
 
 <InteractionMatrix class="buffer.GeneInteractionGraph" key.genes="${SOURCEGENES}" graph.size="${GRAPHSIZE}" />
 
-
-<!--  filterByCapture class="operator.variant.FilterVCFByBED">
- <input>
-   <InputVCF />
-   <capture />
-  </input>
-  <output>
-   <captureVCF class="buffer.VCFFile" filename="${PREFIX}.capture.vcf" />
- </output>
-</filterByCapture -->
-
+<!--  read in initial list of variants -->
+<VariantPool class="buffer.variant.VariantPool">
+	<InputVCF />
+</VariantPool>
 
 <MakeInput class="operator.annovar.ConvertVCFAnnovar">
  <input>
@@ -40,9 +33,6 @@
  </output>
 </MakeInput>
 
-<VariantPool class="buffer.variant.VariantPool">
-	<InputVCF />
-</VariantPool>
 
 <GeneAnnotate class="operator.annovar.GeneAnnotator">
 	<AnnoInput />
@@ -53,77 +43,49 @@
   <VariantPool />
 </FPAnnotate>
 
-<ParallelAnnotator class="operator.ParallelOperator">
-
-<SiftAnnotate class="operator.annovar.SiftAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</SiftAnnotate>
-
-<PolyphenAnnotate class="operator.annovar.PolyphenAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PolyphenAnnotate>
-
-<MTAnnotate class="operator.annovar.MTAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</MTAnnotate>
-
-<PhyloPAnnotate class="operator.annovar.PhyloPAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PhyloPAnnotate>
-
-<GERPAnnotate class="operator.annovar.GERPAnnotator">
-  <AnnoInput />
-  <VariantPool />
-</GERPAnnotate>
-
-<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PopFreqAnnotate>
-
-<ESPAnnotate class="operator.annovar.Exomes5400Annotator">
-   <AnnoInput />
-   <VariantPool />
-</ESPAnnotate>
-
-<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
- <AnnoInput />
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
-</DBSNPAnnotate>
+</dbNSFPAnnotate>
 
-</ParallelAnnotator>
+
+<!--  Do some filtering of the variants -->
+<VarFilter class="operator.variant.VariantMultiFilter" pop.freq.cutoff="${POPFREQ}" inc.dbsnp="${INCDBSNP}" var.depth.cutoff="${VARDEPTH}" var.freq.cutoff="${VARFREQ}" depth.cutoff="${DEPTH}" zygosity="${ZYGOSITY}">
+ <input>
+     <VariantPool />
+ </input>
+ <output>
+     <passingVariants class="buffer.variant.VariantPool" />
+ </output>   
+</VarFilter>
+
 
 <EffectPred class="operator.annovar.EffectPredictionAnnotator">
- <VariantPool />
+ <passingVariants />
 </EffectPred>
 
 <GOAnnotate class="operator.annovar.GOAnnotator" >
-  <VariantPool />
+  <passingVariants />
 </GOAnnotate>
 
 <GoRank class="operator.variant.GOTermRanker">
- <VariantPool />
+ <passingVariants />
  <GOTermsList />
 </GoRank>
 
 <SummaryRank class="operator.variant.GeneSummaryRanker">
-	<VariantPool />
+	<passingVariants />
 	<rankedSummaryTerms />
 </SummaryRank>
 
 
 <InteractionRank class="operator.variant.InteractionRanker" source="${SOURCEGENES}">
-  <VariantPool />
+  <passingVariants />
   <InteractionMatrix />
 </InteractionRank>
 
 
 <PubmedRank class="operator.variant.PubmedRanker">
-  <VariantPool />
+  <passingVariants />
   <rankedSummaryTerms />
 </PubmedRank>
 
@@ -131,7 +93,7 @@
 
 <Analysis class="operator.AnalysisFilter">
  <input>
-   <VariantPool />
+   <passingVariants />
    <genesOfInterest />
  </input>
  <output>
@@ -144,10 +106,13 @@
   <CSVFileAll class="buffer.CSVFile" filename="${PREFIX}.all.csv" />
 </EverythingToFile>
 
-<ToFile class="operator.variant.ExcelWriter">
+<ToFile class="rankingService.ResultsWriter">
 	<filteredVariants />
-	<CSVFile class="buffer.CSVFile" filename="${PREFIX}.ranking.analysis.csv" />
+	<CSVFile class="buffer.CSVFile" filename="${PREFIX}.analysis.csv" />
 </ToFile>
 
+<Cleanup class="operator.RemoveFile">
+    <annovaroutputs class="buffer.GlobFileBuffer" filename="annovar.output.*" />
+</Cleanup>
 
 </Pipeline>

@@ -1,6 +1,7 @@
 package buffer.variant;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import ncbi.GeneInfoDB;
 import operator.OperationFailedException;
 import operator.Operator;
 
@@ -39,6 +41,8 @@ import util.VCFLineParser;
  *
  */
 public class VariantPool extends Operator  {
+	
+	public static final String ALL_GENES = "all.genes"; //If specified as attribute, include all genes one variant per gene
 
 	protected Map<String, List<VariantRec>>  vars = new HashMap<String, List<VariantRec>>();
 	private VariantRec qRec = new VariantRec("?", 0, 0, "x", "x", 0, false); 
@@ -96,74 +100,6 @@ public class VariantPool extends Operator  {
 	public VariantPool(VCFFile file) throws IOException {
 		importFromVariantReader(new VCFLineParser(file));
 	}
-
-	/**
-	 * Read a variant pool from a CSV-formatted file, the first 7 columns are assumed to be:
-	 * 0: contig
-	 * 1: pos
-	 * 2: end pos (not currently used)
-	 * 3: ref
-	 * 4: alt
-	 * 5: qual
-	 * 6: het / hom
-	 * 7: depth
-	 * 8: genotype quality
-	 * @throws IOException
-	 */
-//	private void importFromCSV(CSVFile file) throws IOException {
-//		CSVLineReader reader = new CSVLineReader(file.getFile());
-//		importFromCSV(reader);
-//	}
-
-	/**
-	 * Import from the given CSV file using the given reader
-	 * @param file
-	 * @param reader
-	 * @throws IOException
-	 */
-//	private void importFromCSV(CSVLineReader reader) throws IOException {
-//		int lineNumber = 0;
-//		do {
-//			VariantRec rec = reader.toVariantRec();
-//			if (rec == null) {
-//				System.err.println("Warning, could not import variant from line: " + lineNumber );
-//			}
-//			else {
-//				this.addRecordNoSort(rec);
-//			}
-//			lineNumber++;
-//		} while(reader.advanceLine());
-//
-//		sortAllContigs();		
-//	}
-	/**
-	 * Import all variants from the given vcf file
-	 * @param file
-	 * @throws IOException
-	 */
-//	private void importFromVCF(VCFFile file) throws IOException {
-//		VCFLineParser vParser = new VCFLineParser(file);
-//		//int lineCount = countLines(file);
-//		int lineNumber = 0;
-//		do {
-//			VariantRec rec = vParser.toVariantRec();
-//			if (rec == null) {
-//				System.err.println("Warning, could not import variant from line: " + lineNumber );
-//			}
-//			else {
-//				this.addRecordNoSort(rec);
-//			}
-//			lineNumber++;
-//			//if (lineNumber % 10000 == 0) {
-//				//double frac = 100.0*(double)lineNumber / (double)lineCount;
-//				//DecimalFormat formatter = new DecimalFormat("#0.00");
-//				//System.out.println(file.getFile().getName() + " : line " + lineNumber + " of " + lineCount + " ( " + formatter.format(frac) + "% )");
-//			//}
-//		} while (vParser.advanceLine());
-//	//	System.out.println("Done reading variants, now sorting...");
-//		sortAllContigs();
-//	//	System.out.println("Done sorting.");
-//	}
 	
 	private void importFromVariantReader(VariantLineReader reader) throws IOException {
 		int lineNumber = 0;
@@ -950,6 +886,27 @@ public class VariantPool extends Operator  {
 
 	@Override
 	public void performOperation() throws OperationFailedException {
+		
+		String allGenes = this.getAttribute(ALL_GENES);
+		if (allGenes != null & Boolean.parseBoolean(allGenes)) {
+			//Make a fake variant pool with one variant per gene
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Adding one record for all genes!");
+			GeneInfoDB geneDB = GeneInfoDB.getDB();
+			if (geneDB == null)
+				try {
+					geneDB= new GeneInfoDB(new File(GeneInfoDB.defaultDBPath));
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			for(String symbol : geneDB.getAllGenes()) {
+				VariantRec rec = new VariantRec("Z", 1, 2, "X", "X", 100.0, false);
+				rec.addAnnotation(VariantRec.GENE_NAME, symbol);
+				this.addRecordNoSort(rec);
+			}
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Added " + this.size() + " variant records");
+		}
+		
 		if (inputVariants == null) 
 			return ; // Just make an empty pool
 		
@@ -969,7 +926,7 @@ public class VariantPool extends Operator  {
 		if (inputVariants instanceof CSVFile) {
 			try {
 				importFromVariantReader(new CSVLineReader( ((CSVFile)inputVariants).getFile() ));
-				//importFromCSV( new SimpleLineReader(inputVariants.getFile()));
+				//importFromVariantReader( new SimpleLineReader(inputVariants.getFile()));
 			} catch (IOException e) {
 				e.printStackTrace();
 				throw new OperationFailedException("IO error reading file: " + inputVariants.getAbsolutePath(), this);

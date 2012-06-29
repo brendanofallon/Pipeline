@@ -71,6 +71,10 @@ public class VCFLineParser implements VariantLineReader {
 			while (currentLine != null && currentLine.startsWith("#")) {
 				advanceLine();
 				
+				if (currentLine == null) {
+					throw new IOException("Could not find start of data");
+				}
+				
 				if (currentLine.startsWith("#CHROM")) {
 					String[] toks = currentLine.split("\t");
 					if (sample == null) {
@@ -151,60 +155,67 @@ public class VCFLineParser implements VariantLineReader {
 		 * @return A new variant record containing the information in this vcf line
 		 */
 		public VariantRec toVariantRec(boolean stripChr) {
-			if (currentLine == null)
+			if (currentLine == null || currentLine.trim().length()==0)
 				return null;
 			else {
-				String contig = getContig();
-				if (contig == null)
-					return null;
-				if (stripChr)
-					contig = contig.replace("chr", "");
-				//System.out.println(currentLine);
-				String ref = getRef();
-				String alt = getAlt();
-				int start = getStart();
-				int end = ref.length();
 				
-				if (alt.length() != ref.length()) {
-					//Remove initial characters if they are equal and add one to start position
-					if (alt.charAt(0) == ref.charAt(0)) {
-						alt = alt.substring(1);
-						ref = ref.substring(1);
-						if (alt.length()==0)
-							alt = "-";
-						if (ref.length()==0)
-							ref = "-";
-						start++;
-					}
-					
-					if (ref.equals("-"))
-						end = start;
-					else
-						end = start + ref.length();
-				}
-				
-				VariantRec rec = new VariantRec(contig, start, end,  ref, alt, getQuality(), isHetero() );
-				Integer depth = getDepth();
-				if (depth != null)
-					rec.addProperty(VariantRec.DEPTH, new Double(depth));
-				
-				Integer altDepth = getVariantDepth();
-				if (altDepth != null) {
-					rec.addProperty(VariantRec.VAR_DEPTH, new Double(altDepth));
-				}
-				
-				Double genotypeQuality = getGenotypeQuality();
-				if (genotypeQuality != null) 
-					rec.addProperty(VariantRec.GENOTYPE_QUALITY, genotypeQuality);
-				
-				Double vqsrScore = getVQSR();
-				if (vqsrScore != null)
-					rec.addProperty(VariantRec.VQSR, vqsrScore);
+				VariantRec rec = null;
+				try {
+					String contig = getContig();
+					if (contig == null)
+						return null;
+					if (stripChr)
+						contig = contig.replace("chr", "");
+					//System.out.println(currentLine);
+					String ref = getRef();
+					String alt = getAlt();
+					int start = getStart();
+					int end = ref.length();
 
-				Double fsScore = getStrandBiasScore();
-				if (fsScore != null)
-					rec.addProperty(VariantRec.FS_SCORE, fsScore);
-				
+					if (alt.length() != ref.length()) {
+						//Remove initial characters if they are equal and add one to start position
+						if (alt.charAt(0) == ref.charAt(0)) {
+							alt = alt.substring(1);
+							ref = ref.substring(1);
+							if (alt.length()==0)
+								alt = "-";
+							if (ref.length()==0)
+								ref = "-";
+							start++;
+						}
+
+						if (ref.equals("-"))
+							end = start;
+						else
+							end = start + ref.length();
+					}
+
+					rec = new VariantRec(contig, start, end,  ref, alt, getQuality(), isHetero() );
+					Integer depth = getDepth();
+					if (depth != null)
+						rec.addProperty(VariantRec.DEPTH, new Double(depth));
+
+					Integer altDepth = getVariantDepth();
+					if (altDepth != null) {
+						rec.addProperty(VariantRec.VAR_DEPTH, new Double(altDepth));
+					}
+
+					Double genotypeQuality = getGenotypeQuality();
+					if (genotypeQuality != null) 
+						rec.addProperty(VariantRec.GENOTYPE_QUALITY, genotypeQuality);
+
+					Double vqsrScore = getVQSR();
+					if (vqsrScore != null)
+						rec.addProperty(VariantRec.VQSR, vqsrScore);
+
+					Double fsScore = getStrandBiasScore();
+					if (fsScore != null)
+						rec.addProperty(VariantRec.FS_SCORE, fsScore);
+				}
+				catch (Exception ex) {
+					System.err.println("ERROR: could not parse variant from line : " + currentLine + "\n Exception: " + ex.getMessage());
+					return null;
+				}
 				return rec;
 			}
 		}

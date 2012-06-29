@@ -14,7 +14,7 @@
 
 
 <!-- Perform variant quality score recalibration VQSR, using GaTK -->
-<!--VQSR class="operator.gatk.VariantRecalibrator" >
+<!-- VQSR class="operator.gatk.VariantRecalibrator" >
  <input>
   <reference />
   <InputVCF />
@@ -61,49 +61,9 @@
   <VariantPool />
 </FPAnnotate>
 
-<ParallelAnnotator class="operator.ParallelOperator">
-
-<SiftAnnotate class="operator.annovar.SiftAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</SiftAnnotate>
-
-<PolyphenAnnotate class="operator.annovar.PolyphenAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PolyphenAnnotate>
-
-<MTAnnotate class="operator.annovar.MTAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</MTAnnotate>
-
-<PhyloPAnnotate class="operator.annovar.PhyloPAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PhyloPAnnotate>
-
-<GERPAnnotate class="operator.annovar.GERPAnnotator">
-  <AnnoInput />
-  <VariantPool />
-</GERPAnnotate>
-
-<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PopFreqAnnotate>
-
-<ESPAnnotate class="operator.annovar.Exomes5400Annotator">
-   <AnnoInput />
-   <VariantPool />
-</ESPAnnotate>
-
-<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
- <AnnoInput />
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
-</DBSNPAnnotate>
-
-</ParallelAnnotator>
+</dbNSFPAnnotate>
 
 <OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
   <AnnoInput />
@@ -124,7 +84,7 @@
 
 <GoRank class="operator.variant.GOTermRanker">
  <VariantPool />
- <rankedTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-keyterms.txt" />
+ <rankedTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-goterms.txt" />
 </GoRank>
 
 <SummaryRank class="operator.variant.GeneSummaryRanker">
@@ -133,7 +93,7 @@
 </SummaryRank>
 
 
-<InteractionRank class="operator.variant.InteractionRanker" source="ENG,ACVRL1,SMAD4">
+<InteractionRank class="operator.variant.InteractionRanker" source="ENG,ACVRL1">
   <VariantPool />
   <InteractionMatrix class="buffer.GeneInteractionGraph">
 	<GeneInteractions class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-proteins500.csv" />
@@ -165,7 +125,7 @@
 
 <ToFile class="operator.variant.ExcelWriter">
 	<filteredVariants />
-	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.hht.analysis.csv" />
+	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.hht.analysis2.csv" />
 </ToFile>
 
 

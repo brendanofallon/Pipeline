@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -14,6 +15,7 @@ import buffer.TextBuffer;
 import buffer.variant.VariantRec;
 import operator.OperationFailedException;
 import operator.annovar.Annotator;
+import pipeline.Pipeline;
 import pipeline.PipelineObject;
 
 /**
@@ -27,6 +29,7 @@ import pipeline.PipelineObject;
 public class GeneSummaryRanker extends Annotator {
 
 	public static final String GENE_INFO_PATH = "gene.info.path";
+	public static final String NO_DOWNLOADS = "no.downloads";
 	protected TextBuffer termsFile = null;
 	protected CachedGeneSummaryDB summaryDB = null;
 	protected Map<String, Integer> rankingMap;
@@ -114,6 +117,7 @@ public class GeneSummaryRanker extends Annotator {
 	private void initializeDB() {
 		try {
 			buildRankingMap();
+			
 			String pathToGeneInfo = this.getAttribute(GENE_INFO_PATH);
 			if (pathToGeneInfo != null) {
 				summaryDB = new CachedGeneSummaryDB(pathToGeneInfo);
@@ -121,6 +125,14 @@ public class GeneSummaryRanker extends Annotator {
 			else {
 				summaryDB = new CachedGeneSummaryDB();
 			}
+			
+			String dlAttr = this.getAttribute(NO_DOWNLOADS);
+			if (dlAttr != null) {
+				Logger.getLogger(Pipeline.primaryLoggerName).info("Gene summary is setting prohibit downloads to : " + dlAttr);
+				Boolean prohibitDLs = Boolean.parseBoolean(dlAttr);
+				summaryDB.setProhibitNewDownloads(prohibitDLs);
+			}
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

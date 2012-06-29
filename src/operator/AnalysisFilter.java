@@ -74,27 +74,27 @@ public class AnalysisFilter extends Operator {
 		logger.info("Initializing filter with following cutoffs: \n pop. freq :" + popFreqCutoff + "\n coverage :" + coverageCutoff + "\n vqsr:" + vqsrCutoff + "\n var. freq cutoff :" + varFreqCutoff);
 		//First we filter by the gene pool, if not null
 
+		int examined = 0;
+		int passesFilters = 0;
+		int ranked = 0;
+		
 		for(String contig : inputVars.getContigs()) {
 			for(VariantRec var : inputVars.getVariantsForContig(contig)) {
-				if (genes != null) {
-					String gene = var.getAnnotation(VariantRec.GENE_NAME);
-					Double goScore = var.getProperty(VariantRec.GO_SCORE);
-					if (genes.containsGene(gene) || (goScore != null && goScore > 0)) {
-						boolean passes = variantPassesFilters(var);
-						if (passes)
-							outputPool.addRecordNoSort(var);
-					}
-				}
-				else {
+				examined++;
 					boolean passes = variantPassesFilters(var);
-					if (passes)
+					if (passes) {
+						passesFilters++;
 						outputPool.addRecordNoSort(var);
-				}
+						if (var.getProperty(VariantRec.GO_EFFECT_PROD) > 0) {
+							ranked++;
+						}
+					}
 			}
 		}
 
 		//Be sure to sort output pool now
 		outputPool.sortAllContigs();
+		logger.info("Analysis examined " + examined + " variants, " + passesFilters + " passed filters and " + ranked + " had positive scores");
 	}
 
 	private boolean variantPassesFilters(VariantRec var) {
@@ -166,8 +166,6 @@ public class AnalysisFilter extends Operator {
 		Double effectPred = EffectPredictionAnnotator.getEffectPredictionLinearWeight(var);
 		var.addProperty(VariantRec.EFFECT_PREDICTION2, effectPred);
 		
-		
-		
 		double goVal = 0;
 		double sumVal = 0;
 		if (goScore != null)
@@ -186,9 +184,11 @@ public class AnalysisFilter extends Operator {
 			pubmedScore = pmScore;
 		}
 		
+		Double relevanceScore = (goVal + sumVal + 10*interactionVal + pubmedScore/2.0);
 		
-		Double goEffectProd = effectPred * (goVal + sumVal + 10*interactionVal + pubmedScore/2.0);
+		Double goEffectProd = effectPred * relevanceScore;
 		var.addProperty(VariantRec.GO_EFFECT_PROD, goEffectProd);
+		var.addProperty(VariantRec.GENE_RELEVANCE, relevanceScore);
 		
 		return true;
 	}

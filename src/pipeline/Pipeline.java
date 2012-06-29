@@ -19,6 +19,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -265,7 +266,7 @@ public class Pipeline {
 			primaryLogger.addHandler(new Handler() {
 				@Override
 				public void publish(LogRecord record) {
-					System.out.println(record.getMessage());
+					System.out.println( (new SimpleFormatter()).format(record));
 				}
 
 				@Override
@@ -378,8 +379,10 @@ public class Pipeline {
 				
 				String suffix = "" + day + month + year + "-" + hour + "-" + min;
 				
-				FileHandler fileHandler = new FileHandler(projHome + "pipeinstancelog-" + suffix + ".xml");
+				FileHandler fileHandler = new FileHandler(projHome + "pipeinstancelog-" + suffix + ".txt");
+				fileHandler.setFormatter( new SimpleFormatter() );
 				primaryLogger.addHandler(fileHandler);
+				
 			} catch (SecurityException e) {
 				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());
 			} catch (IOException e) {
@@ -553,8 +556,6 @@ public class Pipeline {
 	}
 	
 	public static void main(String[] args) {
-		
-		//args = new String[]{"/home/brendan/HHT3_downsample/globtest.xml"};
 		
 		//If no args, show the GUI window
 		if (args.length == 0) {

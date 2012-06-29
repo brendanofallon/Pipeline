@@ -8,6 +8,8 @@ import javax.swing.SwingWorker;
 
 import operator.Operator;
 import operator.ParallelOperator;
+import operator.annovar.GeneAnnotator;
+import operator.variant.DBNSFPAnnotator;
 import operator.variant.GOTermRanker;
 import operator.variant.GeneSummaryRanker;
 import operator.variant.InteractionRanker;
@@ -49,7 +51,7 @@ public class RankingServiceJob extends SwingWorker {
 		String rootDir = pipeline.getProjectHome();
 		if (! rootDir.endsWith(System.getProperty("file.separator")))
 			rootDir = rootDir + System.getProperty("file.separator");
-		String path = rootDir + settings.prefix + ".ranking.analysis.csv";
+		String path = rootDir + settings.prefix + ".analysis.csv";
 		return path;
 	}
 	
@@ -103,8 +105,12 @@ public class RankingServiceJob extends SwingWorker {
 		}
 		if (pipeline.isExecuteStarted() && (! pipeline.isExecuteCompleted())) {
 			Operator op = pipeline.getCurrentOperator();
-			String opStr = "Unknown step";
-			if (op.getClass().equals(ParallelOperator.class)) {
+			String opStr = "Reading variants";
+			if (op.getClass().equals(GeneAnnotator.class)) {
+				opStr = "Determining gene information";
+			}
+			
+			if (op.getClass().equals(DBNSFPAnnotator.class)) {
 				opStr = "Annotating variants";
 			}
 			if (op.getClass().equals(PubmedRanker.class)) {
@@ -119,7 +125,7 @@ public class RankingServiceJob extends SwingWorker {
 			if (op.getClass().equals(GOTermRanker.class)) {
 				opStr = "Examining G.O. terms";
 			}
-			return "Running : " + opStr;
+			return "Running - " + opStr;
 		}
 		if (pipeline.isExecuteCompleted()) {
 			return "Completed";

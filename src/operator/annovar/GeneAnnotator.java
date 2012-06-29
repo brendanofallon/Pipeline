@@ -58,6 +58,10 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			String ref = toks[5];
 			String alt = toks[6];
 			
+			if (gene.length() > 8 || gene.contains(",") || gene.contains(";")) {
+				gene = "-";
+			}
+			
 			int pos = Integer.parseInt(toks[3]);
 			VariantRec rec = findVariant(contig, pos, ref, alt); //variants.findRecord(contig, pos);
 

@@ -28,6 +28,14 @@ public class PubMedRecord {
 		public String getAbstract() {
 			return abs;
 		}
+		
+		/**
+		 * Obtain publication date of record
+		 * @return
+		 */
+		public int getYear() {
+			return yearCreated;
+		}
 
 		public String getTitle() {
 			return title;

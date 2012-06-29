@@ -23,7 +23,7 @@ public class SimpleLineReader extends CSVLineReader {
 		String[] toks = currentLine.split("\t");
 		
 		String contig = getContig(toks);
-		Integer start = getStart(toks);
+		Integer start = Integer.parseInt(toks[1]);
 		String ref = toks[3];
 		String alt = toks[4];
 		

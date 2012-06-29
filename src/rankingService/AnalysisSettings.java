@@ -19,4 +19,11 @@ public class AnalysisSettings {
 	public String prefix = null;
 	public String pathToPipelineProperties = null;
 	
+	public double popFreqCutoff = 0.10;
+	public double depthCutoff = 0;
+	public double varDepthCutoff = 0;
+	public double varFreqCutoff = 0;
+	public boolean includeDBSNP = true;
+	public String zygosityFilter = "ALL";
+	
 }

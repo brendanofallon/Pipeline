@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -215,6 +217,11 @@ public class GenePool extends Operator {
 		for(VariantRec var : vars) {
 			sources.add(var.getAnnotation(VariantRec.SOURCE));
 		}
+		
+		if (vars.size() > 2*sources.size()) {
+			return 0;
+		}
+		
 		return sources.size();
 	}
 	
@@ -233,21 +240,40 @@ public class GenePool extends Operator {
 	}
 
 	public void listGenesWithMultipleVars(PrintStream out, int cutoff, List<String> annoKeys) {
+		List<List<VariantRec>> geneList = new ArrayList<List<VariantRec>>();
+		
 		StringBuilder headerB = new StringBuilder();
 		for(String key : annoKeys)
 			headerB.append("\t" + key);
 		
-		out.println(VariantRec.getBasicHeader() + headerB);
+		out.println("source\t" + VariantRec.getSimpleHeader() + headerB);
 		for(String key : pool.keySet()) {
 			List<VariantRec> vars = pool.get(key);
 			int sourceCount =  countSources(key);
 			if (sourceCount >= cutoff ) {
-				out.println("GENE:" + key + " : " + vars.size() + "\t" + sourceCount + "\t" + computeMeanProd(vars));
+				List<VariantRec> varsList = new ArrayList<VariantRec>();
+				//out.println("GENE:" + key + " : " + vars.size() + "\t" + sourceCount + "\t" + computeMeanProd(vars));
 				for(VariantRec var : vars) {
-					out.println(var.getAnnotation(VariantRec.SOURCE) + "\t" + var.toBasicString() + "\t" + var.getPropertyString(annoKeys));
+					varsList.add(var);
+					//out.println(var.getAnnotation(VariantRec.SOURCE) + "\t" + var.toSimpleString() + "\t" + var.getPropertyString(annoKeys));
 				}
+				geneList.add(varsList);
 			}
 		}		
+		
+		Collections.sort(geneList, new MeanEffectComparator());
+		for(List<VariantRec> vars : geneList) {
+			String key = vars.get(0).getAnnotation(VariantRec.GENE_NAME);
+//			String pdot = vars.get(0).getAnnotation(VariantRec.PDOT);
+//			String hgmd = vars.get(0).getAnnotation(VariantRec.HGMD_INFO);
+//			String nm = vars.get(0).getAnnotation(VariantRec.NM_NUMBER);
+			out.print(key + "\t" + "\t" +  computeMeanProd(vars) + "\t");
+			for(VariantRec var : vars) {
+				out.print(var.getAnnotation(VariantRec.SOURCE).replace(".all.csv", ":") + var.getAnnotation(VariantRec.PDOT) + "\t");
+				//out.println(var.getAnnotation(VariantRec.SOURCE) + "\t" + var.toSimpleString() + "\t" + var.getPropertyString(annoKeys));
+			}
+			out.println();
+		}
 	}
 	
 	@Override
@@ -294,10 +320,33 @@ public class GenePool extends Operator {
 		double sum = 0;
 		for(VariantRec rec : vars) {
 			Double prod = rec.getProperty(VariantRec.GO_EFFECT_PROD);
-			if (prod != null)
-				sum += prod;
+			if (prod != null) {
+				if (prod >= 0) //Treat negative vals as equal to zero so means dont get very skewed by some low-effect vars
+					sum += prod;
+				else
+					sum += 0;
+
+			}
 		}
 		return sum / vars.size();
+	}
+	
+	class MeanEffectComparator implements Comparator<List<VariantRec>> {
+
+		@Override
+		public int compare(List<VariantRec> arg0, List<VariantRec> arg1) {
+			double m0 = computeMeanProd(arg0);
+			double m1 = computeMeanProd(arg1);
+			if (m1 == m0)
+				return 0;
+
+			if (m0 < m1)
+				return 1;
+			else
+				return -1;
+
+		}
+		
 	}
 	
 	public static final String FILENAME = "filename";

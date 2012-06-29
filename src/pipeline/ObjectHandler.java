@@ -153,21 +153,8 @@ public class ObjectHandler {
 				if (verbose) {
 					System.out.println("Successfully created object of " + instance.getClass() );
 				}
-				if (! (instance.getClass().isAssignableFrom(PipelineObject.class))) {
-					System.err.println("Object of class " + instance.getClass() + " is not a pipeline object, cannot create it");
-				}
-				
-				
-				VCFFile test2 = (VCFFile) loadClass("buffer.VCFFile").newInstance();
-				
-				if (! (PipelineObject.class.isAssignableFrom(test2.getClass()))) {
-					System.err.println("TestVCF2 class " + test2.getClass() + " is not a pipeline object, cannot create it");
-				}
-				else {
-					System.out.println("TestVCF2 class is OK, has name: "+ VCFFile.class.getCanonicalName() );
-				}
-				
-				
+			
+	
 				PipelineObject obj = (PipelineObject) instance;
 				obj.setObjectLabel(el.getNodeName());
 				obj.setObjectHandler(this);

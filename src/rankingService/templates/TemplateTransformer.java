@@ -1,7 +1,8 @@
-package gui.variantTable.templates;
+package rankingService.templates;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -9,6 +10,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -33,21 +35,10 @@ public class TemplateTransformer {
 	public static Document transformTemplate(InputStream template, Map<String, String> substitutions) throws IOException, ParserConfigurationException, SAXException {
 		String substitutedTemplate = substituteTerms(template, substitutions);
 		
-		String tmpDir = System.getProperty("java.io.tmpdir");
-		String timeStr = "" + System.currentTimeMillis();
-		String tmpName =  "pipelinetmp-" + timeStr.substring(timeStr.length()-8) + ".xml";
-		
-		File tmpFile = new File(tmpDir + System.getProperty("file.separator") + tmpName);
-		BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile));
-		writer.write(substitutedTemplate);
-		writer.close();
-		
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = factory.newDocumentBuilder();
-		
-		
-		Document xmlDoc = builder.parse( tmpFile );
-		
+				
+		Document xmlDoc = builder.parse( new ByteArrayInputStream( substitutedTemplate.getBytes("UTF-8")) );
 		return xmlDoc;
 	}
 
@@ -91,4 +82,6 @@ public class TemplateTransformer {
 	private static String keyToTag(String key) {
 		return "${" + key + "}";
 	}
+	
+	
 }

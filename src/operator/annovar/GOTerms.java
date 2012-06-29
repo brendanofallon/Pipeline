@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.w3c.dom.NodeList;
 
@@ -45,6 +46,9 @@ public class GOTerms extends Operator {
 	@Override
 	public void initialize(NodeList children) {
 		String goDir = (String) getPipelineProperty(GO_DIR);
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+		logger.info("Attempting to read GO terms from : " + goDir);
+
 		if (goDir == null || goDir.length()==0) {
 			throw new IllegalArgumentException("G.O. info base directory not specified (use goinfo.dir in pipelineprops file)");	
 		}
@@ -60,8 +64,9 @@ public class GOTerms extends Operator {
 		try {
 			readData();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			throw new IllegalStateException("Error reading GO terms from " + baseDir.getAbsolutePath() + ": " + e.getMessage());
+
 		}
 	}
 	
@@ -189,6 +194,8 @@ public class GOTerms extends Operator {
 			line = reader.readLine();
 		}
 
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+		logger.info("Read in GO terms for : " + goMap.size() + " genes");
 	}
 
 

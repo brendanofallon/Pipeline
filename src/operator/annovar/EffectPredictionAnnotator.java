@@ -7,8 +7,8 @@ public class EffectPredictionAnnotator extends Annotator {
 
 	@Override
 	public void annotateVariant(VariantRec var) {
-		Integer effect = getEffectPredictionSimple(var);
-		var.addProperty(VariantRec.EFFECT_PREDICTION, new Double(effect));
+		//Integer effect = getEffectPredictionSimple(var);
+		//var.addProperty(VariantRec.EFFECT_PREDICTION, new Double(effect));
 
 		Double val = getEffectPredictionLinearWeight(var);
 		var.addProperty(VariantRec.EFFECT_PREDICTION2, val);
@@ -20,52 +20,63 @@ public class EffectPredictionAnnotator extends Annotator {
 		String exonFuncType = rec.getAnnotation(VariantRec.EXON_FUNCTION);
 		if (exonFuncType != null) {
 			if (exonFuncType.contains("frameshift")) {
-				if (exonFuncType.contains("non"))
-					return 10;
-				else
-					return 25;
+				if (exonFuncType.contains("non")) {
+					return Math.min(15, rec.getRef().length());
+				}
+				else {
+					return 20;
+				}
 			}
 			if (exonFuncType.contains("stopgain"))
-				return 25;
+				return 20;
 			if (exonFuncType.contains("stoploss"))
-				return 20;
+				return 15;
 			if (exonFuncType.contains("splice"))
-				return 20;
+				return 15;
 		}
 		
-		double siftWeight = -0.5;
-		double ppWeight = 1.46;
-		double mtWeight = 6.29;
-		double phylopWeight = -1.48;
-		double gerpWeight = -0.3;
-		double predWeight = 0.87;
-
+		//Last changes are from 6/25/2012 when it was realized that there was a
+		//mixup in the order of the values in the Optimizer ...
+		double siftWeight = -2.22; //-1.24;
+		double ppWeight = 4.98; //2.78;
+		double mtWeight = 11.29; //17.29;
+		double phylopWeight = 1.52; //0.31;
+		double gerpWeight = -0.495; //-0.27;
+		double siphyWeight = -0.22; //-0.12;
+		double lrtWeight = 2.68; //1.5;
+		
+		//-2.22,4.98,1.52,11.29,-0.485,-0.22,2.68
+		
 		Double sift = rec.getProperty(VariantRec.SIFT_SCORE);
 		Double pp = rec.getProperty(VariantRec.POLYPHEN_SCORE);
 		Double mt = rec.getProperty(VariantRec.MT_SCORE);
 		Double phylop = rec.getProperty(VariantRec.PHYLOP_SCORE);
 		Double gerp = rec.getProperty(VariantRec.GERP_SCORE);
-		Double pred = rec.getProperty(VariantRec.EFFECT_PREDICTION);
+		Double siphy = rec.getProperty(VariantRec.SIPHY_SCORE);
+		Double lrt = rec.getProperty(VariantRec.LRT_SCORE);
 		
-		if (sift == null)
-			sift = 0.5d;
-		if (pp == null)
-			pp = 0.0d;
-		if (mt == null)
-			mt = 0.0d;
-		if (phylop == null)
-			phylop = 0.0d;
-		if (gerp == null)
-			gerp = 0.0d;
-		if (pred == null)
-			pred = 0.0d;
+		if (sift == null || Double.isNaN(sift))
+			sift = 0.0;
+		if (pp == null || Double.isNaN(pp))
+			pp = 0.0;
+		if (mt == null || Double.isNaN(mt))
+			mt = 0.0;
+		if (phylop == null || Double.isNaN(phylop))
+			phylop = 0.0;
+		if (gerp == null || Double.isNaN(gerp))
+			gerp = 0.0;
+		if (siphy == null || Double.isNaN(siphy))
+			siphy = 0.0;
+		if (lrt == null || Double.isNaN(lrt))
+			lrt = 0.0;
 		
-		double val = sift * siftWeight 
-					+ pp * ppWeight
-					+ mt * mtWeight
-					+ phylop * phylopWeight
-					+ gerp + gerpWeight
-					+ pred * predWeight;
+		double val = (sift-siftMean)/siftStdev * siftWeight 
+					+ (pp-ppMean)/ppStdev * ppWeight
+					+ (mt-mtMean)/mtStdev * mtWeight
+					+ (phylop-phylopMean)/phylopStdev * phylopWeight
+					+ (gerp-gerpMean)/gerpStdev * gerpWeight
+					+ (siphy-siphyMean)/siphyStdev * siphyWeight
+					+ (lrt-lrtMean)/lrtStdev * lrtWeight;
 		
 		return val;
 	}
@@ -166,5 +177,25 @@ public class EffectPredictionAnnotator extends Annotator {
 		return sum;
 	}
 	
+	public static final double gerpMean = 3.053;
+	public static final double gerpStdev = 3.106;
+	
+	public static final double siftMean = 0.226;
+	public static final double siftStdev = 0.2923;
+	
+	public static final double ppMean = 0.584;
+	public static final double ppStdev = 0.4323;
+	
+	public static final double mtMean = 0.5604;
+	public static final double mtStdev = 0.4318;
+	
+	public static final double phylopMean = 1.2932;
+	public static final double phylopStdev = 1.1921;
+	
+	public static final double siphyMean = 11.1355;
+	public static final double siphyStdev = 5.1848;
+	
+	public static final double lrtMean = 0.08391;
+	public static final double lrtStdev = 0.20298;
 
 }

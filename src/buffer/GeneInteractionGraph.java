@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 
 import math.graph.Graph;
 import math.graph.GraphFactory;
+import ncbi.GeneInfoDB;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -31,14 +32,15 @@ public class GeneInteractionGraph extends PipelineObject {
 	protected Graph graph = null;
 	protected Map<String, String> props = new HashMap<String, String>(); 
 	protected FileBuffer source = null;
-
+	protected GeneInfoDB geneInfo = null; //Used to look up synonyms for genes
+	
 	public static final String KEY_GENES = "key.genes";
 	public static final String GRAPH_SIZE = "graph.size";
+	
 	
 	public Graph getGraph() throws IOException {
 		if (graph == null) {
 			constructGraph();
-			//graph = GraphFactory.constructGraphFromFile(source.getFile()); 
 		}
 		return graph;
 	}
@@ -54,6 +56,10 @@ public class GeneInteractionGraph extends PipelineObject {
 			graph = GraphFactory.constructGraphFromFile(source.getFile()); 
 		}
 		else {
+			
+			geneInfo = GeneInfoDB.getDB();
+			if (geneInfo == null)
+				geneInfo = new GeneInfoDB( new File( GeneInfoDB.defaultDBPath ));
 	
 			String genesAttr = this.getAttribute(KEY_GENES);
 			if (genesAttr == null) {
@@ -80,7 +86,11 @@ public class GeneInteractionGraph extends PipelineObject {
 		String[] arr = genesAttr.split(",");
 		List<String> genes = new ArrayList<String>();
 		for(int i=0; i<arr.length; i++) {
-			genes.add( arr[i].trim().toUpperCase() );
+			String symbol = geneInfo.symbolForSynonym( arr[i].trim() );
+			if (symbol == null) {
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Could not find symbol for gene name : " + arr[i].trim());
+			}
+			genes.add( symbol );
 		}
 		return genes;
 	}

@@ -23,7 +23,21 @@ public class GenePubMedDB {
 
 	private Map<Integer, List<Integer>> map = null;
 	
+	private static GenePubMedDB thisDB = null;
+	
+	
+	public static GenePubMedDB getDB(File dbFile) throws IOException {
+		if (thisDB == null)
+			thisDB = new GenePubMedDB(dbFile);
+		return thisDB;
+	}
+	
+	public static GenePubMedDB getDB() {
+		return thisDB;
+	}
+	
 	public GenePubMedDB(File dbFile) throws IOException {
+		thisDB = this;
 		readFile(dbFile);
 	}
 	

@@ -137,7 +137,7 @@ public class PubMedFetcher {
 		
 		List<Element> pubmedArticleElements = getChildrenByName(rootEl, PUBMED_ARTICLE);
 		if (pubmedArticleElements.size() == 0) {
-			System.err.println("No articles found in document.");
+			//System.err.println("No articles found in document.");
 			return records;
 		}
 		
