@@ -221,7 +221,7 @@ public class CSVLineReader implements VariantLineReader {
 	}
 	
 	protected Double getGenotypeQuality(String[] toks) {
-		if (toks.length < 8)
+		if (toks.length < 9)
 			return 0.0;
 		String trimmed = toks[8].trim();
 		if (trimmed.length()>0)

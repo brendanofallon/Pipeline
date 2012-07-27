@@ -2,21 +2,21 @@ package operator.gatk;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
+import operator.IOOperator;
+import operator.OperationFailedException;
+import pipeline.Pipeline;
+import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.BEDFile;
 import buffer.DOCMetrics;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
-import operator.CommandOperator;
-import operator.IOOperator;
-import operator.OperationFailedException;
-import pipeline.Pipeline;
-import pipeline.PipelineXMLConstants;
 
 public class DepthOfCoverage extends IOOperator {
 
@@ -130,6 +130,27 @@ public class DepthOfCoverage extends IOOperator {
 				System.out.println(" % bases above " + cutoffs[i] + " : " + metrics.getFractionAboveCutoff()[i]);
 			}
 			
+			
+			
+			//Read output from summary file
+			File intervalSummary = new File(outputPrefix + ".sample_interval_summary");
+			reader = new BufferedReader(new FileReader(intervalSummary));
+			String line = reader.readLine();
+			line = reader.readLine(); //Skip first line
+			List<String> problemIntervals = new ArrayList<String>();
+			while(line != null) {
+				toks = line.split("\t");
+				String interval = toks[0];
+				Double meanCov = Double.parseDouble( toks[2] );
+				Double percentOK = Double.parseDouble( toks[ toks.length - 1] );
+				
+				if (percentOK < 80.0) {
+					problemIntervals.add(interval + "\t" + meanCov + "\t" + percentOK);
+				}
+				line = reader.readLine();
+			}
+			
+			metrics.setFlaggedIntervals(problemIntervals);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new OperationFailedException("Error reading output file : " + summaryFile.getAbsolutePath(), this);

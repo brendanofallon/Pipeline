@@ -7,10 +7,9 @@ import java.io.PrintStream;
 import java.util.Date;
 import java.util.logging.Logger;
 
-import buffer.FileBuffer;
-
 import pipeline.Pipeline;
 import util.StringOutputStream;
+import buffer.FileBuffer;
 
 /**
  * An IOOperator that invokes a system call (to call an external application), and captures the data written 
@@ -23,6 +22,16 @@ import util.StringOutputStream;
 public abstract class PipedCommandOp extends IOOperator {
 	
 	protected StringOutputStream errStream = new StringOutputStream();
+	
+	
+	
+	/**
+	 * Return the string containing the command to be executed
+	 * @return
+	 * @throws OperationFailedException 
+	 */
+	protected abstract String getCommand() throws OperationFailedException;
+	
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -113,11 +122,110 @@ public abstract class PipedCommandOp extends IOOperator {
 				e.printStackTrace();
 			}
 	}
+
+	
 	/**
-	 * Return the string containing the command to be executed
-	 * @return
-	 * @throws OperationFailedException 
+	 * We do most of the work here because some classes (such as MultiLaneAligner) use the below code
+	 * to do some output-stream capturing work 
+	 * @param command
+	 * @param logger
+	 * @throws OperationFailedException
 	 */
-	protected abstract String getCommand() throws OperationFailedException;
+	protected void runSeriesAndCaptureOutput(String command1, String command2, Logger logger, FileBuffer destinationBuffer) throws OperationFailedException {
+		//Default to writing to first output buffer if it exists
+		OutputStream writer = null;
+		String outputPath = null;
+				
+		boolean binaryOutput = false;
+		if (destinationBuffer != null) {
+			outputPath = destinationBuffer.getAbsolutePath();
+			binaryOutput = destinationBuffer.isBinary();
+			try {
+				writer = new FileOutputStream(outputPath);
+			} catch (IOException e1) {
+				throw new OperationFailedException("Could not open output stream : " + e1.getCause() + " " + e1.getMessage(), this);
+			}
+		}
+		
+		Date now = new Date();
+		logger.info("[ " + now + "] Operator: " + getObjectLabel() + " Executing command1 : " + command1 + " and command2: " + command2);
+		if (writer != null);
+			
+			
+			Runtime r = Runtime.getRuntime();
+			Process p1;
+			Process p2;
+			try {
+				
+				PrintStream destinationStream = new PrintStream(destinationBuffer.getFile());
+				
+				p1 = r.exec(command1);
+
+				p2 = r.exec(command2);
+				
+				//The process we just started may hang if the output buffer its writing into gets full
+				//to avoid this, we start a couple of threads whose job it is to immediately 
+				//read from the output (both to stdout and to stderr) and store the resulting data
+				//Furthermore, binary output and text output are handled a bit differently
+				Thread pipeConnector = null; //Reads data from first process, writes it to second process 
+				Thread outputHandler = null; //Reads data from second process, writes it to final destination
+				
+					
+				logger.info(" Pipe operator " + getObjectLabel() + " is piping text output to path : " + outputPath);
+				pipeConnector = new StringPipeHandler(p1.getInputStream(), p2.getOutputStream());	
+				pipeConnector.start();
+				
+				outputHandler = new BinaryPipeHandler(p2.getInputStream(), destinationStream);
+				outputHandler.start();
+				
+//				Thread errorHandler = new StringPipeHandler(p1.getErrorStream(), errStream);
+//				errorHandler.start();
+				
+				
+				if (p1.waitFor() != 0) {
+					logger.info(" Piped operator (command #1)" + getObjectLabel() + " exited with nonzero status! \n " + errStream.toString());
+					System.err.println("Piped operator (command #1)" + getObjectLabel() + " exited with nonzero status! \n " + errStream.toString());
+					throw new OperationFailedException("Operator: " + getObjectLabel() + " terminated with nonzero exit value \n" + errStream.toString(), this);
+				}
+					
+				//System.out.println("Process one has completed");
+
+				p2.getOutputStream().close();
+				
+				//Wait for second process to complete
+				if (p2.waitFor() != 0) {
+					logger.info(" Piped operator (command #2) " + getObjectLabel() + " exited with nonzero status! \n " + errStream.toString());
+					System.err.println("Piped operator (command #2)" + getObjectLabel() + " exited with nonzero status! \n " + errStream.toString());
+					throw new OperationFailedException("Operator: " + getObjectLabel() + " terminated with nonzero exit value \n" + errStream.toString(), this);
+				}
+				
+				//System.out.println("Process 2 has completed");
+				
+				
+				
+				//Wait for output handling thread to die
+				if (pipeConnector != null && pipeConnector.isAlive())
+					pipeConnector.join();
+				
+				
+				
+				//System.out.println("Pipe connector has finished");
+				//Wait for final writing process to complete
+				if (outputHandler != null && outputHandler.isAlive())
+					outputHandler.join();
+				
+				//System.out.println("Outputhandler has finished");
+				
+				
+				destinationStream.close();
+				//System.out.println("Destination stream has closed");
+			}
+			catch (IOException e1) {
+				throw new OperationFailedException("Operator: " + getObjectLabel() + " encountered an IO exception : \n" + errStream.toString() + "\n" + e1.getLocalizedMessage(), this);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	}
 	
 }

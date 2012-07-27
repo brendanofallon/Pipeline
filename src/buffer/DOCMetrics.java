@@ -1,10 +1,8 @@
 package buffer;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.w3c.dom.NodeList;
-
-import pipeline.PipelineObject;
 
 /**
  * A small container class for some Depth Of Coverage metrics computed by the GaTK
@@ -17,7 +15,10 @@ public class DOCMetrics extends FileBuffer {
 	protected double meanCoverage = -1;
 	protected int[] cutoffs;
 	protected double[] fractionAboveCutoff;
+	protected List<String> flaggedIntervals = null;
 	
+	
+
 	public DOCMetrics() {
 		System.out.println("Creating new DOC metrics!");
 	}
@@ -26,6 +27,14 @@ public class DOCMetrics extends FileBuffer {
 		return sourceFile;
 	}
 
+	public List<String> getFlaggedIntervals() {
+		return flaggedIntervals;
+	}
+
+	public void setFlaggedIntervals(List<String> flaggedIntervals) {
+		this.flaggedIntervals = flaggedIntervals;
+	}
+	
 	public void setSourceFile(String sourceFile) {
 		this.sourceFile = sourceFile;
 	}

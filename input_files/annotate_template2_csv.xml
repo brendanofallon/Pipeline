@@ -22,42 +22,9 @@
 	<VariantPool />
 </GeneAnnotate>
 
-<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PopFreqAnnotate>
-
-<ExomesAnnotate class="operator.annovar.Exomes5400Annotator" > 
-  <AnnoInput />
-  <VariantPool />
-</ExomesAnnotate>
-
-
-<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
- <AnnoInput />
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
-</DBSNPAnnotate>
-
-
-<SiftAnnotate class="operator.annovar.SiftAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</SiftAnnotate>
-
-<PolyphenAnnotate class="operator.annovar.PolyphenAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PolyphenAnnotate>
-
-<MTAnnotate class="operator.annovar.MTAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</MTAnnotate>
-
-<PhyloPAnnotate class="operator.annovar.PhyloPAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PhyloPAnnotate>
+</dbNSFPAnnotate>
 
 
 <OMIMAnnotate class="operator.annovar.OMIMAnnotator" >

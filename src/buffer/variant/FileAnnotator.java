@@ -4,8 +4,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -48,6 +50,9 @@ public class FileAnnotator extends PipelineObject {
 		String line = reader.readLine();
 		int totalVars = 0;
 		int errorVars = 0;
+		
+		List<String> lastFewErrors = new ArrayList<String>(); //Stores info about variants not found in annotation file
+		
 		while(line != null) {
 			if (line.length()>0) {
 				String[] toks = line.split("\\t");
@@ -70,6 +75,8 @@ public class FileAnnotator extends PipelineObject {
 				}
 				else {
 					errorVars++;
+					if (lastFewErrors.size() < 10)
+						lastFewErrors.add("Variant not found : " + line);
 				}
 			}
 			line = reader.readLine();
@@ -77,7 +84,12 @@ public class FileAnnotator extends PipelineObject {
 		
 		if (errorVars > 0)
 			Logger.getLogger(Pipeline.primaryLoggerName).info(errorVars + " of " + totalVars + " could not be associated with a variant record");
+		
 		if (errorVars > totalVars*0.01) {
+			for(String err : lastFewErrors) {
+				System.err.println(err);
+			}
+			reader.close();
 			throw new IllegalArgumentException("Too many variants not found for file annotation, " + errorVars + " of " + totalVars + " total variants");
 		}
 		

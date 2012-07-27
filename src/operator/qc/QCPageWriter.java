@@ -1,6 +1,5 @@
 package operator.qc;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Writer;
 
@@ -22,6 +21,7 @@ public class QCPageWriter {
 		writer.write("<!DOCTYPE html>");
 		writer.write("<html lang=\"en\">	<head>	<meta charset=\"utf-8\"> <title>Quality metrics</title> \n");
 		writer.write("<link rel=\"stylesheet\" href=\"styles/style.css\" /> <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js\"></script>	<script src=\"js/jquery.custom.js\"></script> \n");
+		writer.write("<!-- //////// Google Fonts //////// -->	<link rel=\"stylesheet\" type=\"text/css\" href=\"http://fonts.googleapis.com/css?family=Droid+Sans\"> \n");
 		writer.write("</head>   <body>   	<div id=\"wrap\">    	<div id=\"header\"> <a href=\"qc-metrics.html\" title=\"Quality report\"><h1>Quality report</h1></a> </div> <!-- header --> \n");
         writer.write("<div id=\"nav\">	<ul> \n");                 	     
         writer.write("<li><a href=\"qc-metrics.html\" title =\"Overview\">Overview</a><span>/</span></li> \n");

@@ -22,14 +22,28 @@ public class VariantRec {
 	boolean isHetero;
 	private Map<String, Double> props = new HashMap<String, Double>();
 	private Map<String, String> annotations = new HashMap<String, String>();
+
+	
+	public VariantRec(String contig, 
+			int start, 
+			int end, 
+			String ref, 
+			String alt) {
+		this.contig = contig;
+		this.start = start;
+		this.end = end;
+		this.ref = ref;
+		this.alt = alt;
+		this.qual = 1000.0;
+		this.isHetero = true;
+	}
 	
 	public VariantRec(String contig, 
 							int start, 
 							int end, 
 							String ref, 
 							String alt, 
-							double qual, 
-							//boolean isExon, 
+							Double qual, 
 							boolean isHetero) {
 		this.contig = contig;
 		this.start = start;
@@ -182,6 +196,10 @@ public class VariantRec {
 	 * @return
 	 */
 	public String getPropertyOrAnnotation(String key) {
+		if (key.equals("quality")) {
+			return "" + getQuality();
+		}
+		
 		Double val = getProperty(key);
 		if (val != null)
 			return "" + val;
@@ -258,7 +276,7 @@ public class VariantRec {
 		return end;
 	}
 	
-	public double getQuality() {
+	public Double getQuality() {
 		return qual;
 	}
 	
@@ -511,6 +529,7 @@ public class VariantRec {
 	public static final String NM_NUMBER = "nm.number";
 	public static final String GENE_NAME = "gene";
 	public static final String FS_SCORE = "strand.bias.score";
+	public static final String LOGFS_SCORE = "log.fs";
 	public static final String DEPTH = "depth";
 	public static final String CDOT = "cdot";
 	public static final String PDOT = "pdot";
@@ -530,12 +549,14 @@ public class VariantRec {
 	public static final String SOURCE = "source.file";
 	public static final String VAR_DEPTH = "var.depth";
 	public static final String FALSEPOS_PROB = "fp.prob";
+	public static final String TAUFP_SCORE = "taufp.score";
 	public static final String VQSR = "vqsr.score";
 	public static final String EXOMES_FREQ = "exomes5400.frequency";
 	public static final String HGMD_INFO = "hgmd.info";
 	public static final String INTERACTION_SCORE = "interaction.score";
 	public static final String PUBMED_SCORE = "pubmed.score";
 	public static final String PUBMED_HIT = "pubmed.hit";
+	public static final String SAMPLE_COUNT = "sample.count";
 	
 }
 

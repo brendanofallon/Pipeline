@@ -24,17 +24,15 @@ import operator.qc.BamMetrics.BAMMetrics;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import buffer.BAMFile;
-import buffer.DOCMetrics;
-import buffer.FileBuffer;
-import buffer.VCFFile;
-import buffer.variant.VariantPool;
-import buffer.variant.VariantRec;
-
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
 import util.ElapsedTimeFormatter;
 import util.StringWriter;
+import buffer.BAMFile;
+import buffer.DOCMetrics;
+import buffer.VCFFile;
+import buffer.variant.VariantPool;
+import buffer.variant.VariantRec;
 
 /**
  * Builds a small html report containing some QC information. 
@@ -49,7 +47,8 @@ public class QCReport extends Operator {
 	DOCMetrics finalCoverageMetrics = null;
 	BAMFile rawBAMFile = null;
 	BAMFile finalBAMFile = null;
-	VCFFile variantsFile = null;
+	//VCFFile variantsFile = null;
+	VariantPool variantPool = null;
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -67,22 +66,16 @@ public class QCReport extends Operator {
 			throw new OperationFailedException("No final bam file specified", this);
 		}
 		
-		
-		System.out.println("Found raw doc metrics : " + rawCoverageMetrics);
-		System.out.println("Found final doc metrics : " + finalCoverageMetrics);
-
+		if (variantPool == null) {
+			throw new OperationFailedException("No variant pool specified", this);
+		}
 		
 		BAMMetrics rawMetrics = BamMetrics.computeBAMMetrics(rawBAMFile);
 		BAMMetrics finalMetrics = BamMetrics.computeBAMMetrics(finalBAMFile);
-		VariantPool varPool = null;
-		try {
-			varPool = new VariantPool(variantsFile);
-		} catch (IOException e1) {
-			e1.printStackTrace();
-			throw new OperationFailedException("Error reading variants file " + variantsFile.getAbsolutePath(), this);
-		}
 		
-		logger.info("Creating qc report for raw bam file:" + rawBAMFile.getAbsolutePath() + "\n final BAM: " + finalBAMFile.getAbsolutePath() + " variants file:" + variantsFile.getAbsolutePath());
+		
+		
+		logger.info("Creating qc report for raw bam file:" + rawBAMFile.getAbsolutePath() + "\n final BAM: " + finalBAMFile.getAbsolutePath() + " variant pool with:" + variantPool.size() + " variants");
 		
 		String projHome = getProjectHome();				
 		try {
@@ -119,7 +112,7 @@ public class QCReport extends Operator {
 			//Writer variant report
 			writer = new BufferedWriter(new FileWriter(outputPath + "/variants.html"));
 			StringWriter variants = new StringWriter();
-			writeVariantReport(variants, varPool, outputDir);
+			writeVariantReport(variants, variantPool, outputDir);
 			pageWriter.writePage(writer, variants.toString());
 			writer.close();
 			
@@ -168,6 +161,49 @@ public class QCReport extends Operator {
 		writer.write("<p> Ts/ Tv ratio : " + formatter.format(varPool.computeTTRatio()) + " </p>" + lineSep );
 		writer.write("<p> Mean variant quality : " + varPool.meanQuality() + " </p>" + lineSep );
 
+		VariantPool novels = new VariantPool();
+		VariantPool knowns = new VariantPool();
+		for(String contig : varPool.getContigs()) {
+			for(VariantRec var : varPool.getVariantsForContig(contig)) {
+				Double freq = var.getProperty(VariantRec.POP_FREQUENCY);
+				if (freq != null && freq > 1e-5)
+					knowns.addRecordNoSort(var);
+				else
+					novels.addRecordNoSort(var);
+			}
+		}
+				
+		
+		writer.write("<h2> Known variant summary </h2>");
+		if (knowns.size()==0) {
+			writer.write("<p> No population frequency computed, cannot determine known / novel properties </p>" + lineSep );
+		}
+		else {
+			writer.write("<p> Total number of novel variants : " + knowns.size() + " </p>" + lineSep );
+			writer.write("<p> Number of contigs : " + knowns.getContigCount() + " </p>" + lineSep );
+			writer.write("<p> Number of SNPs : " + knowns.countSNPs() + " </p>" + lineSep );	
+			writer.write("<p> Number of insertions : " + knowns.countInsertions() + " </p>" + lineSep );
+			writer.write("<p> Number of deletions : " + knowns.countDeletions() + " </p>" + lineSep );
+			heteroFraction = formatter.format(knowns.countHeteros() / (double)knowns.size());
+			writer.write("<p> Number of heterozygotes : " + knowns.countHeteros() + " ( " + heteroFraction + ") </p>" + lineSep );
+			writer.write("<p> Ts/ Tv ratio : " + formatter.format(knowns.computeTTRatio()) + " </p>" + lineSep );
+			writer.write("<p> Mean variant quality : " + knowns.meanQuality() + " </p>" + lineSep );
+
+			writer.write("<h2> Novel variant summary </h2>");
+			writer.write("<p> Total number of known variants : " + novels.size() + " </p>" + lineSep );
+			writer.write("<p> Number of contigs : " + novels.getContigCount() + " </p>" + lineSep );
+			writer.write("<p> Number of SNPs : " + novels.countSNPs() + " </p>" + lineSep );
+
+			writer.write("<p> Number of insertions : " + novels.countInsertions() + " </p>" + lineSep );
+			writer.write("<p> Number of deletions : " + novels.countDeletions() + " </p>" + lineSep );
+			heteroFraction = formatter.format(novels.countHeteros() / (double)novels.size());
+			writer.write("<p> Number of heterozygotes : " + novels.countHeteros() + " ( " + heteroFraction + ") </p>" + lineSep );
+			writer.write("<p> Ts/ Tv ratio : " + formatter.format(novels.computeTTRatio()) + " </p>" + lineSep );
+			writer.write("<p> Mean variant quality : " + novels.meanQuality() + " </p>" + lineSep );
+		}
+		
+		
+		
 		Histogram histo = new Histogram(0, 1, 50);
 		LazyHistogram overallQualHisto = new LazyHistogram(100);
 		LazyHistogram snpQualHisto = new LazyHistogram(100);
@@ -277,10 +313,9 @@ public class QCReport extends Operator {
 		
 		writer.write("<h2> Operator summary </h2>");
 		List<Operator> opList = ppl.getOperatorList();
-		writer.write(" <p> Operator count : " + opList.size() + " </p> " + lineSep);
 		
 		//Operator summary table...
-		writer.write("<table border=\"0\" padding=\"5\" width=\"500\"> <tr>	<th>Operator label  </th>	<th> Time </th>	 <th> Completion state </th></tr> ");
+		writer.write("<table border=\"0\" padding=\"5\" width=\"600\"> <tr>	<th>Operator </th>	<th> Duration </th>	 <th> Completion state </th></tr> ");
 		for(Operator op : opList) {
 			
 			writer.write(" <tr> ");
@@ -310,7 +345,7 @@ public class QCReport extends Operator {
 		writer.write("</table>");
 		
 		writer.write("<h2> Pipeline properties </h2>");
-		writer.write("<table border=\"0\" padding=\"5\" width=\"500\"> <tr>	<th>Property key  </th>	<th> value </th> </tr> ");
+		writer.write("<table border=\"0\" padding=\"5\" width=\"700\"> ");
 		for(Object keyObj : ppl.getPropertyKeys()) {
 			String key = keyObj.toString();
 			Object value = ppl.getProperty(key);
@@ -353,6 +388,19 @@ public class QCReport extends Operator {
 					writer.write("<p>  Fraction of bases with coverage > " + docMetrics.getCutoffs()[i] + " : " + formatter.format(val) + " </p>" +lineSep);
 				}
 			}
+			
+			if (docMetrics.getFlaggedIntervals() == null) {
+				writer.write("<p> Number of low coverage intervals : No information found </p>" +lineSep);
+			}
+			else {
+				writer.write("<p> Number of low coverage intervals : " + docMetrics.getFlaggedIntervals().size() + " </p>" +lineSep);
+				for(String intervalInfo : docMetrics.getFlaggedIntervals()) {
+					writer.write("<p>chr" + intervalInfo + " </p>" +lineSep);
+				}
+			
+			}
+			
+			
 		}
 		
 		writer.write("<h2>  Distribution of insert sizes : " + " </h2>" +lineSep);
@@ -397,12 +445,11 @@ public class QCReport extends Operator {
 					}
 				}
 				if (obj instanceof VCFFile) {
-					if (variantsFile == null)
-						variantsFile = (VCFFile)obj;
-					else
-						throw new IllegalArgumentException("Too many input variant files");
+					throw new IllegalArgumentException("Got a straight-up VCF file as input to QC metrics, this now needs to be a variant pool.");
 				}
-				
+				if (obj instanceof VariantPool) {
+					variantPool = (VariantPool)obj;
+				}
 				// ?
 			}
 		}

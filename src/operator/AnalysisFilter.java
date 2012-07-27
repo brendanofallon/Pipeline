@@ -10,7 +10,6 @@ import org.w3c.dom.NodeList;
 
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
-import buffer.BEDFile;
 import buffer.GeneInteractionGraph;
 import buffer.variant.GenePool;
 import buffer.variant.VariantPool;
@@ -141,26 +140,26 @@ public class AnalysisFilter extends Operator {
 			}
 		}
 		
-		if (vqsr != null && vqsr < vqsrCutoff) {
-			return false;
-		}
-		
-		if (falsePosProb != null && falsePosProb > fpCutoff) {
-			return false;
-		}
-		
-		if (varFreq != null && varFreq < varFreqCutoff) {
-			return false;
-		}
-		
-		
-		if (popFreq != null && popFreq > popFreqCutoff) {
-			return false;
-		}
-		
-		if (espFreq != null && espFreq > popFreqCutoff) {
-			return false;
-		}
+//		if (vqsr != null && vqsr < vqsrCutoff) {
+//			return false;
+//		}
+//		
+//		if (falsePosProb != null && falsePosProb > fpCutoff) {
+//			return false;
+//		}
+//		
+//		if (varFreq != null && varFreq < varFreqCutoff) {
+//			return false;
+//		}
+//		
+//		
+//		if (popFreq != null && popFreq > popFreqCutoff) {
+//			return false;
+//		}
+//		
+//		if (espFreq != null && espFreq > popFreqCutoff) {
+//			return false;
+//		}
 		
 		
 		Double effectPred = EffectPredictionAnnotator.getEffectPredictionLinearWeight(var);

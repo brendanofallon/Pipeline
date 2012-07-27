@@ -4,21 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import operator.IOOperator;
+import operator.OperationFailedException;
+
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import buffer.FileBuffer;
+import pipeline.Pipeline;
+import pipeline.PipelineObject;
 import buffer.variant.VarFilterUtils;
 import buffer.variant.VariantFilter;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
-
-import operator.IOOperator;
-import operator.OperationFailedException;
-import operator.Operator;
-import pipeline.Pipeline;
-import pipeline.PipelineObject;
 
 /**
  * An operator that creates a new variant pool 
@@ -35,6 +33,8 @@ public class VariantMultiFilter extends IOOperator {
 	public static final String VAR_DEPTH_CUTOFF = "var.depth.cutoff";
 	public static final String VAR_FREQ_CUTOFF = "var.freq.cutoff";
 	public static final String ZYGOSITY = "zygosity";
+	public static final String STRAND_BIAS_CUTOFF = "strand.bias.cutoff";
+	public static final String QUALITY_CUTOFF = "quality.cutoff";
 	
 	VariantPool inVariants = null;
 	VariantPool outVariants = null;
@@ -55,6 +55,8 @@ public class VariantMultiFilter extends IOOperator {
 		final Double depthCutoff = readDoubleAttribute(DEPTH_CUTOFF);
 		final Double varDepthCutoff = readDoubleAttribute(VAR_DEPTH_CUTOFF);
 		final Double varFreqCutoff = readDoubleAttribute(VAR_FREQ_CUTOFF);
+		final Double strandBiasCutoff = readDoubleAttribute(STRAND_BIAS_CUTOFF);
+		final Double qualityCutoff = readDoubleAttribute(QUALITY_CUTOFF);
 		
 		Zygosity zygFilter = Zygosity.ALL;
 		String zygStr = this.getAttribute(ZYGOSITY);
@@ -80,6 +82,8 @@ public class VariantMultiFilter extends IOOperator {
 		message = message + " Pop freq. cutoff : " + popFreqCutoff + "\n";
 		message = message + " Var depth cutoff : " + varDepthCutoff+ "\n";
 		message = message + " Var freq cutoff : " + varFreqCutoff+ "\n";
+		message = message + " Strand bias cutoff : " + strandBiasCutoff + "\n";
+		message = message + " Quality cutoff : " + qualityCutoff + "\n";
 		message = message + " Zygosities included cutoff : " + zygFilter + "\n";
 		logger.info(message);
 		
@@ -104,19 +108,42 @@ public class VariantMultiFilter extends IOOperator {
 				@Override
 				public boolean passes(VariantRec rec) {
 					Double depth = rec.getProperty(VariantRec.DEPTH);
-					if (depth == null || depth > depthCutoff)
+					if (depth == null || depth >= depthCutoff)
 						return true;
 					return false;
 				}
 			});
 		}
 		
+		if (strandBiasCutoff != null) {
+			filters.add(new VariantFilter() {
+				@Override
+				public boolean passes(VariantRec rec) {
+					Double fsScore = rec.getProperty(VariantRec.FS_SCORE);
+					if (fsScore == null || fsScore < strandBiasCutoff)
+						return true;
+					return false;
+				}
+			});
+		}
+		
+		if (qualityCutoff != null) {
+			filters.add(new VariantFilter() {
+				@Override
+				public boolean passes(VariantRec rec) {
+					Double qScore = rec.getQuality();
+					if (qScore == null || qScore > qualityCutoff)
+						return true;
+					return false;
+				}
+			});
+		}
 		
 		if (varDepthCutoff != null) {
 			filters.add(new VariantFilter() {
 				public boolean passes(VariantRec rec) {
 					Double varDepth = rec.getProperty(VariantRec.VAR_DEPTH);
-					if (varDepth == null || varDepth > varDepthCutoff)
+					if (varDepth == null || varDepth >= varDepthCutoff)
 						return true;
 					return false;
 				}
@@ -128,12 +155,12 @@ public class VariantMultiFilter extends IOOperator {
 				public boolean passes(VariantRec rec) {
 					Double totDepth = rec.getProperty(VariantRec.DEPTH);
 					Double varDepth = rec.getProperty(VariantRec.VAR_DEPTH);
-					if (totDepth == null || varDepth == null)
+					if (totDepth == null || varDepth == null || totDepth == 0 || varDepth == 0)
 						return true;
 					
 					Double varFreq = varDepth / totDepth;
 					
-					if (varFreq > varFreqCutoff)
+					if (varFreq >= varFreqCutoff)
 						return true;
 					return false;
 				}

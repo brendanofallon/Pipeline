@@ -23,7 +23,7 @@
 </FastQC>
 
 <!-- Parallel realignment with given number of threads. This will assume paired-ends unless single="true" is given -->
-<MultiLaneAlign class="operator.bwa.MultiLaneAligner" threads="4">
+<MultiLaneAlign class="operator.bwa.MultiLaneAligner" threads="4" sample="$$PREFIX" >
   <input>
     <reference />
     <readsOne />
@@ -226,6 +226,65 @@
   </input>
   <output />
 </LastIndex>
+
+<!-- Push variants into a 'variant pool' that can we easily manipulate -->
+<VariantPool class="buffer.variant.VariantPool">
+	<recalibratedVCF />
+</VariantPool>
+
+
+
+<!-- Annotation stuff -->
+<MakeInput class="operator.annovar.ConvertVCFAnnovar">
+ <input>
+	<recalibratedVCF />
+ </input>
+ <output>
+	<AnnoInput class="buffer.AnnovarInputFile" filename="$$PREFIX.annovar.input" />
+ </output>
+</MakeInput>
+
+<GeneAnnotate class="operator.annovar.GeneAnnotator">
+	<AnnoInput />
+	<VariantPool />
+</GeneAnnotate>
+
+<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
+	<AnnoInput />
+	<VariantPool />	
+</PopFreqAnnotate>
+
+<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
+ <AnnoInput />
+ <VariantPool />
+</DBSNPAnnotate>
+
+<ExomesAnnotate class="operator.annovar.Exomes5400Annotator" > 
+  <AnnoInput />
+  <VariantPool />
+</ExomesAnnotate>
+
+
+<OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
+  <AnnoInput />
+  <VariantPool />
+</OMIMAnnotate>
+
+<FilterVariants class="operator.variant.FilterPoolByBED">
+ <VariantPool />
+ <capture />
+</FilterVariants>
+
+
+<ToFile class="operator.variant.ExcelWriter">
+	<VariantPool />
+	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.annotated.csv" />
+</ToFile>
+
+
+
+
+<!-- Final creation of results directory and cleanup of temporary files -->
 
 <!-- Create a directory with a few of the useful files in it -->
 <MakeResults class="operator.MoveFiles" dest="results" >

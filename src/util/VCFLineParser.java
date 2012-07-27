@@ -2,7 +2,6 @@ package util;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,14 +9,15 @@ import java.io.InputStreamReader;
 import java.util.logging.Logger;
 
 import pipeline.Pipeline;
-
 import buffer.VCFFile;
 import buffer.variant.VariantLineReader;
 import buffer.variant.VariantRec;
 
 /**
  * This class provides a uniform interface for extracting values from a single line of a vcf file.
- * It uses a differed-implementation strategy so we dont have to store too much info 
+ * Right now this makes several assumptions regarding the format of the VCF which
+ * work well with the GaTK's vcfs, but may break with other vcf types. Use
+ * GenericVCFParser for a more flexible version.  
  * @author brendan
  *
  */
@@ -26,7 +26,7 @@ public class VCFLineParser implements VariantLineReader {
 		private BufferedReader reader;
 		private int currentLineNumber = -1;
 		private String currentLine = null;
-		private String[] lineToks = null;
+		protected String[] lineToks = null;
 		private String[] formatToks = null; //Tokenized format string, produced as needed
 		private int gtCol = -1; //Format column which contains genotype info
 		private int gqCol = -1; //Format column which contains genotype quality info 
@@ -211,6 +211,16 @@ public class VCFLineParser implements VariantLineReader {
 					Double fsScore = getStrandBiasScore();
 					if (fsScore != null)
 						rec.addProperty(VariantRec.FS_SCORE, fsScore);
+					
+					Double tfpScore = getTauFPScore();
+					if (tfpScore != null)
+						rec.addProperty(VariantRec.TAUFP_SCORE, fsScore);
+					
+					Double logFSScore = getLogFSScore();
+					if (logFSScore != null)
+						rec.addProperty(VariantRec.LOGFS_SCORE, logFSScore);
+					
+					
 				}
 				catch (Exception ex) {
 					System.err.println("ERROR: could not parse variant from line : " + currentLine + "\n Exception: " + ex.getMessage());
@@ -222,7 +232,8 @@ public class VCFLineParser implements VariantLineReader {
 		
 
 
-		
+
+
 		/**
 		 * Read one more line of input, returns false if line cannot be read
 		 * @return
@@ -342,27 +353,27 @@ public class VCFLineParser implements VariantLineReader {
 		 * 
 		 */
 		public boolean isHetero() {
-			if (lineToks != null) {
-				String[] fields = lineToks[9].split(":");
-				//Right now we assume genotype is in FIRST format-field element, this may not always be true 
-				if (fields[0].length() != 3) {
-					throw new IllegalStateException("Wrong number of characters in string for is hetero... (got " + fields[0].length() + ", but should be 3)");
-				}
-				
-				if (fields[0].charAt(1) == '/' || fields[0].charAt(1) == '|') {
-					if (fields[0].charAt(0) != fields[0].charAt(2))
-						 return true;
-					else
-						return false;
-						
-				}
-				else {
-					throw new IllegalStateException("Genotype separator char does not seem to be normal (found " + fields[0].charAt(1) + ")");
-				}
-				
+			if (formatToks == null) {
+				createFormatString();
 			}
-			else
-				return false;
+			
+			String[] formatValues = lineToks[sampleColumn].split(":");
+			String GTStr = formatValues[gtCol];
+			
+			if (GTStr.length() != 3) {
+				throw new IllegalStateException("Wrong number of characters in string for is hetero... (got " + GTStr + ", but length should be 3)");
+			}
+
+			if (GTStr.charAt(1) == '/' || GTStr.charAt(1) == '|') {
+				if (GTStr.charAt(0) != GTStr.charAt(2))
+					 return true;
+				else
+					return false;
+			}
+			else {
+				throw new IllegalStateException("Genotype separator char does not seem to be normal (found " + GTStr.charAt(1) + ")");
+			}
+			
 		}
 		
 		public boolean isHomo() {
@@ -382,7 +393,7 @@ public class VCFLineParser implements VariantLineReader {
 				createFormatString();
 			}
 			
-			String[] formatValues = lineToks[sampleColumn].split("\t");
+			String[] formatValues = lineToks[sampleColumn].split(":");
 			String GTStr = formatValues[gtCol];
 			if (GTStr.charAt(1) == '|') {
 				return true;
@@ -458,6 +469,32 @@ public class VCFLineParser implements VariantLineReader {
 				String tok = infoToks[i];
 				if (tok.startsWith("VQSLOD=")) {
 					Double val = Double.parseDouble(tok.replace("VQSLOD=", ""));
+					return val;
+				}
+			}
+					
+			return null;
+		}
+		
+		private Double getLogFSScore() {
+			String[] infoToks = lineToks[7].split(";");
+			for(int i=0; i<infoToks.length; i++) {
+				String tok = infoToks[i];
+				if (tok.startsWith("LOGFS=")) {
+					Double val = Double.parseDouble(tok.replace("LOGFS=", ""));
+					return val;
+				}
+			}
+			return null;
+		}
+
+		
+		private Double getTauFPScore() {
+			String[] infoToks = lineToks[7].split(";");
+			for(int i=0; i<infoToks.length; i++) {
+				String tok = infoToks[i];
+				if (tok.startsWith("TAUFP=")) {
+					Double val = Double.parseDouble(tok.replace("TAUFP=", ""));
 					return val;
 				}
 			}

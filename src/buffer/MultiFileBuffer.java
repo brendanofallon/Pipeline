@@ -2,9 +2,7 @@ package buffer;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import org.w3c.dom.Node;
@@ -98,6 +96,7 @@ public class MultiFileBuffer extends FileBuffer {
 			return buff.getContig();
 		}
 		else {
+
 			String name = buff.getFile().getName();
 			int index1 = -1;
 			int index2 = -1;

@@ -6,12 +6,9 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import pipeline.ObjectCreationException;
 import pipeline.Pipeline;
-import pipeline.PipelineObject;
 
 /**
  * This MultiFileBuffer contains all files matching the regexp given in the filename attribute
@@ -32,20 +29,27 @@ public class GlobFileBuffer extends MultiFileBuffer {
 	 */
 	public void findFiles() {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-
-		String projHome = System.getProperty("user.dir");
-		if (! fileMatcher.inputPattern.startsWith("/")) {
-			String projHomeAttr = properties.get(Pipeline.PROJECT_HOME);
-			if (projHomeAttr != null) {
-				projHome = projHomeAttr;
-			}
-		}
+		File[] listing = fileMatcher.parent.listFiles(fileMatcher);
+//		if (fileMatcher.inputPattern.startsWith("/")) {
+//			File parent = (new File( fileMatcher.inputPattern )).getParentFile();
+//						
+//			listing = parent.listFiles(fileMatcher);
+//			System.out.println("Input pattern starts with /, looking for files in parent directory : " + parent.getAbsolutePath());
+//		}
+//		else {
+//			String projHomeAttr = properties.get(Pipeline.PROJECT_HOME);
+//			if (projHomeAttr != null) {
+//				projHome = projHomeAttr;
+//			}
+//			File projDir = new File(projHome);
+//			listing = projDir.listFiles(fileMatcher);
+//		}
 		
-		File projDir = new File(projHome);
-		File[] listing = projDir.listFiles(fileMatcher);
 		
-		if (listing.length == 0) {
-			logger.severe("GlobFileBuffer with pattern " + fileMatcher.inputPattern + " matched zero files!");
+		
+		
+		if (listing == null || listing.length == 0) {
+			logger.severe("GlobFileBuffer with pattern " + fileMatcher.pattern + " matched zero files!");
 		//	throw new IllegalArgumentException("Glob file buffer did not match any files, this is probably an error");
 		}
 		
@@ -61,15 +65,27 @@ public class GlobFileBuffer extends MultiFileBuffer {
 	
 	@Override
 	public void initialize(NodeList children) {
+		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+
 		String guessAttr = properties.get(GUESS_CONTIG);
 		if (guessAttr != null) {
 			guessContig = Boolean.parseBoolean(guessAttr);
 		}
 		
 		final String pattern = properties.get(FILENAME_ATTR);
-
-		System.out.println("pattern is: " + pattern);
-		fileMatcher = new FileMatcher(pattern, Pattern.compile(pattern));
+		File parent;
+		if (pattern.startsWith("/")) {
+			parent = (new File(pattern)).getParentFile();
+		}
+		else
+			parent = new File( this.getProjectHome() );
+		
+		
+		String patternStr = pattern.substring( pattern.lastIndexOf("/")+1 );
+		
+		logger.info("Initializing GlobFileBuffer with parent file: " + parent.getAbsolutePath() + " and pattern : " + patternStr);
+		
+		fileMatcher = new FileMatcher(parent, Pattern.compile(patternStr));
 		findFiles();
 	}
 
@@ -77,21 +93,16 @@ public class GlobFileBuffer extends MultiFileBuffer {
 	public class FileMatcher implements FilenameFilter {
 		
 		Pattern pattern;
-		String inputPattern;
-		public FileMatcher(String inputString, Pattern pattern) {
-			this.inputPattern = inputString;
+		File parent;
+		
+		public FileMatcher(File parent, Pattern pattern) {
 			this.pattern = pattern;
+			this.parent = parent;
 		}
 		
 		@Override
 		public boolean accept(File dir, String name) {
 			Matcher matcher = pattern.matcher(name);
-//			if (matcher.matches()) {
-//				System.out.println("Matcher matches name: " + name);
-//			}
-//			else {
-//				System.out.println("Matcher does NOT match name: " + name);
-//			}
 			return matcher.matches();
 		}
 		

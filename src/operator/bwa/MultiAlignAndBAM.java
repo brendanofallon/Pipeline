@@ -24,25 +24,7 @@ import buffer.ReferenceFile;
 import buffer.SAIFile;
 import buffer.SAMFile;
 
-/**
- * A class that uses BWA to align fastq files to a reference, where the fastq files may be paired-end reads
- * from multiple lanes. If so, corresponding pairs are come appear in separate multi-file-buffers and are
- * assumed to appear in the same lexicographical order, so that 
- * 
- * MultiBufferOne:
- * 	 reads_X_1.fq
- *   reads_Y_1.fq
- * 
- * MultiBufferTwo:
- * 	  reads_Y_2.fq
- *    reads_X_2.fq
- *    
- * will assume that reads_X_1.fq and reads_X_2.fq are opposing pairs of a paired-end read job
- * 
- * @author brendan
- *
- */
-public class MultiLaneAligner extends PipedCommandOp {
+public class MultiAlignAndBAM extends PipedCommandOp {
 
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
@@ -56,6 +38,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 	protected int sampeThreads = 1;  //Overridden in performOperation
 	protected String maxEditDist = "3"; //Maximum edit distance for alignment
 	protected String pathToBWA = "bwa";
+	protected String pathToSamTools = "samtools";
 	//protected String skipSAI = "skipsai";
 	protected int defaultThreads = 4;
 	protected String readGroup = "unknown";
@@ -64,6 +47,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 	protected int threads = defaultThreads;
 	protected String referencePath = null;
 	protected StringOutputStream errStream = new StringOutputStream();
+	
 
 	private List<StringPair> saiFileNames = new ArrayList<StringPair>();
 	
@@ -87,6 +71,12 @@ public class MultiLaneAligner extends PipedCommandOp {
 		String bwaPathAttr = properties.get(PATH);
 		if (bwaPathAttr != null) {
 			pathToBWA = bwaPathAttr;
+		}
+		
+		
+		String samToolsPathAttr = properties.get(PipelineXMLConstants.SAMTOOLS_PATH);
+		if (samToolsPathAttr != null) {
+			pathToSamTools = samToolsPathAttr;
 		}
 		
 		String threadsAttr = properties.get(THREADS);
@@ -180,28 +170,22 @@ public class MultiLaneAligner extends PipedCommandOp {
 		}
 		
 		logger.info("Beginning multi-lane alignment with " + files1.getFileCount() + " read pairs");
-		
-		boolean skipSAIGen1 = false; //Deprected, we always remake sai's now
-//		String skipSAIStr = properties.get(skipSAI);
-//		if (skipSAIStr != null) {
-//			skipSAIGen1 = Boolean.parseBoolean(skipSAIStr);
-//			logger.info("Setting skip .sai generation to : " + skipSAIGen1);
-//		}
+
 		
 		//These are done in serial since bwa can parallelize itself
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( Math.max(1, getPreferredThreadCount()/threads) );
 		
 		if (pairedEnd) {
-			runPairedEndAlignment(files1, files2, skipSAIGen1);
+			runPairedEndAlignment(files1, files2, skipSAIGen);
 		}
 		else {
-			runSingleEndAlignment(files1, skipSAIGen1);
+			runSingleEndAlignment(files1, skipSAIGen);
 			if (files2 != null)
-				runSingleEndAlignment(files2, skipSAIGen1);
+				runSingleEndAlignment(files2, skipSAIGen);
 		}
 		
 		
-		if (!skipSAIGen1) {
+		if (!skipSAIGen) {
 			try {
 				logger.info("All alignment jobs have been submitted to MultiLaneAligner, " + getObjectLabel() + ", now awaiting termination");
 				threadPool.shutdown(); //No new tasks will be submitted,
@@ -217,6 +201,7 @@ public class MultiLaneAligner extends PipedCommandOp {
 		
 		logger.info("All bwa aln steps have completed, now creating SAM files");
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount()/threads );
+
 		//Now build sam files in parallel since we can do that and bwa can't
 		for(StringPair saiFiles : saiFileNames) {
 			SamBuilderJob makeSam = null;
@@ -301,14 +286,8 @@ public class MultiLaneAligner extends PipedCommandOp {
 		threadPool.submit(task);
 	}
 	
-	@Override
-	protected String getCommand() throws OperationFailedException {
-		//No need to return a command here since we've overridden performOperation to use multiple commands
-		return null;
-	}
-
 	/**
-	 * Run BWA aln as a seperate thread
+	 * Run BWA aln as a separate thread
 	 * @author brendan
 	 *
 	 */
@@ -343,13 +322,13 @@ public class MultiLaneAligner extends PipedCommandOp {
 			}
 		}
 		
-	}
-	
+	}	
 	
 	class SamBuilderJob implements Runnable {
 
 		protected String defaultRG = "@RG\\tID:unknown\\tSM:$SAMPLE$\\tPL:ILLUMINA";
-		final String command;
+		final String command1;
+		final String command2;
 		String baseFilename;
 		
 		/**
@@ -368,7 +347,8 @@ public class MultiLaneAligner extends PipedCommandOp {
 				
 			String rgStr = defaultRG.replace("$SAMPLE$", SAMPLE);
 			
-			command = pathToBWA + " sampe -r " + rgStr + " " + referencePath + " " + threadsStr + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo;
+			command1 = pathToBWA + " sampe -r " + rgStr + " " + referencePath + " " + threadsStr + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo;
+			command2 = pathToSamTools + " view -Sb - ";
 		}
 		
 		/**
@@ -378,7 +358,8 @@ public class MultiLaneAligner extends PipedCommandOp {
 		 */
 		public SamBuilderJob(String readsOne, String saiFileOne) {
 			baseFilename = saiFileOne;
-			command = pathToBWA + " samse -r " + defaultRG + " " + referencePath + " " + saiFileOne + " " + readsOne;
+			command1 = pathToBWA + " samse -r " + defaultRG + " " + referencePath + " " + saiFileOne + " " + readsOne;
+			command2 = pathToSamTools + " view -Sb ";
 		}
 		
 		@Override
@@ -386,19 +367,19 @@ public class MultiLaneAligner extends PipedCommandOp {
 			Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 			try {
 					Date begin = new Date();
-					logger.info("Beginning task with command : " + command + " threadpool has " + threadPool.getActiveCount() + " active tasks");
-					String samPath = baseFilename.replace(".sai", "");
-					samPath = samPath.replace(".fastq", "");
-					samPath = samPath.replace(".gz", "");
-					samPath = samPath.replace(".fq", "");
-					samPath = samPath.replace(".txt", "");
-					samPath = samPath + ".sam";
-					FileBuffer pipeDestination = new SAMFile(new File(samPath));
-					runAndCaptureOutput(command, Logger.getLogger(Pipeline.primaryLoggerName), pipeDestination);
+					logger.info("Beginning task with command : " + command1 + " | " + command2 + " threadpool has " + threadPool.getActiveCount() + " active tasks");
+					String bamPath = baseFilename.replace(".sai", "");
+					bamPath = bamPath.replace(".fastq", "");
+					bamPath = bamPath.replace(".gz", "");
+					bamPath = bamPath.replace(".fq", "");
+					bamPath = bamPath.replace(".txt", "");
+					bamPath = bamPath + ".bam";
+					FileBuffer pipeDestination = new SAMFile(new File(bamPath));
+					runSeriesAndCaptureOutput(command1, command2, Logger.getLogger(Pipeline.primaryLoggerName), pipeDestination);
 					Date end = new Date();
 					synchronized (this) {
 						outputSAMs.addFile(pipeDestination);
-						logger.info("Task with command : " + command + " has completed (elapsed time " + ElapsedTimeFormatter.getElapsedTime(begin.getTime(), end.getTime()) + ") \n Threadpool has " + threadPool.getActiveCount() + " active tasks");
+						logger.info("Task with command : " + command1 + " | " + command2 + " has completed (elapsed time " + ElapsedTimeFormatter.getElapsedTime(begin.getTime(), end.getTime()) + ") \n Threadpool has " + threadPool.getActiveCount() + " active tasks");
 					}
 					
 				
@@ -425,5 +406,9 @@ public class MultiLaneAligner extends PipedCommandOp {
 		String saiTwo;
 	}
 
-	
+	@Override
+	protected String getCommand() throws OperationFailedException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

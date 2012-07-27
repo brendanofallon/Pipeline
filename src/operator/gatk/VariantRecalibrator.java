@@ -2,14 +2,14 @@ package operator.gatk;
 
 import java.util.logging.Logger;
 
-import buffer.BAMFile;
-import buffer.FileBuffer;
-import buffer.ReferenceFile;
-import buffer.VCFFile;
 import operator.CommandOperator;
 import operator.OperationFailedException;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
+import buffer.FileBuffer;
+import buffer.GlobFileBuffer;
+import buffer.ReferenceFile;
+import buffer.VCFFile;
 
 public class VariantRecalibrator extends CommandOperator {
 
@@ -18,6 +18,7 @@ public class VariantRecalibrator extends CommandOperator {
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
 	public static final String JVM_ARGS="jvmargs";
+	public static final String ADDITIONAL_TAGS="additional.tags";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
 	
@@ -29,7 +30,7 @@ public class VariantRecalibrator extends CommandOperator {
 	}
 	
 	@Override
-	protected String[] getCommands() {
+	protected String[] getCommands() throws OperationFailedException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 		
 		Object propsPath = getPipelineProperty(PipelineXMLConstants.GATK_PATH);
@@ -52,6 +53,13 @@ public class VariantRecalibrator extends CommandOperator {
 			jvmARGStr = "";
 		}
 		
+		String additionalTagsStr = properties.get(ADDITIONAL_TAGS);
+		String[] additionalTags = new String[]{};
+		if (additionalTagsStr != null) {
+			additionalTags = additionalTagsStr.split(",");
+			logger.info("Using additional tags : " + additionalTagsStr);
+		}
+		
 		String maxGaussianStr = properties.get(MAX_GAUSSIANS);
 		if (maxGaussianStr != null) {
 			maxGaussians = Integer.parseInt(maxGaussianStr);
@@ -60,11 +68,35 @@ public class VariantRecalibrator extends CommandOperator {
 		
 		
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
-		String inputFile = inputBuffers.get(1).getAbsolutePath();
+		FileBuffer inputFile = inputBuffers.get(1);
 		FileBuffer hapmapFile = inputBuffers.get(2);
 		FileBuffer genomesFile = inputBuffers.get(3);
 		FileBuffer dbsnpFile = inputBuffers.get(4);
+		FileBuffer backgroundFile = null;
+		if (inputBuffers.size()==6) {
+			backgroundFile = inputBuffers.get(5);
+		}
 			
+		String[] inputFilePaths;
+		if (backgroundFile != null) {
+			if (! (backgroundFile instanceof GlobFileBuffer)) {
+				throw new OperationFailedException("Input file #6, if it exists, must be a glob file buffer", this);
+			}
+			
+			GlobFileBuffer backgroundFiles = (GlobFileBuffer) backgroundFile;
+			if (backgroundFiles.getFileCount()==0) {
+				throw new OperationFailedException("No files found in background VCFs glob, this is probably an error.", this);
+			}
+			inputFilePaths = new String[backgroundFiles.getFileCount()+1];
+			inputFilePaths[0] = inputFile.getAbsolutePath();
+			for(int i=0; i<backgroundFiles.getFileCount(); i++) {
+				inputFilePaths[i+1] = backgroundFiles.getFile(i).getAbsolutePath();
+			}
+		}
+		else {
+			inputFilePaths = new String[1];
+			inputFilePaths[0] = inputFile.getAbsolutePath();
+		}
 
 		FileBuffer outputVCF = getOutputBufferForClass(VCFFile.class);
 		
@@ -75,11 +107,16 @@ public class VariantRecalibrator extends CommandOperator {
 		
 				
 		String recalCommand = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
-		recalCommand = recalCommand + " -R " + reference + " -input " + inputFile + " -T VariantRecalibrator ";		
+		recalCommand = recalCommand + " -R " + reference + " -T VariantRecalibrator ";
+		for(int i=0; i<inputFilePaths.length; i++) {
+			recalCommand = recalCommand + " -input " + inputFilePaths[i] + " ";
+		}
 		recalCommand = recalCommand + "-resource:hapmap,known=false,training=true,truth=true,prior=15.0 " + hapmapFile.getAbsolutePath() + " ";
 		recalCommand = recalCommand + "-resource:omni,known=false,training=true,truth=false,prior=12.0 " + genomesFile.getAbsolutePath() + " ";
 		recalCommand = recalCommand + "-resource:dbsnp,known=true,training=false,truth=false,prior=8.0 " + dbsnpFile.getAbsolutePath() + " ";
-		recalCommand = recalCommand + "-an QD -an HaplotypeScore -an MQRankSum -an ReadPosRankSum -an FS ";
+		recalCommand = recalCommand + "-an QD -an HaplotypeScore -an MQRankSum -an ReadPosRankSum ";
+		for(int i=0; i<additionalTags.length; i++) 
+			recalCommand = recalCommand + "-an " + additionalTags[i] + " ";
 		recalCommand = recalCommand + " --maxGaussians " + maxGaussians + " ";
 		recalCommand = recalCommand + " -recalFile " + recalFilePath + " ";
 		recalCommand = recalCommand + " -tranchesFile " + tranchesPath + " ";
@@ -88,7 +125,7 @@ public class VariantRecalibrator extends CommandOperator {
 		
 		
 		String applyCommand = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
-		applyCommand = applyCommand + " -R " + reference + " -input " + inputFile + " -T ApplyRecalibration ";	
+		applyCommand = applyCommand + " -R " + reference + " -input " + inputFile.getAbsolutePath() + " -T ApplyRecalibration ";	
 		applyCommand = applyCommand + " -recalFile " + recalFilePath + " ";
 		applyCommand = applyCommand + " -tranchesFile " + tranchesPath + " ";
 		applyCommand = applyCommand + " -o " + outputVCF.getAbsolutePath();

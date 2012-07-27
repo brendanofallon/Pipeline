@@ -180,8 +180,25 @@ public class CachedGeneSummaryDB {
 			sum.symbol = symbol;
 			sum.date = time;
 			sum.summary = summary;
-			if (! isExpired(sum))
-				map.put(symbol, sum);
+			if (! isExpired(sum)) {
+				if (map.containsKey(symbol)) {
+					GeneSummary existingSummary = map.get(symbol);
+					//If record already exists somehow, be sure to use newest version found
+					Long existingBirthDate = Long.parseLong(existingSummary.date);
+					Long newBirthDate = Long.parseLong(sum.date);
+					System.out.println("Found multiple gene summary records for symbol " + symbol + ", using newest one");
+					if (newBirthDate > existingBirthDate) {
+						map.put(symbol, sum);
+					}
+					else {
+						//map already contains other one, no need to put it in
+					}
+					
+				}
+				else {
+					map.put(symbol, sum);
+				}
+			}
 			else 
 				expiredRecords++;
 			

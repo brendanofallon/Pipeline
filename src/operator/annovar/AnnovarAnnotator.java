@@ -9,13 +9,12 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import buffer.AnnovarInputFile;
-import buffer.FileBuffer;
-import buffer.variant.VariantRec;
-
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
 import pipeline.PipelineXMLConstants;
+import buffer.AnnovarInputFile;
+import buffer.FileBuffer;
+import buffer.variant.VariantRec;
 
 /**
  * Base class of things that use Annovar to annotate variant pools
@@ -120,20 +119,30 @@ public abstract class AnnovarAnnotator extends Annotator {
 		if (rec != null)
 			return rec;
 
-		//System.out.println("Variant at contig " + contig + " pos: " + pos + " not found, searching for close variants..");
-		if (ref.equals("-")) {
-			int modPos = pos+1;
 
-			rec = variants.findRecord(contig, modPos);
-			if (rec == null)
-				return null;
-			
-			if (! rec.getAlt().equals(alt)) {
-				//System.out.println("Record found, but alt for record is " + rec.getAlt() + " and alt from file is " + alt);
-				return null;
+		int modPos = pos;
+		if (alt.length() != ref.length()) {
+			//Remove initial characters if they are equal and add one to start position
+			if (alt.charAt(0) == ref.charAt(0)) {
+				alt = alt.substring(1);
+				if (alt.length()==0)
+					alt = "-";
+				ref = ref.substring(1);
+				if (ref.length()==0)
+					ref = "-";
+				modPos++;
 			}
-
 		}
-		return rec;
+		
+		if (modPos > pos)
+			rec = variants.findRecord(contig, modPos);
+		if (alt.equals(rec.getAlt())) {
+			return rec;
+		}
+		else {
+			System.err.println("Variant found at modified position, but alt allele is still wrong");
+			return null;
+		}
+
 	}
 }

@@ -1,9 +1,8 @@
 package operator.variant;
 
+import operator.annovar.Annotator;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
-import operator.OperationFailedException;
-import operator.annovar.Annotator;
 
 /**
  * Computes an FP score for all variants in the pool
@@ -31,7 +30,12 @@ public class FPComputer extends Annotator {
 		rec.addProperty(VariantRec.FALSEPOS_PROB, fp);	
 	}
 
-	private static Double computeFPScore(VariantRec rec) {
+	/**
+	 * Compute and return the FP score for the given variant. 
+	 * @param rec
+	 * @return
+	 */
+	public static Double computeFPScore(VariantRec rec) {
 		Double T = rec.getProperty(VariantRec.DEPTH);
 		Double X = rec.getProperty(VariantRec.VAR_DEPTH);
 		
@@ -44,7 +48,7 @@ public class FPComputer extends Annotator {
 			return Double.NaN;
 		}
 		
-		if (T < 10) {
+		if (T < 6) {
 			//System.out.println("T: " + T + " X:" + X + " skipping, coverage too low (" +  T + ")");
 			return Double.NaN;
 		}

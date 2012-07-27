@@ -22,40 +22,10 @@
 	<VariantPool />
 </GeneAnnotate>
 
-<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PopFreqAnnotate>
-
-<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
- <AnnoInput />
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
-</DBSNPAnnotate>
+</dbNSFPAnnotate>
 
-<OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
-  <AnnoInput />
-  <VariantPool />
-</OMIMAnnotate>
-
-<SiftAnnotate class="operator.annovar.SiftAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</SiftAnnotate>
-
-<PolyphenAnnotate class="operator.annovar.PolyphenAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PolyphenAnnotate>
-
-<MTAnnotate class="operator.annovar.MTAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</MTAnnotate>
-
-<PhyloPAnnotate class="operator.annovar.PhyloPAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PhyloPAnnotate>
 
 <GOAnnotate class="operator.annovar.GOAnnotator" >
   <VariantPool />
@@ -64,13 +34,6 @@
 <HGMDAnnotate class="operator.annovar.HGMDAnnotator">
   <VariantPool />
 </HGMDAnnotate>
-
-
-<EffectAnnotate class="operator.annovar.EffectPredictionAnnotator">
-        <VariantPool />
-</EffectAnnotate>
-
-
 
 <ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />

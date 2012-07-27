@@ -5,14 +5,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -25,15 +22,14 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import pipeline.Pipeline;
+import pipeline.PipelineObject;
+import util.VCFLineParser;
 import buffer.BEDFile;
 import buffer.CSVFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
 import buffer.VCFFile;
-
-import pipeline.Pipeline;
-import pipeline.PipelineObject;
-import util.VCFLineParser;
 
 /**
  * Base class for things that maintain a collection of VariantRecs
@@ -45,7 +41,7 @@ public class VariantPool extends Operator  {
 	public static final String ALL_GENES = "all.genes"; //If specified as attribute, include all genes one variant per gene
 
 	protected Map<String, List<VariantRec>>  vars = new HashMap<String, List<VariantRec>>();
-	private VariantRec qRec = new VariantRec("?", 0, 0, "x", "x", 0, false); 
+	private VariantRec qRec = new VariantRec("?", 0, 0, "x", "x", 0.0, false); 
 	/**
 	 * Build a new variant pool from the given list of variants
 	 * @param varList
@@ -450,8 +446,6 @@ public class VariantPool extends Operator  {
 		for(String contig : getContigs()) {
 			for(VariantRec rec : getVariantsForContig(contig)) {
 				count++;
-				if (count % 5000 == 0)
-					System.out.println("Finding variant " + count + " of " + size);
 				VariantRec recB = varsB.findRecordNoWarn(rec.getContig(), rec.getStart());
 				if (recB != null && rec.getAlt().equals(recB.getAlt())) {
 					rec.addAnnotation(VariantRec.altB, recB.getAlt());
@@ -504,7 +498,7 @@ public class VariantPool extends Operator  {
 			return false;
 		}
 		
-		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false);
+		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0.0, false);
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		//This pool does not contain a variant at the given position
@@ -569,6 +563,22 @@ public class VariantPool extends Operator  {
 		else {
 			return contig.remove(rec);
 		}
+	}
+	
+	public void removeDuplicates() {
+		for(String contig : getContigs()) {
+			HashMap<Integer, VariantRec> map = new HashMap<Integer, VariantRec>();
+			for(VariantRec rec : this.getVariantsForContig(contig)) {
+				map.put(rec.getStart(), rec);
+			}
+			
+			List<VariantRec> list = this.getVariantsForContig(contig);
+			list.clear();
+			for(Integer pos : map.keySet()) {
+				list.add(map.get(pos));
+			}
+		}
+		sortAllContigs();
 	}
 	
 	/**
@@ -646,7 +656,7 @@ public class VariantPool extends Operator  {
 			return false;
 		}
 		
-		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0, false);
+		VariantRec qRec = new VariantRec(contig, pos, pos, "x", "x", 0.0, false);
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {

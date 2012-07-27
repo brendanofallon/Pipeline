@@ -46,6 +46,41 @@ public class FlatFilesReader {
 		return currentLine;
 	}
 	
+	public String getRow(String contig, int pos) throws IOException {
+		advanceToContig(contig);
+		advanceToPos(pos);
+		return currentLine;
+	}
+	
+	/**
+	 * Obtain current line as a string
+	 * @return
+	 */
+	public String getCurrentLine() {
+		return currentLine;
+	}
+	
+	/**
+	 * Advance current line to the next line, returns true if next line successfully read
+	 * @return
+	 */
+	public boolean advanceLine() {
+		try {
+			currentLine = reader.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+		if (currentLine == null) {
+			currentPos = -1;
+			return false;
+		}
+		
+		currentPos = getPositionFromLine(currentLine);
+		return true;
+	}
+	
+	
 	public int getCurrentPos() {
 		return currentPos;
 	}
@@ -53,7 +88,41 @@ public class FlatFilesReader {
 	public String getCurrentContig() {
 		return currentContig;
 	}
+	
+	/**
+	 * Advance to first alt base at given position
+	 * @param pos
+	 * @throws IOException
+	 */
+	private void advanceToPos(int pos) throws IOException {
+		if (currentLine == null)
+			currentLine = reader.readLine();
+		if (currentLine == null)
+			return;
+		
+		currentPos = getPositionFromLine(currentLine);
+		
+		if (currentPos > pos) {
+			System.out.println("Current pos : " + currentPos + " is greater than requested pos : " + pos + " so resetting...");
+			resetToContig(currentContig);
+		}
+		
+		while(currentPos < pos) {
+			currentLine = reader.readLine();
+			if (currentLine == null) {
+				currentPos = -1;
+				return;
+			}
+			currentPos = getPositionFromLine(currentLine);
+		}		
+	}
 
+	/**
+	 * Advance current line to the given position and alt base
+	 * @param pos
+	 * @param alt
+	 * @throws IOException
+	 */
 	private void advanceToPos(int pos, char alt) throws IOException {
 		if (currentLine == null)
 			currentLine = reader.readLine();

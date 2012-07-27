@@ -288,6 +288,8 @@ public class Histogram {
 			}
 			str.append(" > " + maxValue + " : " + formatter.format((double)moreThanMax/(double)count) + "\n");
 			str.append("Values: " + count + "\n");
+			str.append("Minimum: " + getMinValueAdded() + "\n");
+			str.append("Maximum: " + getMaxValueAdded() + "\n");
 			str.append("Mean: " + getMean() + "\n");
 			str.append("Stdev: " + getStdev() + "\n");
 		}

@@ -2,7 +2,6 @@ package buffer.variant;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -20,15 +19,9 @@ import java.util.logging.Logger;
 import operator.OperationFailedException;
 import operator.Operator;
 
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import buffer.CSVFile;
-import buffer.VCFFile;
-
 import pipeline.Pipeline;
-import pipeline.PipelineObject;
 
 /**
  * A GenePool contains a bunch of variant records but organizes them by
@@ -104,6 +97,7 @@ public class GenePool extends Operator {
 			}
 			line = reader.readLine();
 		}
+		reader.close();
 	}
 
 	/**
@@ -263,14 +257,15 @@ public class GenePool extends Operator {
 		
 		Collections.sort(geneList, new MeanEffectComparator());
 		for(List<VariantRec> vars : geneList) {
+			Collections.sort(vars, VariantRec.getPositionComparator());
 			String key = vars.get(0).getAnnotation(VariantRec.GENE_NAME);
 //			String pdot = vars.get(0).getAnnotation(VariantRec.PDOT);
 //			String hgmd = vars.get(0).getAnnotation(VariantRec.HGMD_INFO);
 //			String nm = vars.get(0).getAnnotation(VariantRec.NM_NUMBER);
-			out.print(key + "\t" + "\t" +  computeMeanProd(vars) + "\t");
+			out.print(key + "\t Mean Effect:" +  computeMeanProd(vars) + "\n");
 			for(VariantRec var : vars) {
-				out.print(var.getAnnotation(VariantRec.SOURCE).replace(".all.csv", ":") + var.getAnnotation(VariantRec.PDOT) + "\t");
-				//out.println(var.getAnnotation(VariantRec.SOURCE) + "\t" + var.toSimpleString() + "\t" + var.getPropertyString(annoKeys));
+				//out.print(var.getAnnotation(VariantRec.SOURCE).replace(".all.csv", ":") + var.getAnnotation(VariantRec.PDOT) + "\t");
+				out.println(var.getAnnotation(VariantRec.SOURCE) + "\t" + var.toSimpleString() + "\t" + var.getPropertyString(annoKeys));
 			}
 			out.println();
 		}

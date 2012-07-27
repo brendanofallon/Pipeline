@@ -5,14 +5,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.logging.Logger;
 
+import operator.IOOperator;
+import operator.OperationFailedException;
+import pipeline.Pipeline;
 import buffer.AnnovarInputFile;
 import buffer.CSVFile;
 import buffer.variant.CSVLineReader;
 import buffer.variant.SimpleLineReader;
 import buffer.variant.VariantRec;
-import operator.IOOperator;
-import operator.OperationFailedException;
-import pipeline.Pipeline;
 
 public class ConvertCSVAnnovar extends IOOperator {
 

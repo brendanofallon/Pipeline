@@ -48,6 +48,9 @@ public class LazyHistogram {
 	}
 	
 	public void addValue(double val) {
+		if (Double.isNaN(val)) {
+			return;
+		}
 		count++;
 		
 		if (! triggerReached) {
@@ -89,10 +92,11 @@ public class LazyHistogram {
 	}
 	
 	public String toString() {
-		if (histo == null)
-			return "Lazy histogram has not been reached the trigger value yet (size is " + vals.size() + ")";
-		else
-			return histo.toString();
+		if ((!triggerReached) && vals.size()==0) {
+			return "No values in histogram";
+		}
+		makeHistoFromList();
+		return histo.toString();
 	}
 	
 	public double getMax() {
@@ -119,7 +123,11 @@ public class LazyHistogram {
 		}
 		
 		double min = vals.get(0);
-		double max = vals.get(vals.size()-1);
+		Double max = vals.get(vals.size()-1);
+		
+		while (Double.isNaN(max)) {
+			
+		}
 		
 		if (min > 0 && min < (max-min)/2.0) 
 			min = 0;
@@ -128,6 +136,7 @@ public class LazyHistogram {
 		}
 		
 		max = Math.floor(max*1.5 * 10000) / 10000.0;
+		
 		
 		histo = new Histogram(min, max, bins);
 		

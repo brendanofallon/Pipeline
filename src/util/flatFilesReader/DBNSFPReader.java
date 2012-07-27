@@ -12,12 +12,40 @@ public class DBNSFPReader {
 
 	public static final String defaultPath = System.getProperty("user.home") + "/resources/dbNSFP2.0";
 	private FlatFilesReader reader;
-	private String[] curToks = null; 
-	private String prevContig = null;
-	private Integer prevPos = null;
+	private String[] curToks = null;
 	
 	public DBNSFPReader() {
 		reader = new FlatFilesReader(new File(defaultPath));
+	}
+	
+	/**
+	 * Read in the next line, whatever it may be
+	 * @return
+	 */
+	public boolean advanceLine() {
+		boolean hasNext = reader.advanceLine();
+		if (hasNext) {
+			curToks = reader.getCurrentLine().split("\t");
+		}
+		else {
+			curToks = null;
+		}
+		return curToks != null;
+	}
+	
+	public boolean advanceTo(String contig, int pos) throws IOException {
+		if (reader.getCurrentContig() != null && reader.getCurrentContig().equals(contig) && pos < reader.getCurrentPos()) {
+			//System.out.println("requested pos " + pos + " is earlier than readers current pos, " + reader.getCurrentPos() + ", skipping");
+			return false;
+		}
+		String line = reader.getRow(contig, pos);
+				
+		if (line == null) {
+			curToks = null;
+			return false;
+		}
+		curToks = line.split("\t");
+		return true;
 	}
 	
 	/**
@@ -52,6 +80,18 @@ public class DBNSFPReader {
 		return true;
 	}
 	
+	public String getRef() {
+		if (curToks == null)
+			return null;
+		return curToks[2];
+	}
+	
+	public String getAlt() {
+		if (curToks == null)
+			return null;
+		return curToks[3];
+	}
+	
 	/**
 	 * Returns NaN if no value can be parsed from column
 	 * @param col
@@ -69,6 +109,11 @@ public class DBNSFPReader {
 			return Double.NaN;
 		}
 	}
+	
+	public int getCurrentPos() {
+		return reader.getCurrentPos();
+	}
+	
 	
 	public String getString(int col) {
 		if (curToks == null)

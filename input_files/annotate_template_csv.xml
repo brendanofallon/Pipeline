@@ -2,7 +2,7 @@
 <!-- Uses annovar to annotate the given VCF file. This will produce lots of different output files... -->
 <Pipeline>
 
-<InputVCF class="buffer.CSVFile" filename="$$PREFIX" />
+<InputVCF class="buffer.CSVFile" filename="$$INPUTFILE" />
 
 <MakeInput class="operator.annovar.ConvertCSVAnnovar">
  <input>
@@ -22,20 +22,9 @@
 	<VariantPool />
 </GeneAnnotate>
 
-<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PopFreqAnnotate>
-
-<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
- <AnnoInput />
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
-</DBSNPAnnotate>
-
-<ExomesAnnotate class="operator.annovar.Exomes5400Annotator" > 
-  <AnnoInput />
-  <VariantPool />
-</ExomesAnnotate>
+</dbNSFPAnnotate>
 
 
 <OMIMAnnotate class="operator.annovar.OMIMAnnotator" >

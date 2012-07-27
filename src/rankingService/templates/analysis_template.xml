@@ -12,7 +12,7 @@
 
 <!-- capture class="buffer.BEDFile" filename="${CAPTUREBED}" / -->
 
-<InputVCF class="buffer.VCFFile" filename="${INPUTFILE}" />
+<InputVCF class="buffer.CSVFile" filename="${INPUTFILE}" />
 
 <GOTermsList class="buffer.TextBuffer" filename="${GOTERMSFILE}" />
 <rankedSummaryTerms class="buffer.TextBuffer" filename="${KEYTERMS}" />
@@ -24,7 +24,7 @@
 	<InputVCF />
 </VariantPool>
 
-<MakeInput class="operator.annovar.ConvertVCFAnnovar">
+<MakeInput class="operator.annovar.ConvertCSVAnnovar">
  <input>
 	<InputVCF />
  </input>
@@ -60,7 +60,7 @@
 
 
 <EffectPred class="operator.annovar.EffectPredictionAnnotator">
- <passingVariants />
+ <VariantPool />
 </EffectPred>
 
 <GOAnnotate class="operator.annovar.GOAnnotator" >
@@ -101,7 +101,7 @@
  </output>
 </Analysis>
 
-<EverythingToFile class="operator.variant.ExcelWriter">
+<EverythingToFile class="rankingService.ResultsWriter">
   <VariantPool />
   <CSVFileAll class="buffer.CSVFile" filename="${PREFIX}.all.csv" />
 </EverythingToFile>
