@@ -1,6 +1,9 @@
 package operator.bwa;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,12 +20,12 @@ import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import util.ElapsedTimeFormatter;
 import util.StringOutputStream;
+import buffer.BAMFile;
 import buffer.FastQFile;
 import buffer.FileBuffer;
 import buffer.MultiFileBuffer;
 import buffer.ReferenceFile;
 import buffer.SAIFile;
-import buffer.SAMFile;
 
 public class MultiAlignAndBAM extends PipedCommandOp {
 
@@ -74,7 +77,7 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		}
 		
 		
-		String samToolsPathAttr = properties.get(PipelineXMLConstants.SAMTOOLS_PATH);
+		String samToolsPathAttr = getPipelineProperty(PipelineXMLConstants.SAMTOOLS_PATH);
 		if (samToolsPathAttr != null) {
 			pathToSamTools = samToolsPathAttr;
 		}
@@ -200,8 +203,11 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		}
 		
 		logger.info("All bwa aln steps have completed, now creating SAM files");
-		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount()/threads );
-
+		if (sampeThreads > 1)
+			threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount()/ sampeThreads );
+		else
+			threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
+		
 		//Now build sam files in parallel since we can do that and bwa can't
 		for(StringPair saiFiles : saiFileNames) {
 			SamBuilderJob makeSam = null;
@@ -222,7 +228,7 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		} 
 	
 		Date end = new Date();
 		logger.info("MultiLaneAligner " + getObjectLabel() + " has completed (Total time " + ElapsedTimeFormatter.getElapsedTime(start.getTime(), end.getTime()) + " )");
@@ -299,7 +305,7 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		
 		public AlignerJob(FileBuffer inputFile) {
 			baseFilename = inputFile.getFilename();
-			command = pathToBWA + " aln -n " + maxEditDist + " -l " + seedLength + " -t " + threads + " " + referencePath + " " + inputFile.getAbsolutePath();
+			command = pathToBWA + " aln -n " + maxEditDist + " -l " + seedLength + " -t " + Math.max(1, getPreferredThreadCount() / threads) + " " + referencePath + " " + inputFile.getAbsolutePath();
 		}
 		
 		@Override
@@ -328,8 +334,9 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 
 		protected String defaultRG = "@RG\\tID:unknown\\tSM:$SAMPLE$\\tPL:ILLUMINA";
 		final String command1;
-		final String command2;
+		//final String command2;
 		String baseFilename;
+		String bamPath = null;
 		
 		/**
 		 * Constructor for paired-end reads jobs, take two fastq and sai files and make one SAM file
@@ -347,8 +354,38 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 				
 			String rgStr = defaultRG.replace("$SAMPLE$", SAMPLE);
 			
-			command1 = pathToBWA + " sampe -r " + rgStr + " " + referencePath + " " + threadsStr + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo;
-			command2 = pathToSamTools + " view -Sb - ";
+			bamPath = baseFilename.replace(".sai", "");
+			bamPath = bamPath.replace(".fastq", "");
+			bamPath = bamPath.replace(".gz", "");
+			bamPath = bamPath.replace(".fq", "");
+			bamPath = bamPath.replace(".txt", "");
+			bamPath = bamPath + ".bam";
+			
+		//	command1 = "/bin/bash -c \"" + pathToBWA + " sampe -r " + rgStr + " " + referencePath + " " + threadsStr + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo + 
+		//			" | " +  pathToSamTools + " view -Sb - > " + bamPath + "\"";
+			
+			//Sneakily write command to a file...
+			
+			
+			String comStr = pathToBWA + " sampe -r \"" + rgStr + "\" " + referencePath + " " + threadsStr + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo + 
+								" | " +  pathToSamTools + " view -Sb - > " + bamPath;
+			String fileName = getProjectHome() + "sambuilder-" + ((1000000.0*Math.random())+"").substring(0, 6).replace(".", "") + ".sh";
+			
+			System.out.println("Writing command string : " + comStr);
+			System.out.println("To file : " + fileName);
+			BufferedWriter writer;
+			try {
+				writer = new BufferedWriter(new FileWriter(fileName));
+				writer.write(comStr + "\n");
+				writer.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			
+			command1 = "/bin/bash " + fileName;
+			//command2 = pathToSamTools + " view -Sb - ";
 		}
 		
 		/**
@@ -359,7 +396,7 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		public SamBuilderJob(String readsOne, String saiFileOne) {
 			baseFilename = saiFileOne;
 			command1 = pathToBWA + " samse -r " + defaultRG + " " + referencePath + " " + saiFileOne + " " + readsOne;
-			command2 = pathToSamTools + " view -Sb ";
+			//command2 = pathToSamTools + " view -Sb ";
 		}
 		
 		@Override
@@ -367,19 +404,14 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 			Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
 			try {
 					Date begin = new Date();
-					logger.info("Beginning task with command : " + command1 + " | " + command2 + " threadpool has " + threadPool.getActiveCount() + " active tasks");
-					String bamPath = baseFilename.replace(".sai", "");
-					bamPath = bamPath.replace(".fastq", "");
-					bamPath = bamPath.replace(".gz", "");
-					bamPath = bamPath.replace(".fq", "");
-					bamPath = bamPath.replace(".txt", "");
-					bamPath = bamPath + ".bam";
-					FileBuffer pipeDestination = new SAMFile(new File(bamPath));
-					runSeriesAndCaptureOutput(command1, command2, Logger.getLogger(Pipeline.primaryLoggerName), pipeDestination);
+					logger.info("Beginning task with command : " + command1 + " threadpool has " + threadPool.getActiveCount() + " active tasks");
+					
+					FileBuffer pipeDestination = new BAMFile(new File(bamPath));
+					runAndCaptureOutput(command1, Logger.getLogger(Pipeline.primaryLoggerName), pipeDestination);
 					Date end = new Date();
 					synchronized (this) {
 						outputSAMs.addFile(pipeDestination);
-						logger.info("Task with command : " + command1 + " | " + command2 + " has completed (elapsed time " + ElapsedTimeFormatter.getElapsedTime(begin.getTime(), end.getTime()) + ") \n Threadpool has " + threadPool.getActiveCount() + " active tasks");
+						logger.info("Task with command : " + command1 + " has completed (elapsed time " + ElapsedTimeFormatter.getElapsedTime(begin.getTime(), end.getTime()) + ") \n Threadpool has " + threadPool.getActiveCount() + " active tasks");
 					}
 					
 				

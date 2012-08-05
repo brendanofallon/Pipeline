@@ -11,6 +11,7 @@ import buffer.FileBuffer;
 import buffer.MultiFileBuffer;
 
 public class Novoalign extends PipedCommandOp {
+	
 	public static final String SAMPLE = "sample";
 	
 	List<StringPair> fastqFiles = new ArrayList<StringPair>();

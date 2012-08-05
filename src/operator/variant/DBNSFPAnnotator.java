@@ -3,11 +3,11 @@ package operator.variant;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import buffer.variant.VariantRec;
 import operator.OperationFailedException;
 import operator.annovar.Annotator;
 import pipeline.Pipeline;
 import util.flatFilesReader.DBNSFPReader;
+import buffer.variant.VariantRec;
 
 /**
  * Reads dbNSFP info and provides numerous annotations for nonsynonymous SNPs
@@ -16,11 +16,22 @@ import util.flatFilesReader.DBNSFPReader;
  */
 public class DBNSFPAnnotator extends Annotator {
 
-	private DBNSFPReader reader = new DBNSFPReader();
+	public static final String DBNSFP_PATH = "dbnsfp.path";
+	private DBNSFPReader reader = null; 
 	private int examined = 0;
 	private int annotated = 0;
 	
 	public void performOperation() throws OperationFailedException {
+		String pathToDBNSFP = this.getPipelineProperty(DBNSFP_PATH);
+		if (pathToDBNSFP != null) {
+			Logger.getLogger(Pipeline.primaryLoggerName).info("dbNSFP reader using directory : " + pathToDBNSFP);
+			reader = new DBNSFPReader(pathToDBNSFP);
+		}
+		else { 
+			Logger.getLogger(Pipeline.primaryLoggerName).info("dbNSFP reader using default base directory");
+			reader = new DBNSFPReader();
+		}
+		
 		super.performOperation();
 		
 		Logger.getLogger(Pipeline.primaryLoggerName).info("dbNSFP annotator annotated " + annotated + " of " + examined + " variants found");

@@ -115,6 +115,7 @@ public abstract class AnnovarAnnotator extends Annotator {
 	 * @return
 	 */
 	protected VariantRec findVariant(String contig, int pos, String ref, String alt) {
+
 		VariantRec rec = variants.findRecord(contig, pos);
 		if (rec != null)
 			return rec;
@@ -130,12 +131,19 @@ public abstract class AnnovarAnnotator extends Annotator {
 				ref = ref.substring(1);
 				if (ref.length()==0)
 					ref = "-";
-				modPos++;
 			}
 		}
 		
+		if (alt.equals("-") || ref.equals("-"))
+			modPos++;
+		
+		
 		if (modPos > pos)
 			rec = variants.findRecord(contig, modPos);
+		if (rec == null) {
+			return null;
+		}
+		
 		if (alt.equals(rec.getAlt())) {
 			return rec;
 		}

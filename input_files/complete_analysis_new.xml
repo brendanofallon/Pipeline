@@ -23,25 +23,17 @@
 </FastQC>
 
 <!-- Parallel realignment with given number of threads. This will assume paired-ends unless single="true" is given -->
-<MultiLaneAlign class="operator.bwa.MultiLaneAligner" threads="4" sample="$$PREFIX" >
+<MultiLaneAlign class="operator.bwa.MultiAlignAndBAM" threads="4" sample="$$PREFIX" >
   <input>
     <reference />
     <readsOne />
     <readsTwo />
   </input>
   <output>
-   <outputSAMs class="buffer.MultiFileBuffer" />
+   <rawBAMs class="buffer.MultiFileBuffer" />
   </output>
 </MultiLaneAlign>
 
- <ConvertBAM class="operator.samtools.MultiConvertBam">
-   <input>
-     <outputSAMs />
-   </input>
-   <output>
-     <rawBAMs class="buffer.MultiFileBuffer" />
-   </output>
- </ConvertBAM>
  
  <Sort1 class="operator.samtools.MultiSort">
    <input>
@@ -76,15 +68,6 @@
  <output> </output>
  </IndexBig>
 
-<!-- Compute a few basic metrics for the big initial bam file -->
-<BamMetrics class="operator.qc.BamMetrics">
- <input>
-   <BigRawBAM />
- </input>
- <output>
-   <rawMetrics class="buffer.TextBuffer" filename="raw.bam.metrics.txt" />
- </output>
-</BamMetrics>
 
 <!-- Split the raw bam into chunks, one per chromosome -->
 <Split class="operator.gatk.SplitByChromosome">
@@ -122,20 +105,10 @@
    </output>
 </Index2>
 
-<!-- A bit of bam cleanp, remove zero mapping quality reads and reads with unmapped mates, etc. -->
- <CleanBams class="operator.CleanBam">
-   <input>
-   <dedupedContigs />
-  </input>
-  <output>
-   <cleanedBAMs class="buffer.MultiFileBuffer" />
-  </output>
- </CleanBams>
-
 <!-- GATK local realign -->
 <Realign class="operator.ParallelRealign">
    <input>
-     <cleanedBAMs />
+     <dedupedContigs />
      <reference />
    </input>
    <output>
@@ -196,19 +169,6 @@
    </output>
  </AllVariants>
 
-<!-- Perform variant quality score recalibration VQSR, using GaTK -->
-<VQSR class="operator.gatk.VariantRecalibrator" >
- <input>
-  <reference />
-  <finalVariants />
-  <HapMap /> <!-- HAPMAP MUST BE  THIRD ARG! -->
-  <Omni />   <!-- OMNI MUST BE FOURTH ARG! -->
-  <KnownDBSNP />  <!-- DBSNP MUST BE FIFTH ARG! -->
- </input>
- <output>
-  <recalibratedVCF class="buffer.VCFFile" filename="$$PREFIX.vqsr.vcf" />
- </output>
-</VQSR>
 
 <!-- Merge final, polished bams from each chromosome back together to make one big final bam -->
  <MergeBAMs class="operator.samtools.MergeFiles">
@@ -229,15 +189,15 @@
 
 <!-- Push variants into a 'variant pool' that can we easily manipulate -->
 <VariantPool class="buffer.variant.VariantPool">
-	<recalibratedVCF />
+	<finalVariants />
 </VariantPool>
 
 
+<!-- Compute a few basic metrics for the big initial bam file -->
 
-<!-- Annotation stuff -->
 <MakeInput class="operator.annovar.ConvertVCFAnnovar">
  <input>
-	<recalibratedVCF />
+	<finalVariants />
  </input>
  <output>
 	<AnnoInput class="buffer.AnnovarInputFile" filename="$$PREFIX.annovar.input" />
@@ -249,48 +209,69 @@
 	<VariantPool />
 </GeneAnnotate>
 
-<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PopFreqAnnotate>
-
-<DBSNPAnnotate class="operator.annovar.DBSNPAnnotator">
+<dbSNP class="operator.annovar.DBSNPAnnotator">
  <AnnoInput />
  <VariantPool />
-</DBSNPAnnotate>
+</dbSNP>
 
-<ExomesAnnotate class="operator.annovar.Exomes5400Annotator" > 
-  <AnnoInput />
-  <VariantPool />
-</ExomesAnnotate>
-
-
-<OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
-  <AnnoInput />
-  <VariantPool />
-</OMIMAnnotate>
-
-<FilterVariants class="operator.variant.FilterPoolByBED">
+<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
+ <AnnoInput />
  <VariantPool />
- <capture />
-</FilterVariants>
-
-
-<ToFile class="operator.variant.ExcelWriter">
-	<VariantPool />
-	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.annotated.csv" />
-</ToFile>
+</PopFreqAnnotate>
 
 
 
+<qcops class="operator.ParallelOperator">
 
-<!-- Final creation of results directory and cleanup of temporary files -->
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+ <VariantPool />
+</dbNSFPAnnotate>
 
-<!-- Create a directory with a few of the useful files in it -->
-<MakeResults class="operator.MoveFiles" dest="results" >
- <finalBAM />
- <recalibratedVCF />
-</MakeResults>
+<FinalBamMetrics class="operator.qc.BamMetrics" >
+ <input>
+  <finalBAM />
+ </input>
+ <output>
+  <finalBamMetrics class="buffer.TextBuffer" filename="final.bam.metrics.txt" />
+ </output>
+</FinalBamMetrics>
+
+
+<rawdoc class="operator.gatk.DepthOfCoverage">
+ <input>
+  <reference />
+  <BigRawBAM />
+  <capture />
+ </input>
+ <output>
+	<rawdocmetrics class="buffer.DOCMetrics" />
+ </output>
+</rawdoc>
+
+<finaldoc class="operator.gatk.DepthOfCoverage">
+ <input>
+  <reference />
+  <finalBAM />
+  <capture />
+ </input>
+ <output>
+	<finaldocmetrics class="buffer.DOCMetrics" />
+ </output>
+</finaldoc>
+
+</qcops>
+
+
+<QC class="operator.qc.QCReport" filename="qcreport.html" sample="$$PREFIX" >
+  <BigRawBAM  />
+  <rawdocmetrics />
+  <capture />
+  <finalBAM />
+  <finaldocmetrics />
+  <VariantPool />
+</QC>
+
+
 
 <!-- Move other files to temp folder to get them out of the way -->
 <Move class="operator.MoveFiles" dest="tempfiles">
@@ -306,13 +287,6 @@
   <realignedBAMs />
   <sortedBams />
 </Cleanup>
-
-
-<QC class="operator.qc.QCReport" filename="$$PREFIX.qcreport.html" >
-  <BigRawBAM  />
-  <finalBAM  />
-  <recalibratedVCF />
-</QC>
 
 
 </Pipeline>

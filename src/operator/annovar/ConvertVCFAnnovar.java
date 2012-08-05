@@ -1,7 +1,6 @@
 package operator.annovar;
 
 import operator.CommandOperator;
-import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 
 /**
@@ -37,8 +36,7 @@ public class ConvertVCFAnnovar extends CommandOperator {
 		String outputPath = outputBuffers.get(0).getAbsolutePath();
 		
 		String command = "perl " + annovarPath + "convert2annovar.pl -format " + format + " " + inputPath + " --outfile " + outputPath; 
-		return command;
-		
+		return command;	
 	}
 
 }

@@ -25,16 +25,19 @@ public class BinaryPipeHandler extends Thread {
 
 	public void run() {
 			try {
-				//Attempt to read data in 1Mb chunks, this is a lot faster than
+				//Attempt to read data in big chunks, this is a lot faster than
 				//doing things one byte at a time
 				//If an application writes binary data to stdout extremely quickly
 				//then we may need to increase the buffer size, but this appears to be OK for now
-				byte[] data = new byte[8192];
+				byte[] data = new byte[1024*1024]; //One megabyte
 				int bytesRead = inpStr.read(data);
+				int count = 0;
 				while(bytesRead >= 0) {
 					writer.write(data, 0, bytesRead);
 					bytesRead = inpStr.read(data);
+					count++;
 				}
+				System.out.println("Binary pipe handler has reached end, quitting!");
 				writer.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block

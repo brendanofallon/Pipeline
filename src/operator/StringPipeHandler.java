@@ -1,7 +1,6 @@
 package operator;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -36,9 +35,13 @@ public class StringPipeHandler extends Thread {
 				InputStreamReader inpStrd = new InputStreamReader(inpStr);
 				BufferedReader buffRd = new BufferedReader(inpStrd);
 				String line = null;
+				int count = 0;
 				while((line = buffRd.readLine()) != null) {
-					if (stream != null)
+					if (stream != null) {
 						stream.println(line);
+
+						count++;
+					}
 				}
 				buffRd.close();
 

@@ -41,7 +41,7 @@ public class GeneAnnotator extends AnnovarAnnotator {
 	
 	
 	private void addAnnotations(String variantFilePath, String exonicFuncFilePath) throws IOException {
-		//Add gene annotations 
+		//Add gene annotations
 		int totalVars =0 ;
 		int errorVars = 0;
 		BufferedReader reader = new BufferedReader(new FileReader(variantFilePath));
@@ -58,15 +58,17 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			String ref = toks[5];
 			String alt = toks[6];
 			
-			if (gene.length() > 8 || gene.contains(",") || gene.contains(";")) {
-				gene = "-";
+//			if (gene.length() > 8 || gene.contains(",") || gene.contains(";")) {
+//				gene = "-";
+//			}
+			
+			if (gene.contains(";")) {
+				String before = gene;
+				gene = gene.substring(0, gene.indexOf(";"));
+				logger.info("Converting gene name : " + before + " to: " + gene);				
 			}
 			
 			int pos = Integer.parseInt(toks[3]);
-			
-			if (pos > 914410 && pos < 914500) {
-				System.out.println("b");
-			}
 			
 			VariantRec rec = findVariant(contig, pos, ref, alt); //variants.findRecord(contig, pos);
 

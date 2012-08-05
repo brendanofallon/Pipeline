@@ -6,10 +6,9 @@ import java.util.logging.Logger;
 import operator.MultiOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
-import buffer.BAMFile;
 import buffer.BEDFile;
 import buffer.FileBuffer;
-import buffer.ReferenceFile;
+import buffer.IntervalsFile;
 import buffer.VCFFile;
 
 /**
@@ -32,6 +31,7 @@ public class MultiGenotype extends MultiOperator {
 	protected double emitConf = 10.0;
 	protected double callConf = 30.0;
 	
+	protected IntervalsFile captureFile = null;
 	
 	public int getPreferredThreadCount() {
 		//Dont use more than 12 threads...
@@ -53,6 +53,10 @@ public class MultiGenotype extends MultiOperator {
 		String path = properties.get(PATH);
 		if (path != null) {
 			gatkPath = path;
+		}
+		
+		if (captureFile == null) {
+			captureFile = (BEDFile) getInputBufferForClass(BEDFile.class);
 		}
 		
 		//Additional args for jvm
@@ -110,11 +114,19 @@ public class MultiGenotype extends MultiOperator {
 		command = command + " -minIndelFrac " + minIndelFrac;
 		command = command + " -stand_call_conf " + callConf + " ";
 		command = command + " -stand_emit_conf " + emitConf + " ";
-		if (inputBuffer.getContig() != null) {
+
+		if (captureFile != null) {
+			command = command + " -L:intervals,BED " + captureFile.getAbsolutePath() + " ";
+		}
+		
+		if (captureFile == null && inputBuffer.getContig() != null) {
 			command = command + " -L " + inputBuffer.getContig() + " ";
 		}
+		
 		if (inputBuffer.getContig() == null && bedFile != null)
 			command = command + " -L:intervals,BED " + bedFilePath;
+		
+		
 		return new String[]{command};
 	}
 

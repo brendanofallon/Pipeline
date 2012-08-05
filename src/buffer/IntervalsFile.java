@@ -110,6 +110,60 @@ public abstract class IntervalsFile extends FileBuffer {
 		}
 	}
 	
+	/**
+	 * Returns the number of bases covered by all of the intervals
+	 * @return
+	 */
+	public int getExtent() {
+		int size = 0;
+		if (! isMapCreated()) {
+			try {
+				buildIntervalsMap();
+			} catch (IOException e) {
+				e.printStackTrace();
+				return 0;
+			}
+		}
+		
+		if (intervals == null) {
+			return 0;
+		}
+		
+		for(String contig : intervals.keySet()) {
+			List<Interval> intList = intervals.get(contig);
+			for(Interval interval : intList) {
+				size += interval.end - interval.begin;
+			}
+		}
+		return size;
+	}
+	
+	/**
+	 * Returns the number of intervals in this interval collections
+	 * @return
+	 */
+	public int getIntervalCount() {
+		if (! isMapCreated()) {
+			try {
+				buildIntervalsMap();
+			} catch (IOException e) {
+				e.printStackTrace();
+				return 0;
+			}
+		}
+		
+		if (intervals == null) {
+			return 0;
+		}
+		
+		int size = 0;
+		for(String contig : intervals.keySet()) {
+			List<Interval> intList = intervals.get(contig);
+			size += intList.size();
+		}
+		return size;
+	}
+	
 	public class Interval implements Comparable {
 		
 		final int begin;

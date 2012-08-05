@@ -1,27 +1,14 @@
 package operator;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Date;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-
-import org.w3c.dom.NodeList;
 
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
-import util.ElapsedTimeFormatter;
-
 import buffer.BAMFile;
 import buffer.BEDFile;
 import buffer.FileBuffer;
 import buffer.MultiFileBuffer;
-import buffer.ReferenceFile;
-import buffer.VCFFile;
 
 /**
  * This operator performs the indel realignment target creation and actual realignment step
@@ -63,6 +50,7 @@ public class ParallelRealign extends MultiOperator {
 			gatkPath = path;
 		}
 		
+		
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
@@ -102,10 +90,14 @@ public class ParallelRealign extends MultiOperator {
 	
 		if (bedFile != null)
 			command = command + " -L:intervals,BED " + bedFile.getAbsolutePath();
-		else {
-			if (contig != null)
-				command = command +	" -L " + contig;
-		}
+		
+		if (bedFile == null && contig != null)
+			command = command +	" -L " + contig;
+		
+//		if (contig != null && bedFile != null) {
+//			command = command +	" -isr INTERSECTION ";
+//		}
+		
 		
 		if (knownIndelsPath != null) {
 			command = command + " --known " + knownIndelsPath;

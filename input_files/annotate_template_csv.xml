@@ -22,6 +22,17 @@
 	<VariantPool />
 </GeneAnnotate>
 
+<dbSNP class="operator.annovar.DBSNPAnnotator">
+ <AnnoInput />
+ <VariantPool />
+</dbSNP>
+
+<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
+ <AnnoInput />
+ <VariantPool />
+</PopFreqAnnotate>
+
+
 <dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
 </dbNSFPAnnotate>

@@ -13,6 +13,11 @@ public class DBNSFPReader {
 	public static final String defaultPath = System.getProperty("user.home") + "/resources/dbNSFP2.0";
 	private FlatFilesReader reader;
 	private String[] curToks = null;
+
+	
+	public DBNSFPReader(String pathToDBNSFP) {
+		reader = new FlatFilesReader(new File(pathToDBNSFP));
+	}
 	
 	public DBNSFPReader() {
 		reader = new FlatFilesReader(new File(defaultPath));

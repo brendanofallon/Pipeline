@@ -15,7 +15,7 @@ public class DOCMetrics extends FileBuffer {
 	protected double meanCoverage = -1;
 	protected int[] cutoffs;
 	protected double[] fractionAboveCutoff;
-	protected List<String> flaggedIntervals = null;
+	protected List<FlaggedInterval> flaggedIntervals = null;
 	
 	
 
@@ -27,11 +27,11 @@ public class DOCMetrics extends FileBuffer {
 		return sourceFile;
 	}
 
-	public List<String> getFlaggedIntervals() {
+	public List<FlaggedInterval> getFlaggedIntervals() {
 		return flaggedIntervals;
 	}
 
-	public void setFlaggedIntervals(List<String> flaggedIntervals) {
+	public void setFlaggedIntervals(List<FlaggedInterval> flaggedIntervals) {
 		this.flaggedIntervals = flaggedIntervals;
 	}
 	
@@ -80,4 +80,9 @@ public class DOCMetrics extends FileBuffer {
 	
 	
 
+	public static class FlaggedInterval {
+		public String info = null;
+		public double mean = 0;
+		public double frac = 0;
+	}
 }

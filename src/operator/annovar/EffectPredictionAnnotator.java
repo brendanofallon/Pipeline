@@ -1,7 +1,6 @@
 package operator.annovar;
 
 import buffer.variant.VariantRec;
-import operator.OperationFailedException;
 
 public class EffectPredictionAnnotator extends Annotator {
 
@@ -17,6 +16,14 @@ public class EffectPredictionAnnotator extends Annotator {
 
 	public static double getEffectPredictionLinearWeight(VariantRec rec) {
 		
+		//All splicing variants immediately get a rather high score
+		String varType = rec.getAnnotation(VariantRec.VARIANT_TYPE);
+
+		if (varType != null && varType.contains("splic")) {
+			return 15;
+		}
+		
+		
 		String exonFuncType = rec.getAnnotation(VariantRec.EXON_FUNCTION);
 		if (exonFuncType != null) {
 			if (exonFuncType.contains("frameshift")) {
@@ -31,8 +38,6 @@ public class EffectPredictionAnnotator extends Annotator {
 				return 20;
 			if (exonFuncType.contains("stoploss"))
 				return 15;
-			if (exonFuncType.contains("splice"))
-				return 15;
 		}
 		
 		//Last changes are from 6/25/2012 when it was realized that there was a
@@ -44,9 +49,7 @@ public class EffectPredictionAnnotator extends Annotator {
 		double gerpWeight = -0.495; //-0.27;
 		double siphyWeight = -0.22; //-0.12;
 		double lrtWeight = 2.68; //1.5;
-		
-		//-2.22,4.98,1.52,11.29,-0.485,-0.22,2.68
-		
+				
 		Double sift = rec.getProperty(VariantRec.SIFT_SCORE);
 		Double pp = rec.getProperty(VariantRec.POLYPHEN_SCORE);
 		Double mt = rec.getProperty(VariantRec.MT_SCORE);

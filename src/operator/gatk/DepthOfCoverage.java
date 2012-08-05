@@ -15,6 +15,7 @@ import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.BEDFile;
 import buffer.DOCMetrics;
+import buffer.DOCMetrics.FlaggedInterval;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
 
@@ -137,15 +138,19 @@ public class DepthOfCoverage extends IOOperator {
 			reader = new BufferedReader(new FileReader(intervalSummary));
 			String line = reader.readLine();
 			line = reader.readLine(); //Skip first line
-			List<String> problemIntervals = new ArrayList<String>();
+			List<FlaggedInterval> problemIntervals = new ArrayList<FlaggedInterval>();
 			while(line != null) {
 				toks = line.split("\t");
 				String interval = toks[0];
 				Double meanCov = Double.parseDouble( toks[2] );
-				Double percentOK = Double.parseDouble( toks[ toks.length - 1] );
+				Double percentOK = Double.parseDouble( toks[ toks.length - 1].trim() );
 				
 				if (percentOK < 80.0) {
-					problemIntervals.add(interval + "\t" + meanCov + "\t" + percentOK);
+					FlaggedInterval fInt = new FlaggedInterval();
+					fInt.info = interval;
+					fInt.mean = meanCov;
+					fInt.frac = percentOK;
+					problemIntervals.add(fInt);
 				}
 				line = reader.readLine();
 			}

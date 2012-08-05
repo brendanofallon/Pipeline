@@ -1,5 +1,6 @@
 package operator;
 
+import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -172,7 +173,7 @@ public abstract class PipedCommandOp extends IOOperator {
 				
 					
 				logger.info(" Pipe operator " + getObjectLabel() + " is piping text output to path : " + outputPath);
-				pipeConnector = new StringPipeHandler(p1.getInputStream(), p2.getOutputStream());	
+				pipeConnector = new StringPipeHandler(p1.getInputStream(), new BufferedOutputStream(p2.getOutputStream()));	
 				pipeConnector.start();
 				
 				outputHandler = new BinaryPipeHandler(p2.getInputStream(), destinationStream);
@@ -181,6 +182,8 @@ public abstract class PipedCommandOp extends IOOperator {
 //				Thread errorHandler = new StringPipeHandler(p1.getErrorStream(), errStream);
 //				errorHandler.start();
 				
+				System.out.println("Waiting for process 1 to complete");
+				logger.info("Waiting for process 1 to complete...");
 				
 				if (p1.waitFor() != 0) {
 					logger.info(" Piped operator (command #1)" + getObjectLabel() + " exited with nonzero status! \n " + errStream.toString());
@@ -190,30 +193,30 @@ public abstract class PipedCommandOp extends IOOperator {
 					
 				//System.out.println("Process one has completed");
 
+				logger.info("Process one has completed, now closing pipe stream");
 				p2.getOutputStream().close();
 				
+				logger.info("Pipe stream has closed, now waiting for process 2 to complete");
 				//Wait for second process to complete
 				if (p2.waitFor() != 0) {
 					logger.info(" Piped operator (command #2) " + getObjectLabel() + " exited with nonzero status! \n " + errStream.toString());
 					System.err.println("Piped operator (command #2)" + getObjectLabel() + " exited with nonzero status! \n " + errStream.toString());
 					throw new OperationFailedException("Operator: " + getObjectLabel() + " terminated with nonzero exit value \n" + errStream.toString(), this);
 				}
+							
 				
-				//System.out.println("Process 2 has completed");
-				
-				
-				
+				logger.info("Process 2 has completed, now waiting for output handler to finish");
 				//Wait for output handling thread to die
-				if (pipeConnector != null && pipeConnector.isAlive())
-					pipeConnector.join();
-				
-				
+//				if (pipeConnector != null && pipeConnector.isAlive())
+//					pipeConnector.join();
+								
 				
 				//System.out.println("Pipe connector has finished");
 				//Wait for final writing process to complete
 				if (outputHandler != null && outputHandler.isAlive())
 					outputHandler.join();
 				
+				logger.info("Output handler has finished, now closing destination buffer");
 				//System.out.println("Outputhandler has finished");
 				
 				
