@@ -16,8 +16,12 @@ public class DOCMetrics extends FileBuffer {
 	protected int[] cutoffs;
 	protected double[] fractionAboveCutoff;
 	protected List<FlaggedInterval> flaggedIntervals = null;
+	protected double[] coverageProportions = null; //When non-null should be proportion of reads with coverage greater than index
 	
-	
+
+	public double[] getCoverageProportions() {
+		return coverageProportions;
+	}
 
 	public DOCMetrics() {
 		System.out.println("Creating new DOC metrics!");
@@ -63,6 +67,10 @@ public class DOCMetrics extends FileBuffer {
 		this.fractionAboveCutoff = fractionAboveCutoff;
 	}
 	
+	public void setCoverageProportions(double[] prop) {
+		coverageProportions = prop;
+	}
+	
 	
 	@Override
 	public void initialize(NodeList children) {
@@ -85,4 +93,8 @@ public class DOCMetrics extends FileBuffer {
 		public double mean = 0;
 		public double frac = 0;
 	}
+
+
+
+	
 }

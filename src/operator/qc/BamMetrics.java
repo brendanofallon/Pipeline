@@ -6,17 +6,13 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.logging.Logger;
 
-import operator.IOOperator;
-import operator.OperationFailedException;
-
-import pipeline.Pipeline;
-
 import math.Histogram;
 import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMFileWriterFactory;
-import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMFileReader.ValidationStringency;
+import net.sf.samtools.SAMRecord;
+import operator.IOOperator;
+import operator.OperationFailedException;
+import pipeline.Pipeline;
 import buffer.BAMFile;
 import buffer.FileBuffer;
 import buffer.TextBuffer;
@@ -90,7 +86,11 @@ public class BamMetrics extends IOOperator {
 			if (samRecord.getDuplicateReadFlag())
 				dupCount++;
 			
-			byte[] baseQuals = samRecord.getBaseQualities();
+			byte[] rawBaseQuals = samRecord.getBaseQualities();
+			int[] baseQuals = new int[rawBaseQuals.length];
+			for(int i=0; i<baseQuals.length; i++) {
+				baseQuals[i] = (int)rawBaseQuals[i];
+			}
 			
 			if (posHisto == null) {
 				posHisto = new Histogram[baseQuals.length];
@@ -108,7 +108,7 @@ public class BamMetrics extends IOOperator {
 				//int bq = (int)baseQuals[i];
 				baseQHisto.addValue( baseQuals[i] );
 				
-				posHisto[i].addValue(baseQuals[i]);
+				posHisto[i].addValue( baseQuals[i] );
 			}
 			totalBaseCount += baseQuals.length;
 			int insertSize = Math.abs( samRecord.getInferredInsertSize() );
@@ -177,7 +177,7 @@ public class BamMetrics extends IOOperator {
 		int totalReads;
 		Histogram insertSizeHistogram;
 		Histogram baseQualityHistogram;
-		Histogram[] readPosQualHistos;
+		public Histogram[] readPosQualHistos;
 		int unmappedReads;
 		int unmappedMates;
 		int duplicateReads;

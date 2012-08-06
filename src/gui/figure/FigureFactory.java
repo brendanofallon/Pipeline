@@ -1,5 +1,6 @@
 package gui.figure;
 
+import gui.figure.heatMapFigure.HeatMapFigure;
 import gui.figure.series.XYSeries;
 import gui.figure.series.XYSeriesElement;
 import gui.figure.series.XYSeriesFigure;
@@ -8,16 +9,21 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.CellRendererPane;
+
+import math.Histogram;
+import operator.qc.BamMetrics;
+import operator.qc.BamMetrics.BAMMetrics;
+import buffer.BAMFile;
 
 public class FigureFactory {
 
@@ -47,12 +53,15 @@ public class FigureFactory {
 		fig.doLayout();
 		layoutComponent(fig);
 		
-		BufferedImage img = new BufferedImage((int)size.getWidth(), (int)size.getHeight(),
+		BufferedImage img = new BufferedImage((int)size.getWidth()-1, (int)size.getHeight()-1,
                 BufferedImage.TYPE_INT_RGB);
 		
 		CellRendererPane crp = new CellRendererPane();
         crp.add(fig);
-        crp.paintComponent(img.createGraphics(), fig, crp, fig.getBounds());    
+        Graphics g = img.createGraphics();
+        g.setColor(fig.getBackground());
+        g.fillRect(1, 1, fig.getBounds().width, fig.getBounds().height);
+        crp.paintComponent(g, fig, crp, fig.getBounds());    
         crp.repaint();
         return img; 
 	}
@@ -67,6 +76,32 @@ public class FigureFactory {
 	public static void saveFigure(Dimension size, Figure fig, File destinationFile) throws IOException {
 		BufferedImage image = getFigureImage(size, fig);
 		ImageIO.write(image, "png", destinationFile);
+	}
+
+	
+	public static HeatMapFigure createFigure(String xLabel, String yLabel,
+			double[][] data) {
+				
+		HeatMapFigure fig = new HeatMapFigure();
+		fig.setPreferredSize(new Dimension(500, 500));
+		fig.setData(data);
+		
+		//Laboriously find maximum value
+		double max = 0;
+		for(int i=0; i<data.length; i++) {
+			for(int j=0; j<data[0].length; j++) {
+				if (data[i][j] > max) 
+					max = data[i][j];
+			}
+		}
+		fig.setHeatMax(max);
+		
+		fig.setXAxisLabel(xLabel);
+		fig.setYAxisLabel(yLabel);
+		fig.setXMax(data.length);
+		fig.setYMax(data[0].length);
+		
+		return fig;
 	}
 	
 	public static XYSeriesFigure createFigure(String xLabel, String yLabel,
@@ -123,45 +158,58 @@ public class FigureFactory {
 	
 	public static void main(String[] args) {	
 		List< List<Point2D> > data = new ArrayList< List<Point2D>>();
-		data.add(Arrays.asList(new Point2D[]{
-				new Point2D.Double(0, 1.0),
-				new Point2D.Double(1, 2.0),
-				new Point2D.Double(3, 0.1),
-				new Point2D.Double(5, -14.0),
-				new Point2D.Double(8, 3.0),
-				new Point2D.Double(17, 10.0),
-				new Point2D.Double(18, 2.0)
-		}));
+//		data.add(Arrays.asList(new Point2D[]{
+//				new Point2D.Double(0, 0.0),
+//				new Point2D.Double(1, 0.01),
+//				new Point2D.Double(2, 0.01),
+//				new Point2D.Double(3, 0.012),
+//				new Point2D.Double(4, 0.02),
+//				new Point2D.Double(5, 0.064),
+//				new Point2D.Double(6, 0.02),
+//				new Point2D.Double(7, 0.018),
+//				new Point2D.Double(8, 0.017),
+//				new Point2D.Double(9, 0.012),
+//				new Point2D.Double(10, 0.005)
+//		}));
+//		
+//		
+//		List<String> names = new ArrayList<String>();
+//		names.add("My data series");
+//	//	names.add("Another data series");
+//		
+//		List<Color> colors = new ArrayList<Color>();
+//		colors.add(Color.green);
+//	//	colors.add(Color.magenta);
+//		
+//		XYSeriesFigure fig = createFigure("X axis label", "Time", data, names, colors);
+//		
+//		File destFile = new File("savedImage.png");
+//		
+//		try {
+//			saveFigure(new Dimension(1000, 1000), fig, destFile);
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		
-		data.add(Arrays.asList(new Point2D[]{
-				new Point2D.Double(0, 4.0),
-				new Point2D.Double(1, 3.0),
-				new Point2D.Double(2, 0.1),
-				new Point2D.Double(4, -1.0),
-				new Point2D.Double(6, 3.0),
-				new Point2D.Double(10, 1.0),
-				new Point2D.Double(12, 5.0)
-		}));
+		BAMFile bam = new BAMFile(new File("/home/brendan/oldhome/tinytest/test.final.bam"));
+		BAMMetrics metrics = BamMetrics.computeBAMMetrics(bam);
+		Histogram[] histos = metrics.readPosQualHistos;
 		
-		List<String> names = new ArrayList<String>();
-		names.add("My data series");
-		names.add("Another data series");
-		
-		List<Color> colors = new ArrayList<Color>();
-		colors.add(Color.green);
-		colors.add(Color.magenta);
-		
-		XYSeriesFigure fig = createFigure("X axis label", "Time", data, names, colors);
-		
-		File destFile = new File("savedImage.png");
-		
+		double[][] heats = new double[histos.length][histos[0].getBinCount()];
+		for(int i=0; i<histos.length; i++) {
+			Histogram posHist = histos[i];
+			if (posHist != null)
+				System.arraycopy(posHist.getRawCounts(), 0, heats[i], 0, posHist.getRawCounts().length);
+		}
+		HeatMapFigure readPosFig = FigureFactory.createFigure("Read position", "Quality", heats);
 		try {
-			saveFigure(new Dimension(1000, 1000), fig, destFile);
+			FigureFactory.saveFigure(new Dimension(500, 500), readPosFig, new File("fancynewfigure.png"));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		
 		System.exit(0);
 		

@@ -133,7 +133,8 @@ public class DepthOfCoverage extends IOOperator {
 			
 			
 			
-			//Read output from summary file
+			//Read output from interval summary file
+			reader.close();
 			File intervalSummary = new File(outputPrefix + ".sample_interval_summary");
 			reader = new BufferedReader(new FileReader(intervalSummary));
 			String line = reader.readLine();
@@ -156,6 +157,35 @@ public class DepthOfCoverage extends IOOperator {
 			}
 			
 			metrics.setFlaggedIntervals(problemIntervals);
+			
+			
+			
+			
+			
+			
+			//Read output from interval summary file. Right now we assume that the second line of the
+			//file is the proportion of reads with coverage greater than i, where i is tab-delimited
+			//index number
+			reader.close();
+			File intervalCoverageProps = new File(outputPrefix + ".sample_cumulative_coverage_proportions");
+			reader = new BufferedReader(new FileReader(intervalCoverageProps));
+			line = reader.readLine();
+//			toks = line.split("\t");
+//			Integer[] depths = new Integer[toks.length];
+//			for(int i=0; i<depths.length; i++) {
+//				depths[i]  = i;
+//			}
+			
+			line = reader.readLine();
+			toks = line.split("\t");
+			double[] prop = new double[toks.length];
+			for(int i=1; i<prop.length; i++) {
+				prop[i] = Double.parseDouble(toks[i]);
+			}
+			metrics.setCoverageProportions(prop);
+			
+			
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new OperationFailedException("Error reading output file : " + summaryFile.getAbsolutePath(), this);

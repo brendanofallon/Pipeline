@@ -1,5 +1,12 @@
 package operator.qc;
 
+import gui.figure.FigureFactory;
+import gui.figure.heatMapFigure.HeatMapFigure;
+import gui.figure.series.XYSeriesFigure;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.geom.Point2D;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,7 +20,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import javax.swing.SwingWorker;
 
 import math.Histogram;
 import math.LazyHistogram;
@@ -74,11 +87,45 @@ public class QCReport extends Operator {
 			throw new OperationFailedException("No variant pool specified", this);
 		}
 		
-		BAMMetrics rawMetrics = BamMetrics.computeBAMMetrics(rawBAMFile);
-		BAMMetrics finalMetrics = BamMetrics.computeBAMMetrics(finalBAMFile);
+		//BAMMetrics rawMetrics = BamMetrics.computeBAMMetrics(rawBAMFile);
+		//BAMMetrics finalMetrics = BamMetrics.computeBAMMetrics(finalBAMFile);
+		logger.info(getObjectLabel() + " : Submitting two BAMMetrics jobs to worker pool...");
+		BAMMetricsWorker rawWorker = new BAMMetricsWorker(rawBAMFile);
+		BAMMetricsWorker finalWorker = new BAMMetricsWorker(finalBAMFile);
+		
+		ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( 2 );
+		threadPool.submit(rawWorker);
+		threadPool.submit(finalWorker);
+		 
+		try {
+			logger.info("All tasks have been submitted to multioperator " + getObjectLabel() + ", now awaiting termination...");
+			threadPool.shutdown(); //No new tasks will be submitted,
+			
+			rawWorker.get();
+			finalWorker.get();
+			
+			threadPool.awaitTermination(7, TimeUnit.DAYS); //Wait until all tasks have completed
+		
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		
 		
+		BAMMetrics rawMetrics = rawWorker.getMetricsResult();
+		BAMMetrics finalMetrics = finalWorker.getMetricsResult();
 		
+		logger.info(getObjectLabel() + " Workers are finished computing BAM Metrics results");
+		if (rawMetrics == null) {
+			logger.warning(getObjectLabel() + " Raw BAM Metrics object is null!");
+		}
+		if (finalMetrics == null) {
+			logger.warning(getObjectLabel() + " Final BAM Metrics object is null!");
+		}
 		logger.info("Creating qc report for raw bam file:" + rawBAMFile.getAbsolutePath() + "\n final BAM: " + finalBAMFile.getAbsolutePath() + " variant pool with:" + variantPool.size() + " variants");
 		
 		String projHome = getProjectHome();				
@@ -155,6 +202,7 @@ public class QCReport extends Operator {
 		DecimalFormat formatter = new DecimalFormat("#0.00");
 		String lineSep = System.getProperty("line.separator");
 		
+		writer.write("<h2> Variant summary </h2>");
 		if (captureBed != null) {
 			writer.write("<p> Using target regions from file : " + captureBed.getFilename() + "</p>" );
 			writer.write("<p> Target region covers : " + captureBed.getExtent() + " sites in " + captureBed.getIntervalCount() + " intervals </p>" );
@@ -215,7 +263,6 @@ public class QCReport extends Operator {
 			row.add( formatter.format(varPool.countHeteros() / (double)varPool.size()) );
 			row.add( formatter.format(varPool.computeTTRatio()) );
 			table.addRow(row);
-			
 		}
 
 		row.clear();
@@ -242,6 +289,11 @@ public class QCReport extends Operator {
 		table.addRow(row);
 		
 		writer.write("<div id=\"vartablewrap\">" +  table.getHTML() + "\n</div><!-- table wrapper -->\n");
+		
+		
+		writer.write("<p> Novel variant % : " + formatter.format( 100*novels.size()/(novels.size()+knowns.size()))) ;
+		writer.write("<p> Variants per sequenced base : " + formatter.format( (novels.size()+knowns.size() / (double)captureBed.getExtent() ) )) ;
+		
 		
 		Histogram histo = new Histogram(0, 1, 50);
 		LazyHistogram overallQualHisto = new LazyHistogram(100);
@@ -275,29 +327,53 @@ public class QCReport extends Operator {
 		
 		String figName = "vardepthfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
 		String figPath = outputDir.getAbsolutePath() + "/" + figName;
-		CreateFigure.generateFigure(getPipelineOwner(), histo, "Fraction", "Allele fraction", "Frequency", figPath);
+		File destFile = new File(figPath);
+		
+		System.out.println("Creating var depth histo, orig histo is : " + histo.toString());
+		List<Point2D> data = histoToPointList(histo);
+		for(int i=0; i<data.size(); i++) {
+			System.out.println("Got point " + data.get(i).getX() + ", " + data.get(i).getY());
+		}
+		XYSeriesFigure fig = FigureFactory.createFigure("Variant allele frequency", "Count", data, "All variants", Color.blue);
+		
+		FigureFactory.saveFigure(new Dimension(500, 500), fig, destFile);
+		
+		//CreateFigure.generateFigure(getPipelineOwner(), histo, "Fraction", "Allele fraction", "Frequency", figPath);
 		writer.write("<h2> Distribution of variant depths: " + " </h2>" +lineSep);
 		writer.write("<img src=\"" + figName + "\">");
 		
 		
-		List<Histogram> histos = new ArrayList<Histogram>();
-		histos.add(overallQualHisto.getHistogram());
-		histos.add(snpQualHisto.getHistogram());
-		histos.add(indelQualHisto.getHistogram());
-		histos.add(hetQualHisto.getHistogram());
-		histos.add(homoQualHisto.getHistogram());
+		List<List<Point2D>> histos = new ArrayList< List<Point2D> >();
+		histos.add( histoToPointList( overallQualHisto.getHistogram()) );
+		histos.add(histoToPointList( snpQualHisto.getHistogram() ));
+		histos.add(histoToPointList( indelQualHisto.getHistogram() ));
+		histos.add(histoToPointList( hetQualHisto.getHistogram()));
+		histos.add(histoToPointList( homoQualHisto.getHistogram()));
 		
 		List<String> labels = new ArrayList<String>();
 		labels.add("All variants");
-		labels.add("SNPs only");
-		labels.add("Indels only");
-		labels.add("Heterozygotes only");
-		labels.add("Homozygotes only");
+		labels.add("SNPs");
+		labels.add("Indels");
+		labels.add("Heterozygotes");
+		labels.add("Homozygotes");
+		
+		List<Color> colors = new ArrayList<Color>();
+		colors.add(Color.blue);
+		colors.add(Color.red);
+		colors.add(Color.green);
+		colors.add(Color.orange);
+		colors.add(Color.magenta);
 		
 		if (histo.getCount() > 0) {
 			figName = "varqualfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
 			figPath = outputDir.getAbsolutePath() + "/" + figName;
-			CreateFigure.generateFigure(getPipelineOwner(), histos, labels, "Allele fraction", "Frequency", figPath);
+			
+			XYSeriesFigure qualityFig = FigureFactory.createFigure("Quality (phred-scaled)", "Frequency", histos, labels, colors);
+			qualityFig.getAxes().setXMax(500);
+			qualityFig.getAxes().setNumXTicks(5);
+			FigureFactory.saveFigure(new Dimension(500, 500), qualityFig, new File(figPath));
+			
+			//CreateFigure.generateFigure(getPipelineOwner(), histos, labels, "Allele fraction", "Frequency", figPath);
 			writer.write("<h2> Distribution of variant qualities: " + " </h2>" +lineSep);
 			writer.write("<img src=\"" + figName + "\">");
 		}
@@ -308,11 +384,44 @@ public class QCReport extends Operator {
 	}
 
 
+	/**
+	 * Convert histogram to list of points
+	 * @param histo
+	 * @return
+	 */
+	private List<Point2D> histoToPointList(Histogram histo) {
+		if (histo == null)
+			return new ArrayList<Point2D>();
+		
+		List<Point2D> data = new ArrayList<Point2D>(histo.getBinCount());
+		
+		double x = histo.getMin();
+		double step = histo.getBinWidth();
+		
+		for(int i=0; i<histo.getBinCount(); i++) {
+			Point2D p = new Point2D.Double(x, histo.getCount(i));
+			data.add(p);
+			x+=step;
+		}
+		
+		return data;
+	}
+
+
+
+
+
+
 	private void writeBaseQualities(StringWriter writer, BAMMetrics metrics, File outputDir) throws IOException {
 		DecimalFormat formatter = new DecimalFormat("#0.00");
 		String lineSep = System.getProperty("line.separator");
 
 		writer.write("<h2> Raw base qualities </h2>");
+		
+		if (metrics == null) {
+			writer.write("<h2 id=\"error\"> No .bam metrics computed! </h2>");
+			return;
+		}
 
 		writer.write("<p> Bases with quality > 30 : " + metrics.basesQAbove30 + " ( " + formatter.format(100.0*metrics.basesQAbove30 / metrics.basesRead) + "% )" +" </p>" + lineSep );
 		writer.write("<p> Bases with quality > 20 : " + metrics.basesQAbove20 + " ( " + formatter.format(100.0*metrics.basesQAbove20 / metrics.basesRead) + "% )" + " </p>" +lineSep );
@@ -326,10 +435,22 @@ public class QCReport extends Operator {
 //		writer.write("<h2> Base qualities by read position: " + " </h2>" +lineSep);
 //		writer.write("<img src=\"" + rpFigStr + "\">");
 		
-		
 		String bqFigStr =  "bqfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
 		String bqFigFullPath = outputDir.getAbsolutePath() + "/" + bqFigStr;
-		CreateFigure.generateFigure(getPipelineOwner(), metrics.baseQualityHistogram, "Quality score", "Base qualities", "Frequency", bqFigFullPath);
+		
+		
+		Histogram[] histos = metrics.readPosQualHistos;
+		
+		double[][] heats = new double[histos.length][histos[0].getBinCount()];
+		for(int i=0; i<histos.length; i++) {
+			Histogram posHist = histos[i];
+			if (posHist != null)
+				System.arraycopy(posHist.getRawCounts(), 0, heats[i], 0, posHist.getRawCounts().length);
+		}
+		HeatMapFigure readPosFig = FigureFactory.createFigure("Read position", "Quality", heats);
+		FigureFactory.saveFigure(new Dimension(500, 500), readPosFig, new File(bqFigFullPath));
+		
+		//CreateFigure.generateFigure(getPipelineOwner(), metrics.baseQualityHistogram, "Quality score", "Base qualities", "Frequency", bqFigFullPath);
 		writer.write("<h2> Distribution of base qualities: " + " </h2>" +lineSep);
 		writer.write("<img src=\"" + bqFigStr + "\">");
 	}
@@ -346,14 +467,15 @@ public class QCReport extends Operator {
 		}
 		
 		TableWriter sumT = new TableWriter(2);
+		sumT.setWidth("800");
 		
 		String lineSep = System.getProperty("line.separator");
-		sumT.addRow(Arrays.asList(new String[]{"Report creation time : ",(new Date()).toString()} ));
+		sumT.addRow(Arrays.asList(new String[]{"Pipeline execution start time :" , startTime.toString() } ));
 		sumT.addRow(Arrays.asList(new String[]{"Pipeline input file : ", ppl.getSourceFile().getName()} ));
+		sumT.addRow(Arrays.asList(new String[]{"Pipeline elapsed time : " , formattedElapsedTime} ));
+		sumT.addRow(Arrays.asList(new String[]{"Report creation time : ",(new Date()).toString()} ));
 		sumT.addRow(Arrays.asList(new String[]{"Input file modified date : ", new Date(ppl.getSourceFile().lastModified()).toString()} ));
 		sumT.addRow(Arrays.asList(new String[]{"Project home directory :" , ppl.getProjectHome() } ));
-		sumT.addRow(Arrays.asList(new String[]{"Pipeline execution start time :" , startTime.toString() } ));
-		sumT.addRow(Arrays.asList(new String[]{"Pipeline elapsed time : " , formattedElapsedTime} ));
 		sumT.addRow(Arrays.asList(new String[]{"Target regions file: " , targetRegions } ));
 		
 		writer.write(sumT.getHTML());
@@ -437,7 +559,7 @@ public class QCReport extends Operator {
 			covT.addRow(new String[]{"", "Raw BAM", "Final BAM", "Final / Raw %"});
 			covT.addRow(new String[]{"Overall mean cov :", "" + rawDOCMetrics.getMeanCoverage(), "" + finalDOCMetrics.getMeanCoverage(), formatPercent(finalDOCMetrics.getMeanCoverage() , rawDOCMetrics.getMeanCoverage() )});
 						
-			if (finalDOCMetrics.getCutoffs() == null) {
+			if (finalDOCMetrics.getCutoffs() == null || rawDOCMetrics.getCutoffs() == null) {
 				writer.write("<p id=\"error\">  Count not find cutoff values! </p>\n");
 			}
 			else {
@@ -450,6 +572,73 @@ public class QCReport extends Operator {
 			}
 			writer.write( covT.getHTML() );
 			
+			
+			//Coverage proportions sections
+			if (finalDOCMetrics.getCoverageProportions() == null || rawDOCMetrics.getCoverageProportions() == null) {
+				writer.write("<p id=\"error\">  Count not find coverage proportions data </p>\n");
+			}
+			else {
+				//dump proportions to point list..
+				List<Point2D> finalCov = new ArrayList<Point2D>();
+				double[] covs = finalDOCMetrics.getCoverageProportions();
+				for(int i=0; i<covs.length; i++) {
+					finalCov.add(new Point2D.Double((double)i, covs[i]));
+				}
+				
+				List<Point2D> rawCov = new ArrayList<Point2D>();
+				covs = rawDOCMetrics.getCoverageProportions();
+				for(int i=0; i<covs.length; i++) {
+					rawCov.add(new Point2D.Double((double)i, covs[i]));
+				}
+	
+				List<List<Point2D>> data = new ArrayList<List<Point2D>>();
+				data.add(rawCov);
+				data.add(finalCov);
+				
+				List<String> names = new ArrayList<String>();
+				names.add("Raw coverage");
+				names.add("Final coverage");
+				
+				List<Color> colors = new ArrayList<Color>();
+				colors.add(Color.blue);
+				colors.add(Color.green);
+				
+				String figStr =  "covfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
+				String figFullPath = outputDir.getAbsolutePath() + "/" + figStr;
+				File destFile = new File(figFullPath);
+				XYSeriesFigure fig = FigureFactory.createFigure("Coverage", "Proportion of bases", data, names, colors); 
+				FigureFactory.saveFigure(new Dimension(500, 500), fig, destFile);
+			
+				writer.write("<h2> Proportion of bases covered to given depth " + " </h2>\n");
+				writer.write("<img src=\"" + figStr + "\">");
+				
+			}
+			
+			
+			
+			//Emit insert size distribution figure
+			writer.write("<h2>  Distribution of insert sizes : " + " </h2>\n");
+			
+			writer.write("<p>  Mean insert size:" + formatter.format(finalMetrics.insertSizeHistogram.getMean()) + " </p>\n");		
+			writer.write("<p>  Stdev insert size:" + formatter.format(finalMetrics.insertSizeHistogram.getStdev()) + " </p>\n");
+			writer.write("<p>  Insert size range: " + finalMetrics.insertSizeHistogram.getMinValueAdded() + " - " + finalMetrics.insertSizeHistogram.getMaxValueAdded() + " </p>\n" );
+
+			String figStr =  "insertsizefig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
+			String figFullPath = outputDir.getAbsolutePath() + "/" + figStr;
+			
+			System.out.println("Creating insert size histogram, orig histo is : " + finalMetrics.insertSizeHistogram.toString());
+			XYSeriesFigure fig = FigureFactory.createFigure("Insert Size", "Frequency", histoToPointList(finalMetrics.insertSizeHistogram), "All reads", Color.blue); 
+			FigureFactory.saveFigure(new Dimension(500, 500), fig, new File(figFullPath));
+		
+			//CreateFigure.generateFigure(getPipelineOwner(), finalMetrics.insertSizeHistogram, "Insert size (bp)", "Insert size", "Frequency", figFullPath);
+			
+			writer.write("<img src=\"" + figStr + "\">");		
+			
+			writer.write("</div> <!-- bammetrics -->\n");
+			
+			
+			
+			//Emit 'flagged' low coverage intervals...
 			if (finalDOCMetrics.getFlaggedIntervals() == null) {
 				writer.write("<p> Number of low coverage intervals : No information found </p>\n");
 			}
@@ -475,19 +664,9 @@ public class QCReport extends Operator {
 			
 		}
 		
-		writer.write("<h2>  Distribution of insert sizes : " + " </h2>\n");
+	
 		
-		writer.write("<p>  Mean insert size:" + formatter.format(finalMetrics.insertSizeHistogram.getMean()) + " </p>\n");		
-		writer.write("<p>  Stdev insert size:" + formatter.format(finalMetrics.insertSizeHistogram.getStdev()) + " </p>\n");
-		writer.write("<p>  Insert size range: " + finalMetrics.insertSizeHistogram.getMinValueAdded() + " - " + finalMetrics.insertSizeHistogram.getMaxValueAdded() + " </p>\n" );
-
-		String figStr =  "metricsfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
-		String figFullPath = outputDir.getAbsolutePath() + "/" + figStr;
-		CreateFigure.generateFigure(getPipelineOwner(), finalMetrics.insertSizeHistogram, "Insert size (bp)", "Insert size", "Frequency", figFullPath);
 		
-		writer.write("<img src=\"" + figStr + "\">");		
-		
-		writer.write("</div> <!-- bammetrics -->\n");
 	}
 	
 	private void writeBAMMetricsBlock(Writer writer, BAMMetrics metrics, DOCMetrics docMetrics, String header, File outputDir) throws IOException {
@@ -520,6 +699,9 @@ public class QCReport extends Operator {
 			}
 			
 			
+			
+			
+			//Flagged intervals section
 			if (docMetrics.getFlaggedIntervals() == null) {
 				writer.write("<p> Number of low coverage intervals : No information found </p>" +lineSep);
 			}
@@ -628,6 +810,32 @@ public class QCReport extends Operator {
 	            destination.close();
 	        }
 	    }
+	}
+	
+	class BAMMetricsWorker extends SwingWorker {
+
+		final BAMFile inputBAM;
+		BAMMetrics result = null;
+		
+		public BAMMetricsWorker(BAMFile input) {
+			this.inputBAM = input;
+		}
+		
+		@Override
+		protected Object doInBackground() throws Exception {
+			BAMMetrics metrics = BamMetrics.computeBAMMetrics(inputBAM);
+			result = metrics;
+			System.out.println("Done computing BAM metrics for input file : " + inputBAM.getFilename());
+			if (result == null) {
+				System.out.println("Result is null!");	
+			}
+			return result;
+		}
+		
+		public BAMMetrics getMetricsResult() {
+			return result;
+		}
+		
 	}
 	
 	static DecimalFormat formatter = new DecimalFormat("#0.00");

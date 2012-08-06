@@ -53,7 +53,7 @@ public class Histogram {
 	//from the wikipedia page on standard deviation
 	double currentStdev = 0;
 	
-	int count = 0;
+	long count = 0;
 	
 	NumberFormat formatter = new DecimalFormat("0.0###");
 
@@ -76,7 +76,7 @@ public class Histogram {
 	 * Return the total number of times addValue has been called
 	 * @return
 	 */
-	public int getCount() {
+	public long getCount() {
 		return count;
 	}
 	
@@ -122,6 +122,16 @@ public class Histogram {
 //		int bin = getBin(val);
 //		hist[ bin ]--;
 //	}
+	
+	
+	/**
+	 * Return array storing raw count data for each bin - this is the actual storage array,
+	 * not a newly allocated one, so changing values in it will destroy this histogram
+	 * @return
+	 */
+	public double[] getRawCounts() {
+		return hist;
+	}
 	
 	/**
 	 * The minimum of all values added via addValue(x)

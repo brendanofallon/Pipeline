@@ -2,6 +2,7 @@ package operator.qc;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Date;
 
 public class QCPageWriter {
 
@@ -43,12 +44,13 @@ public class QCPageWriter {
         writer.write("<li><a href=\"variants.html\" title =\"Variant Metrics\">Variant Metrics</a><span>/</span></li> \n");
    		writer.write("<li><a href=\"pipelinestats.html\" title =\"Run metrics\">Pipeline statistics</a></li> \n");
 		writer.write("</ul> </div> <!-- nav --> \n ");
-		writer.write("<div id=\"content\"> \n");
+		writer.write("<div id=\"maincontent\"> \n");
 	}
 	
 	
 	private void writeFooter(Writer writer) throws IOException {
-		writer.write("\n</div> <!--end content--> \n ");
-		writer.write("\n</div> <!--end wrap--> \n</body>\n </html>  ");
+		writer.write("\n</div> <!--end main content--> \n ");
+		writer.write("\n<div id=\"footer\"> ARUP Labs Sequencing Quality Report, generated " + (new Date()).toString() + "</div>\n");
+		writer.write("\n</div> <!--end wrap--> \n </body> \n</html>  ");
 	}
 }
