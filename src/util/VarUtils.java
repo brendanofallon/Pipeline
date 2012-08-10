@@ -219,22 +219,23 @@ public class VarUtils {
 			for(String contig : vPool.getContigs()) {
 				for(VariantRec var : vPool.getVariantsForContig(contig)) {
 					//Double prod = var.getProperty(VariantRec.GO_EFFECT_PROD);
-					boolean passes = false;
+					boolean passes = true;
+					passes = var.getQuality() > 25.0;
 					
 					String func = var.getAnnotation(VariantRec.EXON_FUNCTION); 
-					if (func != null && (func.contains("nonsyn") 
-							|| func.contains("splic")
-							|| func.contains("stopgain")
-							|| func.contains("stoploss")
-							|| func.contains("frameshift"))) {
-						
-						Double freq = var.getProperty(VariantRec.POP_FREQUENCY);
-						if (freq == null || freq < 0.01)
-							passes = true;
-						if (! var.isHetero()) {
-							passes = false;
-						}
-					}
+//					if (func != null && (func.contains("nonsyn") 
+//							|| func.contains("splic")
+//							|| func.contains("stopgain")
+//							|| func.contains("stoploss")
+//							|| func.contains("frameshift"))) {
+//						
+//						Double freq = var.getProperty(VariantRec.POP_FREQUENCY);
+//						if (freq == null || freq < 0.01)
+//							passes = true;
+//						if (! var.isHetero()) {
+//							passes = false;
+//						}
+//					}
 					
 					if (passes) {
 						genePool.addRecordNoWarn(var);

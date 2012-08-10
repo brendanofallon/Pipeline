@@ -277,13 +277,21 @@ public class XYSeriesElement extends SeriesElement {
 				double y1 = axes.dataYtoBoundsY(xySeries.getY(0) );
 				double x2 = axes.dataXtoBoundsX( xySeries.getX(1));
 				double y2 = axes.dataYtoBoundsY( xySeries.getY(1) );
-				pathShape = new GeneralPath(new Line2D.Double(x1, y1, x2, y2) );
 				
+				pathShape = new GeneralPath(new Line2D.Double(x1, y1, x2, y2));
+					
 				boolean connect = true;
+			
+				//System.out.println("Regenerating XYSeries shape, axes xFactor: " + axes.getXFactor() + " yFactor: " + axes.getYFactor());
+				if (axes.getXFactor()==0 || axes.getYFactor()==0 || Double.isNaN(axes.getXFactor()) || Double.isNaN(axes.getYFactor())) {
+					axes.setScale(this.getWidth(), this.getHeight(), null);
+					//System.out.println("Rescaling axes size to : xFactor: " + axes.getXFactor() + " yFactor: " + axes.getYFactor());
+				}
 				
 				for(int i=1; i<xySeries.size(); i++) {
 					x1 = axes.dataXtoBoundsX( xySeries.getX(i) );
 					y1 = axes.dataYtoBoundsY( xySeries.getY(i) );
+					//System.out.println("Plotting point data: " + xySeries.getX(i) + ", " + xySeries.getY(i) + " -> " + x1 + ", " + y1);
 					//We've moved from a undrawn region into an OK one, so just move the 'pointer'
 					//to the new site
 					if (!connect && !(Double.isNaN(y1))) {
@@ -297,12 +305,14 @@ public class XYSeriesElement extends SeriesElement {
 					}
 					
 					
-					if (connect)
+					if (connect) {
 						pathShape.lineTo(x1, y1);
+					}
 				}
 			}
 		}
 				
+		pathShape.moveTo(axes.dataXtoBoundsX(0), axes.dataYtoBoundsY(0));
 		
 //		if (currentMode == BOXES) {
 //			// Currently there is no pathShape that defines the boundaries for BOXES mode. We use getboxForIndex(...)

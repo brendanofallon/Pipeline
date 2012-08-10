@@ -11,6 +11,7 @@ import java.util.List;
 public class TableWriter {
 
 	final int columns; //Number of columns in table, set once at creation
+	List<Integer> columnWidths = new ArrayList<Integer>();
 	List<String[]> cells = new ArrayList<String[]>();
 	
 	private String id = null;
@@ -22,10 +23,19 @@ public class TableWriter {
 	
 	public TableWriter(int cols) {
 		columns = cols;
+		for(int i=0; i<cols; i++) {
+			columnWidths.add(-1); //-1 means unspecified
+		}
 	}
 	
 	public void setCellSpacing(String spacing) {
 		cellSpacing = spacing;
+	}
+	
+	public void setColumnWidth(int col, int width) {
+		if (col < columnWidths.size()) {
+			columnWidths.set(col, new Integer(width));
+		}
 	}
 
 	public void setCellPadding(String padding) {
@@ -95,6 +105,15 @@ public class TableWriter {
 			classStr = "class=\"" + className +"\"";
 		
 		html.append("<table " + idStr + " " + classStr + " " + border + " " + width + " " + spacingStr + " " + paddingStr + ">\n");
+		
+		for(Integer colWidth : columnWidths) {
+			if (colWidth > 0) {
+				html.append("<col style=\"width: " + colWidth + "px\" />" );
+			}
+			else {
+				html.append("<col />" );
+			}
+		}
 		
 		for(String[] row : cells) {
 			html.append("  <tr>\n");

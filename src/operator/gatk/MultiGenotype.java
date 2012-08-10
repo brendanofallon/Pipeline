@@ -35,7 +35,7 @@ public class MultiGenotype extends MultiOperator {
 	
 	public int getPreferredThreadCount() {
 		//Dont use more than 12 threads...
-		return Math.min(getPipelineOwner().getThreadCount(), 12);
+		return Math.min(getPipelineOwner().getThreadCount(), 10);
 	}
 	
 	@Override
@@ -114,7 +114,7 @@ public class MultiGenotype extends MultiOperator {
 		command = command + " -minIndelFrac " + minIndelFrac;
 		command = command + " -stand_call_conf " + callConf + " ";
 		command = command + " -stand_emit_conf " + emitConf + " ";
-
+		
 		if (captureFile != null) {
 			command = command + " -L:intervals,BED " + captureFile.getAbsolutePath() + " ";
 		}
@@ -132,3 +132,4 @@ public class MultiGenotype extends MultiOperator {
 
 	
 }
+

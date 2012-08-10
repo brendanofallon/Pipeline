@@ -2,7 +2,6 @@ package pipeline;
 
 import gui.PipelineApp;
 
-import java.util.List;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -13,6 +12,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.InvalidPropertiesFormatException;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -24,14 +24,6 @@ import java.util.logging.SimpleFormatter;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.TransformerFactoryConfigurationError;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import operator.OperationFailedException;
 import operator.Operator;
@@ -43,9 +35,11 @@ import org.xml.sax.SAXException;
 import util.ElapsedTimeFormatter;
 import util.LoggingOutputStream;
 import util.OperatorTimeSummary;
+import util.QueuedLogHandler;
 
 public class Pipeline {
 
+	public static final String PIPELINE_VERSION = "1.0";
 	protected File source;
 	protected Document xmlDoc;
 	public static final String PYTHON_SCRIPTS_DIR="python.scripts.dir";
@@ -55,9 +49,10 @@ public class Pipeline {
 	public static final String primaryLoggerName = "pipeline.primary";
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
 	protected String defaultLogFilename = "pipelinelog";
+	protected String instanceLogPath = null; //Gets set when pipeinstancelog file handler is created
 	protected ObjectHandler handler = null;
 	private ClassLoader loader = null;
-	
+	private QueuedLogHandler memLogHandler = null; // Stores log records in memory
 	
 	//Default number of threads to use
 	protected int threadCount = 8;
@@ -276,26 +271,21 @@ public class Pipeline {
 				public void close() throws SecurityException { }
 			});
 		}
-		
-//		try {
-//			FileHandler logHandler = new FileHandler(defaultLogFilename + ".xml", true); //Append to existing log
-//			primaryLogger.addHandler( logHandler );
-//	
-//		} catch (SecurityException e) {
-//			// TODO Auto-generated catch block
-//			System.err.println("ERROR :  Could not open log file for writing! \n " + e.getCause() + e.getLocalizedMessage());
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			System.err.println("ERROR :  Could not open log file for writing! \n " + e.getCause() + e.getLocalizedMessage());
-//			e.printStackTrace();
-//		}
-		
+	
+		memLogHandler = new QueuedLogHandler(5000);
+		primaryLogger.addHandler(memLogHandler);
 
 		Date beginTime = new Date();
 		primaryLogger.info("\n\n***************************************************************** \n " + beginTime + " Beginning new Pipeline run");
 	}
 	
-	
+	/**
+	 * Obtain a QueuedLogHandler which stores most (hopefully, all) of the log records published
+	 * @return
+	 */
+	public QueuedLogHandler getLogHandler() {
+		return memLogHandler;
+	}
 	
 	/**
 	 * Attempt to read, parse, and create the objects as specified in the document
@@ -379,7 +369,8 @@ public class Pipeline {
 				
 				String suffix = "" + day + month + year + "-" + hour + "-" + min;
 				
-				FileHandler fileHandler = new FileHandler(projHome + "pipeinstancelog-" + suffix + ".txt");
+				this.instanceLogPath = projHome + "pipeinstancelog-" + suffix + ".txt";
+				FileHandler fileHandler = new FileHandler(instanceLogPath);
 				fileHandler.setFormatter( new SimpleFormatter() );
 				primaryLogger.addHandler(fileHandler);
 				
@@ -407,6 +398,16 @@ public class Pipeline {
 	
 	public Date getStartTime() {
 		return startTime;
+	}
+	
+	/**
+	 * Returns the full path to the instance log (i.e. pipelinstancelog...txt)
+	 * This may be null if it has not been set. Setting happens when initializePipeline
+	 * is called (so we know what projectHome is).
+	 * @return
+	 */
+	public String getInstanceLogPath() {
+		return instanceLogPath;
 	}
 	
 	/**

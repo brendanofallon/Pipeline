@@ -42,7 +42,7 @@ public class QCPageWriter {
         writer.write("<li><a href=\"basequalities.html\" title =\"Base Qualities\">Base qualities</a><span>/</span></li> \n");
         writer.write("<li><a href=\"alignment.html\" title =\"Alignment Metrics\">Alignment metrics</a><span>/</span></li> \n");
         writer.write("<li><a href=\"variants.html\" title =\"Variant Metrics\">Variant Metrics</a><span>/</span></li> \n");
-   		writer.write("<li><a href=\"pipelinestats.html\" title =\"Run metrics\">Pipeline statistics</a></li> \n");
+   		writer.write("<li><a href=\"log.html\" title =\"Run metrics\">Full log</a></li> \n");
 		writer.write("</ul> </div> <!-- nav --> \n ");
 		writer.write("<div id=\"maincontent\"> \n");
 	}

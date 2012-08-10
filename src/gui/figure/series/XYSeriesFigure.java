@@ -376,7 +376,7 @@ public class XYSeriesFigure extends SeriesFigure {
 		newElement.setLineColor( colorList[ seriesElements.size() % colorList.length] );
 		seriesElements.add(newElement);
 		addElement(newElement);
-		newElement.setCanConfigure(true);
+		//newElement.setCanConfigure(true);
 		inferBoundsFromCurrentSeries();
 		return newElement;
 	}

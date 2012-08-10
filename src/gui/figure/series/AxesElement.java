@@ -575,6 +575,9 @@ public class AxesElement extends FigureElement {
 	private void initializeBounds(Graphics g) {
 		FontMetrics fm = g.getFontMetrics();
 		fontHeight = fm.getHeight();
+		
+		System.out.println("Initializing axes bounds with xFactor : " + xFactor + " yFactor : " + yFactor + " bounds.x: " + bounds.x + " bounds.y: " + bounds.y);
+		
 		bottomSpace = fontHeight + xTickWidth*yFactor;
 		leftSpace = fm.stringWidth(testLabel) + xTickWidth*xFactor;
 		graphAreaTop = bounds.y*yFactor;
@@ -667,6 +670,7 @@ public class AxesElement extends FigureElement {
 	 */
 	public double dataXtoBoundsX(double dataX) {
 		 double boundsX = (dataX-minXVal)/(maxXVal-minXVal)*graphAreaWidth/xFactor+graphAreaLeft/xFactor;
+		 //System.out.println("Computing dXtobX, dataX: " + dataX + "\n minx: " + minXVal + " maxX: " + maxXVal + "\n xFactor : " + xFactor + " graph width: " + graphAreaWidth + "\n graph left: " + graphAreaLeft);
 		 return boundsX;
 	}
 

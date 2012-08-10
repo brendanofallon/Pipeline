@@ -14,6 +14,7 @@ import operator.IOOperator;
 import operator.OperationFailedException;
 import pipeline.Pipeline;
 import buffer.BAMFile;
+import buffer.BAMMetrics;
 import buffer.FileBuffer;
 import buffer.TextBuffer;
 
@@ -32,12 +33,18 @@ public class BamMetrics extends IOOperator {
 			throw new OperationFailedException("No input bam file specified", this);
 		}
 		
+		buffer.BAMMetrics metrics = (BAMMetrics) super.getOutputBufferForClass(buffer.BAMMetrics.class);;
+		if (metrics == null) {
+			throw new OperationFailedException("No output BAM metrics object specified", this);
+		}
+		
+		
 		logger.info("Computing summary metrics for input bam file " + inputBAM.getAbsolutePath());
 		
 		FileBuffer outputFile = getOutputBufferForClass(TextBuffer.class);
 		
 		
-		BAMMetrics metrics = computeBAMMetrics( (BAMFile)inputBAM);
+		computeBAMMetrics( (BAMFile)inputBAM, metrics);
 		
 		String metricsSummary = getBAMMetricsSummary(metrics);
 		try {
@@ -53,6 +60,10 @@ public class BamMetrics extends IOOperator {
 	}
 	
 	public static BAMMetrics computeBAMMetrics(BAMFile inputBAM) {
+		return computeBAMMetrics(inputBAM, new buffer.BAMMetrics());
+	}
+	
+	public static BAMMetrics computeBAMMetrics(BAMFile inputBAM, buffer.BAMMetrics metrics) {
 		SAMFileReader.setDefaultValidationStringency(ValidationStringency.LENIENT);
 		if (inputBAM.getFile() == null) {
 			throw new IllegalArgumentException("File associated with inputBAM " + inputBAM.getAbsolutePath() + " is null");
@@ -74,6 +85,8 @@ public class BamMetrics extends IOOperator {
 		long totalBaseCount = 0;
 		Histogram[] posHisto = null; 
 		
+		final int baseSubSample = 4; //Only count 1 of every this many bases
+		
 		for (final SAMRecord samRecord : inputSam) {
 			readCount++;
 						
@@ -86,30 +99,36 @@ public class BamMetrics extends IOOperator {
 			if (samRecord.getDuplicateReadFlag())
 				dupCount++;
 			
-			byte[] rawBaseQuals = samRecord.getBaseQualities();
-			int[] baseQuals = new int[rawBaseQuals.length];
-			for(int i=0; i<baseQuals.length; i++) {
-				baseQuals[i] = (int)rawBaseQuals[i];
-			}
+			byte[] baseQuals = samRecord.getBaseQualities();
+//			int[] baseQuals = new int[rawBaseQuals.length];
+//			for(int i=0; i<baseQuals.length; i++) {
+//				baseQuals[i] = (int)rawBaseQuals[i];
+//			}
 			
 			if (posHisto == null) {
-				posHisto = new Histogram[baseQuals.length];
-				for(int i=0; i<baseQuals.length; i++)
-					posHisto[i] =  new Histogram(0, 50, 50);
+				posHisto = new Histogram[ Math.max(100, baseQuals.length) ];
+				System.out.println("Creating new position histogram array with length : " + posHisto.length);
+				for(int i=0; i<posHisto.length; i++)
+					posHisto[i] = new Histogram(0, 40, 40);
 			}
 			
-			for(int i=0; i<baseQuals.length; i++) {
-				if (baseQuals[i] > 30)
+			
+			int start = readCount % baseSubSample;
+			for(int i=start; i<baseQuals.length; i+=baseSubSample) {
+				final int bq = (int) baseQuals[i];
+				if (bq > 30)
 					basesAbove30++;
-				if (baseQuals[i] > 20)
+				if (bq > 20)
 					basesAbove20++;
-				if (baseQuals[i] > 10)
+				if (bq > 10)
 					basesAbove10++;
 				//int bq = (int)baseQuals[i];
-				baseQHisto.addValue( baseQuals[i] );
+				baseQHisto.addValue( bq );
 				
-				posHisto[i].addValue( baseQuals[i] );
+				if (i < posHisto.length)
+					posHisto[i].addValue( bq );
 			}
+			
 			totalBaseCount += baseQuals.length;
 			int insertSize = Math.abs( samRecord.getInferredInsertSize() );
 			if (insertSize > 10000) {
@@ -123,7 +142,6 @@ public class BamMetrics extends IOOperator {
 
 		inputSam.close();
 		
-		BAMMetrics metrics = new BAMMetrics();
 		metrics.path = inputBAM.getFile().getAbsolutePath();
 		metrics.totalReads = readCount;
 		metrics.unmappedReads = unmappedCount;
@@ -172,22 +190,5 @@ public class BamMetrics extends IOOperator {
 		return sum.toString();
 	}
 	
-	public static class BAMMetrics {
-		String path;
-		int totalReads;
-		Histogram insertSizeHistogram;
-		Histogram baseQualityHistogram;
-		public Histogram[] readPosQualHistos;
-		int unmappedReads;
-		int unmappedMates;
-		int duplicateReads;
-		int lowVendorQualityReads;
-		int hugeInsertSize;
-		long basesRead;
-		long basesQAbove30;
-		long basesQAbove20;
-		long basesQAbove10;
-		
-	}
 
 }

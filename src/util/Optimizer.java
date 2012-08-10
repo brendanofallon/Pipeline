@@ -3,7 +3,6 @@ package util;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -16,10 +15,7 @@ import math.Histogram;
 import org.apache.commons.math3.analysis.MultivariateFunction;
 import org.apache.commons.math3.optimization.GoalType;
 import org.apache.commons.math3.optimization.PointValuePair;
-import org.apache.commons.math3.optimization.PointVectorValuePair;
 import org.apache.commons.math3.optimization.direct.CMAESOptimizer;
-import org.apache.commons.math3.optimization.direct.NelderMeadSimplex;
-import org.apache.commons.math3.optimization.direct.SimplexOptimizer;
 
 import cern.jet.random.Normal;
 import cern.jet.random.Uniform;
@@ -182,14 +178,14 @@ public class Optimizer implements MultivariateFunction {
 	}
 	
 	public void emit(double[] w) throws IOException {
-		BufferedWriter writer = new BufferedWriter(new FileWriter("/home/brendan/hgmd_test/hgmdvals.csv"));
+		BufferedWriter writer = new BufferedWriter(new FileWriter("/home/brendan/oldhome/hgmd_test/hgmdvals.csv"));
 		System.out.println("Disease variants");
 		for(int i=0; i<practiceA.size(); i++) {
 			writer.write(sum(practiceA.get(i), w) + "\n");
 		}
 		writer.close();
 		
-		writer = new BufferedWriter(new FileWriter("/home/brendan/hgmd_test/esp5400.csv"));
+		writer = new BufferedWriter(new FileWriter("/home/brendan/oldhome/hgmd_test/esp5400.csv"));
 		for(int i=0; i<practiceB.size(); i++) {
 			writer.write(sum(practiceB.get(i), w) + "\n");
 		}
@@ -263,8 +259,8 @@ public class Optimizer implements MultivariateFunction {
 			//func.loadDataA(new File("/home/brendan/hgmd_test/hgmd.analysis.csv"));
 			//func.loadDataB(new File("/home/brendan/hgmd_test/highfreqs.0.1.analysis.csv"));
 	
-			func.loadDataA(new File("/home/brendan/hgmd_test/hgmd.dmonly.nonans.csv"));
-			func.loadDataB(new File("/home/brendan/hgmd_test/tgk.nonans.csv"));
+			func.loadDataA(new File("/home/brendan/oldhome/hgmd_test/hgmd.dmonly.nonans.csv"));
+			func.loadDataB(new File("/home/brendan/oldhome/hgmd_test/tgk.nonans.csv"));
 			
 			//func.emit(new double[]{0, 0, 0, 0, 1, 0}); 
 			//func.emit(new double[]{-8, -0.1, 23, -7.8, 0.6, 3.9}); //This one is good for no interaction term
@@ -294,7 +290,7 @@ public class Optimizer implements MultivariateFunction {
 			
 			
 			//func.emit(new double[]{-2.22,4.98,1.52,11.29,-0.485,-0.22,2.68}); //best so far, basically
-			func.emit(new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}); 
+			func.emit(new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}); 
 			//func.emit(new double[]{-1859.67,4183.4,463.13,26201.1,-410.62,-184.6,2250.07}); //no penalty test
 			System.exit(0);
 			

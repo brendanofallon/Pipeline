@@ -334,5 +334,12 @@ public abstract class FigureElement {
 		return (int)Math.floor(x+0.5);
 	}
 	
+	public double getXFactor() {
+		return xFactor;
+	}
+	
+	public double getYFactor() {
+		return yFactor;
+	}
 	
 }

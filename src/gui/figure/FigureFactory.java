@@ -22,8 +22,8 @@ import javax.swing.CellRendererPane;
 
 import math.Histogram;
 import operator.qc.BamMetrics;
-import operator.qc.BamMetrics.BAMMetrics;
 import buffer.BAMFile;
+import buffer.BAMMetrics;
 
 public class FigureFactory {
 
@@ -48,7 +48,7 @@ public class FigureFactory {
 	 * @param fig
 	 * @return
 	 */
-	public static BufferedImage getFigureImage(Dimension size, Figure fig) {
+	public synchronized static BufferedImage getFigureImage(Dimension size, Figure fig) {
 		fig.setSize(size);
 		fig.doLayout();
 		layoutComponent(fig);
@@ -58,11 +58,17 @@ public class FigureFactory {
 		
 		CellRendererPane crp = new CellRendererPane();
         crp.add(fig);
+        crp.setSize(size);
+        crp.revalidate();
+        
         Graphics g = img.createGraphics();
+        
         g.setColor(fig.getBackground());
         g.fillRect(1, 1, fig.getBounds().width, fig.getBounds().height);
-        crp.paintComponent(g, fig, crp, fig.getBounds());    
-        crp.repaint();
+        
+
+        crp.paintComponent(g, fig, crp, crp.getBounds());    
+        
         return img; 
 	}
 	
@@ -73,13 +79,13 @@ public class FigureFactory {
 	 * @param destinationFile
 	 * @throws IOException
 	 */
-	public static void saveFigure(Dimension size, Figure fig, File destinationFile) throws IOException {
+	public synchronized static void saveFigure(Dimension size, Figure fig, File destinationFile) throws IOException {
 		BufferedImage image = getFigureImage(size, fig);
 		ImageIO.write(image, "png", destinationFile);
 	}
 
 	
-	public static HeatMapFigure createFigure(String xLabel, String yLabel,
+	public synchronized static HeatMapFigure createFigure(String xLabel, String yLabel,
 			double[][] data) {
 				
 		HeatMapFigure fig = new HeatMapFigure();
@@ -104,12 +110,13 @@ public class FigureFactory {
 		return fig;
 	}
 	
-	public static XYSeriesFigure createFigure(String xLabel, String yLabel,
+	public synchronized static XYSeriesFigure createFigure(String xLabel, String yLabel,
 			List< List<Point2D>> data, 
 			List<String> seriesNames,
 			List<Color> colors) {
 		XYSeriesFigure fig = new XYSeriesFigure();
-		fig.setPreferredSize(new Dimension(500, 500));
+		Dimension size = new Dimension(500, 500);
+		
 		
 		int count = 0;
 		for(List<Point2D> seriesData : data) {
@@ -120,8 +127,10 @@ public class FigureFactory {
 			count++;
 		}
 		
+		fig.inferBoundsFromCurrentSeries();
 		fig.setXLabel(xLabel);
 		fig.setYLabel(yLabel);
+		fig.setSize( size );
 		return fig;
 	}
 	
@@ -136,11 +145,12 @@ public class FigureFactory {
 	 * @param color
 	 * @return
 	 */
-	public static XYSeriesFigure createFigure(String xLabel, String yLabel,
+	public synchronized static XYSeriesFigure createFigure(String xLabel, String yLabel,
 								List<Point2D> data, 
 								String name,
 								Color color) {
 		List<List<Point2D>> dataList = new ArrayList<List<Point2D>>();
+		dataList.add(data);
 		List<String> names = new ArrayList<String>();
 		List<Color> colors = new ArrayList<Color>();
 		names.add(name);

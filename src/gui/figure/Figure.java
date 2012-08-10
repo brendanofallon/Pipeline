@@ -351,6 +351,8 @@ public class Figure extends JPanel implements ComponentListener, KeyListener {
 		Graphics2D g2d = (Graphics2D)g;
 		boolean rescale = (currentX != getWidth() || currentY != getHeight());
 		
+		System.out.println("Paintin figure, width : " + getWidth() + " height: " + getHeight() + " currentX: " + currentX + " currentY: " + currentY);
+		rescale = true;
 		
 		if (autoClear) {
 			g2d.setColor(backgroundColor);
