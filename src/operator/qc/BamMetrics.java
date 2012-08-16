@@ -117,11 +117,11 @@ public class BamMetrics extends IOOperator {
 			for(int i=start; i<baseQuals.length; i+=baseSubSample) {
 				final int bq = (int) baseQuals[i];
 				if (bq > 30)
-					basesAbove30++;
+					basesAbove30+=baseSubSample;
 				if (bq > 20)
-					basesAbove20++;
+					basesAbove20+=baseSubSample;
 				if (bq > 10)
-					basesAbove10++;
+					basesAbove10+=baseSubSample;
 				//int bq = (int)baseQuals[i];
 				baseQHisto.addValue( bq );
 				

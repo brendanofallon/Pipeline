@@ -2,7 +2,6 @@ package ncbi;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -69,6 +68,27 @@ public class GeneInfoDB {
 	 */
 	public Collection<String> getAllGenes() {
 		return map.keySet();
+	}
+	
+	
+	/**
+	 * Returns a list of the pubmed ID # for all genes in this DB 
+	 * @return
+	 */
+	public Collection<Integer> getAllGeneIDs() {
+		List<Integer> ids = new ArrayList<Integer>();
+		for(String key : map.keySet()) {
+			GeneInfo val = map.get(key);
+			try {
+				Integer id = Integer.parseInt( val.id );
+				if (id != null)
+					ids.add( id );
+			}
+			catch (NumberFormatException nfe) {
+				System.err.println("Could not parse id for gene with symbol :" + key + " id is: " + val.id);
+			}
+		}
+		return ids;
 	}
 	
 	/**

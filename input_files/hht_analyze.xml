@@ -8,7 +8,7 @@
 <Omni class="buffer.VCFFile" filename="/home/brendan/resources/1000G_omni2.5.b37.sites.vcf" />
 
 
-<genesOfInterest class="buffer.variant.GenePool" filename="/media/MORE_DATA/HHT/HHT-genes.txt" />
+<genesOfInterest class="buffer.variant.GenePool" filename="/home/brendan/MORE_DATA/HHT/HHT-genes.txt" />
 
 <InputVCF class="buffer.CSVFile" filename="$$INPUTFILE" />
 
@@ -97,26 +97,26 @@
 
 <GoRank class="operator.variant.GOTermRanker">
  <passingVariants />
- <rankedTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-goterms.txt" />
+ <rankedTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-goterms.txt" />
 </GoRank>
 
 <SummaryRank class="operator.variant.GeneSummaryRanker" no.downloads="true" >
 	<passingVariants />
-	<rankedSummaryTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-summaryterms.txt" />
+	<rankedSummaryTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-summaryterms.txt" />
 </SummaryRank>
 
 
 <InteractionRank class="operator.variant.InteractionRanker" source="ENG,ACVRL1">
   <passingVariants />
   <InteractionMatrix class="buffer.GeneInteractionGraph">
-	<GeneInteractions class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-proteins500.csv" />
+	<GeneInteractions class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-proteins500.csv" />
   </InteractionMatrix>
 </InteractionRank>
 
 
 <PubmedRank class="operator.variant.PubmedRanker">
   <passingVariants />
-  <pubmedTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/HHT/HHT-pubmedterms.txt" />
+  <pubmedTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-pubmedterms.txt" />
 </PubmedRank>
 
 

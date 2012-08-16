@@ -28,8 +28,6 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
-import java.awt.geom.Line2D;
-import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
@@ -45,8 +43,9 @@ import java.awt.geom.Rectangle2D;
 public class XYSeriesElement extends SeriesElement {
 	
 	protected AbstractSeries xySeries;
-	GeneralPath pathShape;
-	GeneralPath markerShape;
+//	private GeneralPath pathShape;
+	private Point2D[] path = null;
+	protected GeneralPath markerShape;
 	
 	AxesElement axes;
 	Shape shapeToDraw = null; //For debugging only
@@ -261,15 +260,27 @@ public class XYSeriesElement extends SeriesElement {
 	
 	private void regenerateShape() {
 		if (xySeries.size()==0) {
-			pathShape = new GeneralPath();
+			//pathShape = new GeneralPath();
 			return;
 		}
-				
-		if (pathShape == null) {
-			pathShape = new GeneralPath(new Line2D.Double(xySeries.getX(0), xySeries.getY(0), xySeries.getX(1), xySeries.getY(1)) );
+		
+		if (axes.getXFactor()==0 || axes.getYFactor()==0 || Double.isNaN(axes.getXFactor()) || Double.isNaN(axes.getYFactor())) {
+			axes.setScale(this.getWidth(), this.getHeight(), null);
+			//System.out.println("Rescaling axes size to : xFactor: " + axes.getXFactor() + " yFactor: " + axes.getYFactor());
 		}
-		else 
-			pathShape.reset();
+
+		if (path == null || path.length != xySeries.size()) {
+			path = new Point2D[ xySeries.size() ];
+			
+		}
+		
+		//if (pathShape == null) {
+		//pathShape = new GeneralPath(new Line2D.Double(xySeries.getX(0), xySeries.getY(0), xySeries.getX(1), xySeries.getY(1)) );
+		//}
+//		else {
+//			pathShape.reset();
+//			pathShape.moveTo(0, 0);
+//		}
 		
 		if (currentMode == LINES || currentMode == POINTS_AND_LINES || currentMode == POINTS) {
 			if (xySeries.size()>1) {
@@ -278,41 +289,48 @@ public class XYSeriesElement extends SeriesElement {
 				double x2 = axes.dataXtoBoundsX( xySeries.getX(1));
 				double y2 = axes.dataYtoBoundsY( xySeries.getY(1) );
 				
-				pathShape = new GeneralPath(new Line2D.Double(x1, y1, x2, y2));
+				//pathShape = new GeneralPath(new Line2D.Double(x1, y1, x2, y2));
 					
 				boolean connect = true;
 			
 				//System.out.println("Regenerating XYSeries shape, axes xFactor: " + axes.getXFactor() + " yFactor: " + axes.getYFactor());
-				if (axes.getXFactor()==0 || axes.getYFactor()==0 || Double.isNaN(axes.getXFactor()) || Double.isNaN(axes.getYFactor())) {
-					axes.setScale(this.getWidth(), this.getHeight(), null);
-					//System.out.println("Rescaling axes size to : xFactor: " + axes.getXFactor() + " yFactor: " + axes.getYFactor());
-				}
 				
 				for(int i=1; i<xySeries.size(); i++) {
 					x1 = axes.dataXtoBoundsX( xySeries.getX(i) );
 					y1 = axes.dataYtoBoundsY( xySeries.getY(i) );
+					
+					path[i] = new Point2D.Double(x1, y1);
+					//pathShape.lineTo(x1, y1);
+					
+					
 					//System.out.println("Plotting point data: " + xySeries.getX(i) + ", " + xySeries.getY(i) + " -> " + x1 + ", " + y1);
 					//We've moved from a undrawn region into an OK one, so just move the 'pointer'
 					//to the new site
-					if (!connect && !(Double.isNaN(y1))) {
-						pathShape.moveTo(x1, y1);
-						connect = true;
-					}
-					
-					//Moving from a good region to an undrawn one
-					if (connect && Double.isNaN(y1)) {
-						connect = false;
-					}
-					
-					
-					if (connect) {
-						pathShape.lineTo(x1, y1);
-					}
+//					if (!connect && !(Double.isNaN(y1))) {
+//						pathShape.moveTo(x1, y1);
+//						connect = true;
+//					}
+//					
+//					//Moving from a good region to an undrawn one
+//					if (connect && Double.isNaN(y1)) {
+//						connect = false;
+//					}
+//					
+//					
+//					if (connect) {
+//						try {
+//							pathShape.lineTo(x1, y1);
+//						}
+//						catch (RuntimeException ex) {
+//							pathShape.moveTo(x1, y1);
+//						}
+//							
+//					}
 				}
 			}
 		}
 				
-		pathShape.moveTo(axes.dataXtoBoundsX(0), axes.dataYtoBoundsY(0));
+		//pathShape.moveTo(axes.dataXtoBoundsX(0), axes.dataYtoBoundsY(0));
 		
 //		if (currentMode == BOXES) {
 //			// Currently there is no pathShape that defines the boundaries for BOXES mode. We use getboxForIndex(...)
@@ -385,9 +403,9 @@ public class XYSeriesElement extends SeriesElement {
 				return rect.contains(pos);
 		}
 		
-		if (currentMode == POINTS) {
-			return pathShape.intersects(x*xFactor-3, y*yFactor-3, 5, 5);
-		}
+//		if (currentMode == POINTS) {
+//			return pathShape.intersects(x*xFactor-3, y*yFactor-3, 5, 5);
+//		}
 		
 		return false;
 	}
@@ -449,25 +467,18 @@ public class XYSeriesElement extends SeriesElement {
 		}
 	}
 	
-	private void emitPathShape() {
-		AffineTransform transform = new AffineTransform();
-		transform.setToIdentity();
-		PathIterator pi = pathShape.getPathIterator(transform);
-		
-		double[] coords = new double[6];
-		int index = 0;
-		while (! pi.isDone()) {
-			pi.currentSegment(coords);
-			pi.next();
-			index++;
-		}
-	}
 	
 	public void setScale(double xFactor, double yFactor, Graphics g) {
 		setDataBounds();
 				
 		currentTransform.setToScale(xFactor, yFactor);
-		pathShape.transform(currentTransform);
+		if (path != null) {
+			for(int i=0; i<path.length; i++) {
+				if (path[i] != null)
+					currentTransform.transform(path[i], path[i]);
+			}
+		}
+		//pathShape.transform(currentTransform);
 		
 		this.xFactor = xFactor;
 		this.yFactor = yFactor;	
@@ -504,15 +515,18 @@ public class XYSeriesElement extends SeriesElement {
 		if (isSelected) {
 			g.setColor(highlightColor);
 			g.setStroke(highlightStroke);
-			if (currentMode == LINES || currentMode == POINTS_AND_LINES || currentMode == BOXES) 
-				g.draw(pathShape);
+			if (currentMode == LINES || currentMode == POINTS_AND_LINES || currentMode == BOXES) {
+				drawPath(g);
+				//g.draw(pathShape);
+			}
 		}
 		
 		g.setStroke(normalStroke);
 		
 		if (currentMode == LINES) {
 			g.setColor(getLineColor());
-			g.draw(pathShape);	
+			drawPath(g);
+			//g.draw(pathShape);	
 		}
 		
 		if (currentMode == BOXES) {
@@ -535,7 +549,8 @@ public class XYSeriesElement extends SeriesElement {
 		
 		if (currentMode == POINTS_AND_LINES ) {
 			g.setColor(getLineColor());
-			g.draw(pathShape);
+			drawPath(g);
+			//g.draw(pathShape);
 			
 			g.setColor(getLineColor());
 			for(int i=0; i<xySeries.size(); i++) {
@@ -547,6 +562,19 @@ public class XYSeriesElement extends SeriesElement {
 
 	}
 
+
+
+	private void drawPath(Graphics2D g) {
+		if (path == null)
+			return;
+		Point2D first = path[0];
+		for(int i=1; i<path.length; i++) {
+			Point2D second = path[i];
+			if (first != null && second != null)
+				g.drawLine( (int)first.getX(), (int)first.getY(), (int)second.getX(), (int)second.getY());
+			first = second;
+		}
+	}
 
 
 	/**

@@ -516,6 +516,7 @@ public class VariantRec {
 	public static final String EFFECT_PREDICTION = "effect.prediction";
 	public static final String EFFECT_PREDICTION2 = "effect.prediction2";
 	public static final String POP_FREQUENCY = "pop.freq";
+	public static final String CG69_FREQUENCY = "cg69.freq";
 	public static final String SIFT_SCORE = "sift.score";
 	public static final String POLYPHEN_SCORE = "pp.score";
 	public static final String MT_SCORE = "mt.score";
@@ -557,6 +558,12 @@ public class VariantRec {
 	public static final String PUBMED_SCORE = "pubmed.score";
 	public static final String PUBMED_HIT = "pubmed.hit";
 	public static final String SAMPLE_COUNT = "sample.count";
+	
+	public static final String DBNSFP_FUNCTIONDESC = "dbnsfp.function.desc";
+	public static final String DBNSFP_DISEASEDESC = "dbnsfp.disease.desc";
+	public static final String DBNSFP_MIMDISEASE = "dbnsfp.mim.disease";
+	public static final String DBNSFPGENE_SCORE = "dbnsfp.score";
+	
 	
 }
 

@@ -12,12 +12,12 @@ import java.util.List;
 import math.Histogram;
 import math.LazyHistogram;
 import operator.qc.BamMetrics;
-import operator.qc.BamMetrics.BAMMetrics;
 import operator.variant.CompareVCF;
 import operator.variant.CompoundHetFinder;
 import operator.variant.ExcelWriter;
 import operator.variant.FPComputer;
 import buffer.BAMFile;
+import buffer.BAMMetrics;
 import buffer.BEDFile;
 import buffer.CSVFile;
 import buffer.VCFFile;
@@ -223,6 +223,16 @@ public class VarUtils {
 					passes = var.getQuality() > 25.0;
 					
 					String func = var.getAnnotation(VariantRec.EXON_FUNCTION); 
+					String type = var.getAnnotation(VariantRec.VARIANT_TYPE);
+					if (! type.contains("exonic")) {
+						passes = false;
+					}
+					
+					String gene = var.getAnnotation(VariantRec.GENE_NAME);
+					if (gene == null || (! gene.contains("MIR"))) {
+						passes = false;
+					}
+					
 //					if (func != null && (func.contains("nonsyn") 
 //							|| func.contains("splic")
 //							|| func.contains("stopgain")

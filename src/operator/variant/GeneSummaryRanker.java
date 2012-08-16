@@ -7,16 +7,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import ncbi.CachedGeneSummaryDB;
+import operator.OperationFailedException;
+import operator.annovar.Annotator;
+
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import ncbi.CachedGeneSummaryDB;
-import buffer.TextBuffer;
-import buffer.variant.VariantRec;
-import operator.OperationFailedException;
-import operator.annovar.Annotator;
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
+import buffer.TextBuffer;
+import buffer.variant.VariantRec;
 
 /**
  * An annotator that computes a score for variants based on how many hits a particular term has
@@ -57,7 +58,7 @@ public class GeneSummaryRanker extends Annotator {
 	}
 	
 	@Override
-	public void annotateVariant(VariantRec var) {
+	public void annotateVariant(VariantRec var) throws OperationFailedException {
 		if (summaryDB == null) {
 			initializeDB();
 		}
@@ -71,7 +72,7 @@ public class GeneSummaryRanker extends Annotator {
     	if (summary == null)
     		return;
     	
-    	double score = scoreSummary(summary);
+    	double score = scoreSummary(summary.toLowerCase());
     	var.addProperty(VariantRec.SUMMARY_SCORE, score);
 	}
 	
@@ -91,7 +92,7 @@ public class GeneSummaryRanker extends Annotator {
 		return score;
 	}
 
-	private void buildRankingMap() throws IOException {
+	protected void buildRankingMap() throws IOException {
 		rankingMap = new HashMap<String, Integer>();
 		BufferedReader reader = new BufferedReader(new FileReader(termsFile.getAbsolutePath()));
 		String line = reader.readLine();
@@ -111,6 +112,8 @@ public class GeneSummaryRanker extends Annotator {
 			rankingMap.put(toks[0].trim().toLowerCase(), score);
 			line = reader.readLine();
 		}
+		
+		reader.close();
 	}
 	
 	

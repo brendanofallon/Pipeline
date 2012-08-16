@@ -8,13 +8,15 @@
 <Omni class="buffer.VCFFile" filename="/home/brendan/resources/1000G_omni2.5.b37.sites.vcf" />
 
 
-<genesOfInterest class="buffer.variant.GenePool" filename="/media/MORE_DATA/noonan/noonan-genes.txt" />
+<genesOfInterest class="buffer.variant.GenePool" filename="/home/brendan/MORE_DATA/noonan/noonan-genes.txt" />
 
-<InputVCF class="buffer.VCFFile" filename="$$INPUTFILE" />
+
+
+<captureVCF class="buffer.VCFFile" filename="noonan7.capture.vcf" />
 
 
 <!-- Perform variant quality score recalibration VQSR, using GaTK -->
-<VQSR class="operator.gatk.VariantRecalibrator" >
+<!-- VQSR class="operator.gatk.VariantRecalibrator" >
  <input>
   <reference />
   <InputVCF />
@@ -23,19 +25,19 @@
   <KnownDBSNP />  
  </input>
  <output>
-  <recalibratedVCF class="buffer.VCFFile" filename="$$PREFIX.vqsr.vcf" />
+  <recalibratedVCF class="buffer.VCFFile" filename="noonan7.vqsr.vcf" />
  </output>
-</VQSR>
+</VQSR -->
 
-<filterByCapture class="operator.variant.FilterVCFByBED">
+<!-- filterByCapture class="operator.variant.FilterVCFByBED">
  <input>
    <recalibratedVCF />
    <capture />
   </input>
   <output>
-   <captureVCF class="buffer.VCFFile" filename="$$PREFIX.capture.vcf" />
+   <captureVCF class="buffer.VCFFile" filename="noonan7.capture.vcf" />
  </output>
-</filterByCapture>
+</filterByCapture -->
 
 
 <MakeInput class="operator.annovar.ConvertVCFAnnovar">
@@ -51,9 +53,6 @@
 	<captureVCF />
 </VariantPool>
 
-<ParallelAnnotate class="operator.ParallelOperator">
-
-
 <GeneAnnotate class="operator.annovar.GeneAnnotator">
 	<AnnoInput />
 	<VariantPool />
@@ -62,31 +61,6 @@
 <FPAnnotate class="operator.variant.FPComputer">
   <VariantPool />
 </FPAnnotate>
-
-<SiftAnnotate class="operator.annovar.SiftAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</SiftAnnotate>
-
-<PolyphenAnnotate class="operator.annovar.PolyphenAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PolyphenAnnotate>
-
-<MTAnnotate class="operator.annovar.MTAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</MTAnnotate>
-
-<PhyloPAnnotate class="operator.annovar.PhyloPAnnotator">
-	<AnnoInput />
-	<VariantPool />	
-</PhyloPAnnotate>
-
-<GERPAnnotate class="operator.annovar.GERPAnnotator">
-  <AnnoInput />
-  <VariantPool />
-</GERPAnnotate>
 
 <PopFreqAnnotate class="operator.annovar.TKGAnnotator">
 	<AnnoInput />
@@ -103,16 +77,15 @@
  <VariantPool />
 </DBSNPAnnotate>
 
-<OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
-  <AnnoInput />
-  <VariantPool />
-</OMIMAnnotate>
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+ <VariantPool />
+</dbNSFPAnnotate>
 
-<HGMD class="operator.annovar.HGMDAnnotator">
-  <VariantPool />
-</HGMD>
+<dbNSFPGene class="operator.variant.DBNSFPGeneAnnotator">
+ <VariantPool />
+</dbNSFPGene>
 
-</ParallelAnnotate>
+
 
 <EffectPred class="operator.annovar.EffectPredictionAnnotator">
  <VariantPool />
@@ -124,25 +97,25 @@
 
 <GoRank class="operator.variant.GOTermRanker">
  <VariantPool />
- <rankedTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/noonan/noonan-goterms.txt" />
+ <rankedTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/noonan/noonan-goterms.txt" />
 </GoRank>
 
 <SummaryRank class="operator.variant.GeneSummaryRanker">
 	<VariantPool />
-	<rankedSummaryTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/noonan/noonan-keyterms.txt" />
+	<rankedSummaryTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/noonan/noonan-keyterms.txt" />
 </SummaryRank>
 
 
 <InteractionRank class="operator.variant.InteractionRanker" source="PTPN11,KRAS,BRAF,RAF1,HRAS,SOS1">
   <VariantPool />
   <InteractionMatrix class="buffer.GeneInteractionGraph">
-	<GeneInteractions class="buffer.TextBuffer" filename="/media/MORE_DATA/noonan/noonan-proteins250.csv" />
+	<GeneInteractions class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/noonan/noonan-proteins250.csv" />
   </InteractionMatrix>
 </InteractionRank>
 
-<PubMedRank class="operator.variant.PubmedRanker">
+<PubMedRank class="operator.variant.PubmedRanker" disable.cache.writes="true" >
   <VariantPool />
-  <pubmedTerms class="buffer.TextBuffer" filename="/media/MORE_DATA/noonan/noonan-keyterms.txt" />
+  <pubmedTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/noonan/noonan-keyterms.txt" />
 </PubMedRank>
 
 <Analysis class="operator.AnalysisFilter">
@@ -157,12 +130,12 @@
 
 <EverythingToFile class="operator.variant.ExcelWriter">
   <VariantPool />
-  <CSVFileAll class="buffer.CSVFile" filename="$$PREFIX.all.csv" />
+  <CSVFileAll class="buffer.CSVFile" filename="noonan7.all.csv" />
 </EverythingToFile>
 
 <ToFile class="operator.variant.ExcelWriter">
 	<filteredVariants />
-	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.analysis.output.csv" />
+	<CSVFile class="buffer.CSVFile" filename="noonan7.analysis.output.csv" />
 </ToFile>
 
 

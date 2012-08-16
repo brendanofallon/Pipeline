@@ -26,11 +26,9 @@
  <VariantPool />
 </dbNSFPAnnotate>
 
-
-<OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
-  <AnnoInput />
-  <VariantPool />
-</OMIMAnnotate>
+<dbNSFPGene class="operator.variant.DBNSFPGeneAnnotator">
+ <VariantPool />
+</dbNSFPGene>
 
 <GOAnnotate class="operator.annovar.GOAnnotator" >
   <VariantPool />
@@ -38,7 +36,7 @@
 
 <HGMDAnnotate class="operator.annovar.HGMDAnnotator">
   <VariantPool />
-</HGMDAnnotate >
+</HGMDAnnotate>
 
 <EffectAnnotate class="operator.annovar.EffectPredictionAnnotator">
         <VariantPool />

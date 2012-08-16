@@ -26,6 +26,9 @@
  <VariantPool />
 </dbNSFPAnnotate>
 
+<dbNSFPGene class="operator.variant.DBNSFPGeneAnnotator">
+ <VariantPool />
+</dbNSFPGene>
 
 <GOAnnotate class="operator.annovar.GOAnnotator" >
   <VariantPool />

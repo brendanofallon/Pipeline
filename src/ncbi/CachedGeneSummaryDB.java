@@ -31,8 +31,11 @@ public class CachedGeneSummaryDB {
 	private FetchGeneInfo fetcher = new FetchGeneInfo(); //Fetches gene summaries from ncbi
     private GeneInfoDB geneInfo; //Stores symbol / refgene id information so we can look genes up by symbol
     
-    public static final int expirationDays = 60; // Force re-downloading of records older than a few months
+    public static int expirationDays = 60; // Force re-downloading of records older than a few months
     private int missesSinceLastWrite = 0; //Number of cache misses since last writeToFile
+    
+    //public static final int maxToDownload = 500; //Don't ever download more than this number of records 
+    //public int newRecordsDownloaded = 0; //Number of new records so far downloaded
     
     private boolean prohibitNewDownloads = false; //If true, nothing new will be downloaded
     
@@ -63,6 +66,26 @@ public class CachedGeneSummaryDB {
 	}
 
 	/**
+	 * Sets the expiration length of records in days. You should always follow 
+	 * this up with a call to buildMapFromFile(), which will discard the current info and
+	 * re-read the map, excluding all expired records 
+	 * @param days
+	 */
+	public static void setExpirationLength(int days) {
+		expirationDays = days;
+	}
+	
+	/**
+	 * Returns true if the local cache contains a summary for the given gene
+	 * @param syn
+	 * @return
+	 */
+	public boolean hasLocalSummary(String syn) {
+		String id = geneInfo.symbolForSynonym(syn);
+		return map.containsKey(id);
+	}
+	
+	/**
 	 * Obtain the full string containing ncbi's summary for the given gene symbol (i.e. 'RASA1'). 
 	 * If the summary is already in the local cache and has not expired, just return it. If not, we 
 	 * query ncbi and try to get it. 
@@ -84,7 +107,6 @@ public class CachedGeneSummaryDB {
 		
 		//Sweet, cache hit. Return the info right away
 		if (summary != null) {
-			//System.out.println("Got cache hit for gene : " + symbol);
 			return summary.summary;
 		}
 		
@@ -114,6 +136,7 @@ public class CachedGeneSummaryDB {
 				missesSinceLastWrite++;
 				if (missesSinceLastWrite > 10)
 					writeMapToFile();
+				//newRecordsDownloaded++;
 				return summaryString;
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -186,7 +209,7 @@ public class CachedGeneSummaryDB {
 					//If record already exists somehow, be sure to use newest version found
 					Long existingBirthDate = Long.parseLong(existingSummary.date);
 					Long newBirthDate = Long.parseLong(sum.date);
-					System.out.println("Found multiple gene summary records for symbol " + symbol + ", using newest one");
+					//System.out.println("Found multiple gene summary records for symbol " + symbol + ", using newest one");
 					if (newBirthDate > existingBirthDate) {
 						map.put(symbol, sum);
 					}

@@ -22,10 +22,10 @@
 	<VariantPool />
 </GeneAnnotate>
 
-<dbSNP class="operator.annovar.DBSNPAnnotator">
+<!-- dbSNP class="operator.annovar.DBSNPAnnotator">
  <AnnoInput />
  <VariantPool />
-</dbSNP>
+</dbSNP -->
 
 <PopFreqAnnotate class="operator.annovar.TKGAnnotator">
  <AnnoInput />
@@ -38,10 +38,10 @@
 </dbNSFPAnnotate>
 
 
-<OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
+<!-- OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
   <AnnoInput />
   <VariantPool />
-</OMIMAnnotate>
+</OMIMAnnotate -->
 
 
 <ToFile class="operator.variant.ExcelWriter">

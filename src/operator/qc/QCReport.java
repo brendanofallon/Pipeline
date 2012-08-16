@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
@@ -171,8 +172,13 @@ public class QCReport extends Operator {
 			cal.setTimeInMillis( rec.getMillis() );
 			List<String> recRow = new ArrayList<String>(4);
 			
-			recRow.add(rec.getLevel() + "");
-			recRow.add((cal.get(Calendar.MONTH)+1) + "/" + cal.get(Calendar.DAY_OF_MONTH) + "/" + cal.get(Calendar.YEAR) + "  " + cal.get(Calendar.HOUR_OF_DAY) + ":" + cal.get(Calendar.MINUTE) + ":" + cal.get(Calendar.SECOND) + "." + (cal.get(Calendar.MILLISECOND)/1000.0) );
+			if (rec.getLevel() == Level.WARNING || (rec.getLevel() == Level.SEVERE)) {
+				recRow.add("<div id=\"error\">" + rec.getLevel() + "</div>");
+			}
+			else {
+				recRow.add(rec.getLevel() + "");
+			}
+			recRow.add((cal.get(Calendar.MONTH)+1) + "/" + cal.get(Calendar.DAY_OF_MONTH) + "/" + cal.get(Calendar.YEAR) + "  " + cal.get(Calendar.HOUR_OF_DAY) + ":" + cal.get(Calendar.MINUTE) + ":" + cal.get(Calendar.SECOND) + "." + ("" + (cal.get(Calendar.MILLISECOND)/1000.0)).replace("0.",  "") );
 			
 			recRow.add(rec.getMessage());
 				
@@ -774,7 +780,7 @@ public class QCReport extends Operator {
 			if (iChild.getNodeType() == Node.ELEMENT_NODE) {
 				PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
 				if (obj instanceof BAMFile) {
-					throw new IllegalArgumentException("Please supply a BamMetrics object, not a BAMFile object to the qc report");
+					throw new IllegalArgumentException("Please supply a BamMetrics object, not a BAMFile object to the qc report (offending object:" + obj.getObjectLabel() +")");
 				}
 				
 				if (obj instanceof BAMMetrics ) {

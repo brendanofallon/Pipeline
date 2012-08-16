@@ -20,11 +20,6 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.CellRendererPane;
 
-import math.Histogram;
-import operator.qc.BamMetrics;
-import buffer.BAMFile;
-import buffer.BAMMetrics;
-
 public class FigureFactory {
 
 	
@@ -48,7 +43,7 @@ public class FigureFactory {
 	 * @param fig
 	 * @return
 	 */
-	public synchronized static BufferedImage getFigureImage(Dimension size, Figure fig) {
+	public static BufferedImage getFigureImage(final Dimension size, final Figure fig) {
 		fig.setSize(size);
 		fig.doLayout();
 		layoutComponent(fig);
@@ -56,18 +51,17 @@ public class FigureFactory {
 		BufferedImage img = new BufferedImage((int)size.getWidth()-1, (int)size.getHeight()-1,
                 BufferedImage.TYPE_INT_RGB);
 		
-		CellRendererPane crp = new CellRendererPane();
+		final CellRendererPane crp = new CellRendererPane();
         crp.add(fig);
         crp.setSize(size);
-        crp.revalidate();
+        crp.validate();
         
-        Graphics g = img.createGraphics();
+        final Graphics g = img.createGraphics();
         
         g.setColor(fig.getBackground());
         g.fillRect(1, 1, fig.getBounds().width, fig.getBounds().height);
         
-
-        crp.paintComponent(g, fig, crp, crp.getBounds());    
+        crp.paintComponent(g, fig, fig, 0, 0, (int)size.getWidth(), (int)size.getHeight(), true);			
         
         return img; 
 	}
@@ -79,13 +73,13 @@ public class FigureFactory {
 	 * @param destinationFile
 	 * @throws IOException
 	 */
-	public synchronized static void saveFigure(Dimension size, Figure fig, File destinationFile) throws IOException {
+	public static void saveFigure(Dimension size, Figure fig, File destinationFile) throws IOException {
 		BufferedImage image = getFigureImage(size, fig);
 		ImageIO.write(image, "png", destinationFile);
 	}
 
 	
-	public synchronized static HeatMapFigure createFigure(String xLabel, String yLabel,
+	public static HeatMapFigure createFigure(String xLabel, String yLabel,
 			double[][] data) {
 				
 		HeatMapFigure fig = new HeatMapFigure();
@@ -110,7 +104,7 @@ public class FigureFactory {
 		return fig;
 	}
 	
-	public synchronized static XYSeriesFigure createFigure(String xLabel, String yLabel,
+	public static XYSeriesFigure createFigure(String xLabel, String yLabel,
 			List< List<Point2D>> data, 
 			List<String> seriesNames,
 			List<Color> colors) {
@@ -145,7 +139,7 @@ public class FigureFactory {
 	 * @param color
 	 * @return
 	 */
-	public synchronized static XYSeriesFigure createFigure(String xLabel, String yLabel,
+	public static XYSeriesFigure createFigure(String xLabel, String yLabel,
 								List<Point2D> data, 
 								String name,
 								Color color) {
@@ -202,26 +196,25 @@ public class FigureFactory {
 //			e.printStackTrace();
 //		}
 		
-		BAMFile bam = new BAMFile(new File("/home/brendan/oldhome/tinytest/test.final.bam"));
-		BAMMetrics metrics = BamMetrics.computeBAMMetrics(bam);
-		Histogram[] histos = metrics.readPosQualHistos;
-		
-		double[][] heats = new double[histos.length][histos[0].getBinCount()];
-		for(int i=0; i<histos.length; i++) {
-			Histogram posHist = histos[i];
-			if (posHist != null)
-				System.arraycopy(posHist.getRawCounts(), 0, heats[i], 0, posHist.getRawCounts().length);
-		}
-		HeatMapFigure readPosFig = FigureFactory.createFigure("Read position", "Quality", heats);
-		try {
-			FigureFactory.saveFigure(new Dimension(500, 500), readPosFig, new File("fancynewfigure.png"));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		BAMFile bam = new BAMFile(new File("/home/brendan/oldhome/tinytest/test.final.bam"));
+//		BAMMetrics metrics = BamMetrics.computeBAMMetrics(bam);
+//		Histogram[] histos = metrics.readPosQualHistos;
+//		
+//		double[][] heats = new double[histos.length][histos[0].getBinCount()];
+//		for(int i=0; i<histos.length; i++) {
+//			Histogram posHist = histos[i];
+//			if (posHist != null)
+//				System.arraycopy(posHist.getRawCounts(), 0, heats[i], 0, posHist.getRawCounts().length);
+//		}
+//		HeatMapFigure readPosFig = FigureFactory.createFigure("Read position", "Quality", heats);
+//		try {
+//			FigureFactory.saveFigure(new Dimension(500, 500), readPosFig, new File("fancynewfigure.png"));
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 
 		
-		System.exit(0);
 		
 	}
 }

@@ -9,10 +9,9 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import pipeline.PipelineObject;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
-
-import pipeline.PipelineObject;
 
 /**
  * Base class for things that can take a variant pool and add an annotation of some sort to
@@ -29,8 +28,9 @@ public abstract class Annotator extends Operator {
 	 * Compute or obtain an annotation for the given variant and add it to the list of
 	 * annotations or properties stored for the variant
 	 * @param var
+	 * @throws OperationFailedException 
 	 */
-	public abstract void annotateVariant(VariantRec var);
+	public abstract void annotateVariant(VariantRec var) throws OperationFailedException;
 	
 	/**
 	 * If true, we write some progress indicators to system.out

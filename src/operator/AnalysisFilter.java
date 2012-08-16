@@ -183,7 +183,14 @@ public class AnalysisFilter extends Operator {
 			pubmedScore = pmScore;
 		}
 		
-		Double relevanceScore = (goVal + sumVal + 10*interactionVal + pubmedScore/2.0);
+		
+		double dbNSFPGeneScore = 0;
+		Double dbScore = var.getProperty(VariantRec.DBNSFPGENE_SCORE);
+		if (dbScore != null) {
+			dbNSFPGeneScore = dbScore;
+		}
+		
+		Double relevanceScore = (goVal + sumVal + 10*interactionVal + pubmedScore/2.0 + dbNSFPGeneScore);
 		
 		Double goEffectProd = effectPred * relevanceScore;
 		var.addProperty(VariantRec.GO_EFFECT_PROD, goEffectProd);

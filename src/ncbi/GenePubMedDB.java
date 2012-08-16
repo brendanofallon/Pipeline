@@ -51,6 +51,9 @@ public class GenePubMedDB {
 	public List<Integer> getPubMedIDsForGene(Integer geneID) {
 		if (map == null)
 			throw new IllegalStateException("Map has not been initialized");
+		if (! map.containsKey(geneID)) {
+			return new ArrayList<Integer>();
+		}
 		return map.get(geneID);
 	}
 	
