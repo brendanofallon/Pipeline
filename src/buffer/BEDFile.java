@@ -2,19 +2,15 @@ package buffer;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import pipeline.Pipeline;
-import util.VCFLineParser;
 
 public class BEDFile extends IntervalsFile {
 
@@ -46,7 +42,7 @@ public class BEDFile extends IntervalsFile {
 	 */
 	public void buildIntervalsMap(boolean stripChr) throws IOException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		logger.info("Building intervals map for BED file " + getFilename());
+		//logger.info("Building intervals map for BED file " + getFilename());
 		BufferedReader reader = new BufferedReader(new FileReader(getAbsolutePath()));
 		String line = reader.readLine();
 		intervals = new HashMap<String, List<Interval>>();
@@ -75,9 +71,10 @@ public class BEDFile extends IntervalsFile {
 			line = reader.readLine();
 		}
 		
+		reader.close();
 		sortAllContigs();
 		
-		logger.info("Done building intervals map for " + getFilename());
+		logger.info("Done building intervals map for " + getFilename() + " Interval count: " + this.getIntervalCount() + " extent: " + this.getExtent());
 //		for(String contig : intervals.keySet()) {
 //			List<Interval> list = intervals.get(contig);
 //			int tot = countSize(list);

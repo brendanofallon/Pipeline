@@ -169,7 +169,7 @@ public class FlatFilesReader {
 	 * @throws IOException
 	 */
 	public void resetToContig(String contig) throws IOException {
-		System.out.println("Loading contig : " +contig);
+		//System.out.println("Loading contig : " +contig);
 		File contigFile = new File(baseDir.getAbsolutePath() + "/" + filenameBase + contig);
 		if (! contigFile.exists()) {
 			throw new IOException("Cannot find contig file : " + contigFile.getAbsolutePath());

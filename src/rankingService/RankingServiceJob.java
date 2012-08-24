@@ -7,19 +7,16 @@ import java.util.List;
 import javax.swing.SwingWorker;
 
 import operator.Operator;
-import operator.ParallelOperator;
 import operator.annovar.GeneAnnotator;
 import operator.variant.DBNSFPAnnotator;
 import operator.variant.GOTermRanker;
 import operator.variant.GeneSummaryRanker;
 import operator.variant.InteractionRanker;
 import operator.variant.PubmedRanker;
-
+import pipeline.Pipeline;
 import buffer.CSVFile;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
-
-import pipeline.Pipeline;
 
 /**
  * Represents a running, or possibly completed, variant ranking job. 
@@ -55,6 +52,10 @@ public class RankingServiceJob extends SwingWorker {
 		return path;
 	}
 	
+	/**
+	 * Return path to file containing all variants with headers in human-readable form
+	 * @return
+	 */
 	public String getPathToAllVariants() {
 		String rootDir = pipeline.getProjectHome();
 		if (! rootDir.endsWith(System.getProperty("file.separator")))
@@ -64,11 +65,23 @@ public class RankingServiceJob extends SwingWorker {
 	}
 	
 	/**
+	 * Return path to file containing all variants with headers in machine-parseable form
+	 * @return
+	 */
+	public String getPathToParseableVariants() {
+		String rootDir = pipeline.getProjectHome();
+		if (! rootDir.endsWith(System.getProperty("file.separator")))
+			rootDir = rootDir + System.getProperty("file.separator");
+		String path = rootDir + settings.prefix + ".normal.csv";
+		return path;
+	}
+	
+	/**
 	 * Obtain a CSV file referencing the list of ranked variants created by the analysis
 	 * @return
 	 */
 	protected CSVFile getFinalVariants() {
-		String path = getPathToFinalVariants();
+		String path = getPathToParseableVariants();
 		CSVFile vars = new CSVFile(new File(path));
 		return vars;
 	}

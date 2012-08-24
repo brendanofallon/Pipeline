@@ -13,19 +13,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import ncbi.CachedPubmedAbstractDB;
 import ncbi.GeneInfoDB;
 import ncbi.GenePubMedDB;
 import ncbi.PubMedRecord;
-import buffer.TextBuffer;
-import buffer.variant.VariantRec;
 import operator.OperationFailedException;
 import operator.annovar.Annotator;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
+import buffer.TextBuffer;
+import buffer.variant.VariantRec;
 
 /**
  * Annotates variants with the PUBMED_SCORE property, which is computed by looking at pubmed abstracts
@@ -137,13 +138,12 @@ public class PubmedRanker extends Annotator {
 		
 		if (geneToPubmed == null) {
 			try {
-				geneToPubmed = GenePubMedDB.getDB(new File(System.getProperty("user.home") + "/resources/gene2pubmed_human"));
-				//String pubmedPath = System.getProperty("user.home") + "/resources/gene2pubmed_human";
-//				String pubmedAttr = this.getAttribute(PUBMED_PATH);
-//				if (pubmedAttr != null) {
-//					pubmedPath = pubmedAttr;
-//				}
-//				geneToPubmed = new GenePubMedDB(new File(pubmedPath));
+				String pubmedPath = System.getProperty("user.home") + "/resources/gene2pubmed_human";
+				String pubmedAttr = this.getAttribute(PUBMED_PATH);
+				if (pubmedAttr != null) {
+					pubmedPath = pubmedAttr;
+				}
+				geneToPubmed = GenePubMedDB.getDB(new File(pubmedPath));
 			} catch (IOException e) {
 				throw new IllegalStateException("Error opening gene2pubmed file : " + e.getMessage());
 			}

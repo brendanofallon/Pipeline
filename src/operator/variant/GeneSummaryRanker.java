@@ -123,9 +123,11 @@ public class GeneSummaryRanker extends Annotator {
 			
 			String pathToGeneInfo = this.getAttribute(GENE_INFO_PATH);
 			if (pathToGeneInfo != null) {
+				Logger.getLogger(Pipeline.primaryLoggerName).info("Gene summary is using custom location for cache: " + pathToGeneInfo);
 				summaryDB = new CachedGeneSummaryDB(pathToGeneInfo);
 			}
 			else {
+				Logger.getLogger(Pipeline.primaryLoggerName).info("Gene summary is using default location for local cache");
 				summaryDB = new CachedGeneSummaryDB();
 			}
 			

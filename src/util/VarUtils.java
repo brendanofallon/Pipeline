@@ -16,10 +16,12 @@ import operator.variant.CompareVCF;
 import operator.variant.CompoundHetFinder;
 import operator.variant.ExcelWriter;
 import operator.variant.FPComputer;
+import util.flatFilesReader.DBNSFPReader;
 import buffer.BAMFile;
 import buffer.BAMMetrics;
 import buffer.BEDFile;
 import buffer.CSVFile;
+import buffer.IntervalsFile.Interval;
 import buffer.VCFFile;
 import buffer.variant.CSVLineReader;
 import buffer.variant.GenePool;
@@ -193,8 +195,8 @@ public class VarUtils {
 			}
 		}
 		
-		if (noAnno > 0)
-			System.err.println("No gene annotation found for " + noAnno + " of " + total + " variants examined");
+//		if (noAnno > 0)
+//			System.err.println("No gene annotation found for " + noAnno + " of " + total + " variants examined");
 		return geneVars;
 	}
 
@@ -222,11 +224,11 @@ public class VarUtils {
 					boolean passes = true;
 					passes = var.getQuality() > 25.0;
 					
-					String func = var.getAnnotation(VariantRec.EXON_FUNCTION); 
-					String type = var.getAnnotation(VariantRec.VARIANT_TYPE);
-					if (! type.contains("exonic")) {
-						passes = false;
-					}
+//					String func = var.getAnnotation(VariantRec.EXON_FUNCTION); 
+//					String type = var.getAnnotation(VariantRec.VARIANT_TYPE);
+//					if (type == null || (!type.contains("exonic"))) {
+//						passes = false;
+//					}
 					
 					String gene = var.getAnnotation(VariantRec.GENE_NAME);
 					if (gene == null || (! gene.contains("MIR"))) {
@@ -240,11 +242,24 @@ public class VarUtils {
 //							|| func.contains("frameshift"))) {
 //						
 //						Double freq = var.getProperty(VariantRec.POP_FREQUENCY);
-//						if (freq == null || freq < 0.01)
-//							passes = true;
+//						if (freq != null && freq > 0.01)
+//							passes = false;
+//						
+//						if (passes) {
+//							Double cgFreq = var.getProperty(VariantRec.CG69_FREQUENCY);
+//							if (cgFreq != null && cgFreq > 0.02)
+//								passes = false;
+//						}
+//						
 //						if (! var.isHetero()) {
 //							passes = false;
 //						}
+//						
+//						
+//						
+//					}
+//					else {
+//						passes = false;
 //					}
 					
 					if (passes) {
@@ -680,6 +695,16 @@ public class VarUtils {
 			return;
 		}
 		
+		if (firstArg.equals("propGeneComp")) {
+			performPropGeneComp(args);
+			return;
+		}
+		
+		if (firstArg.equals("freqComp")) {
+			performFreqComp(args);
+			return;
+		}
+		
 		if (firstArg.equals("computeFP")) {
 			performComputeFP(args);
 			return;
@@ -928,6 +953,54 @@ public class VarUtils {
 		}
 	}
 
+	private static void performPropGeneComp(String[] args) {
+		if (args.length < 4) {
+			System.out.println("Enter the name of the file containing gene names, then one property to extract, then the variant files");
+			return;
+		}
+		try {
+			String key = args[2];
+			GenePool genes = new GenePool(new File(args[1]));
+			for(int i=3; i<args.length; i++) {
+				VariantPool vars = getPool(new File(args[i]));
+				VariantPool geneVars = filterByGene(vars, genes, false);
+				VariantPool nonGeneVars = filterByGene(vars, genes, true);
+				
+				
+				for(String contig : geneVars.getContigs()) {
+					for(VariantRec var : geneVars.getVariantsForContig(contig)) {
+						if (var.getAnnotation(VariantRec.EXON_FUNCTION) != null && var.getAnnotation(VariantRec.EXON_FUNCTION).contains("nonsynon"))
+							try {
+								Double val = Double.parseDouble( var.getPropertyOrAnnotation(key) );
+								System.out.println(val);
+							}
+							catch (NumberFormatException nfe) {
+								//Do nothing
+							}
+					}
+				}
+				
+				for(String contig : nonGeneVars.getContigs()) {
+					for(VariantRec var : nonGeneVars.getVariantsForContig(contig)) {
+						if (var.getAnnotation(VariantRec.EXON_FUNCTION) != null && var.getAnnotation(VariantRec.EXON_FUNCTION).contains("nonsynon")) {
+							try {
+								Double val = Double.parseDouble( var.getPropertyOrAnnotation(key) );
+								System.err.println(val);
+							}
+							catch (NumberFormatException nfe) {
+								//Do nothing
+							}
+							
+						}
+					}
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	/**
 	 * Emit only the property or annotation given as arg #2 for variants present in the gene list for all input files
 	 * Works just like extract, but only emits for the desired genes
@@ -1194,16 +1267,21 @@ public class VarUtils {
 			annoKeys.add(VariantRec.EXON_FUNCTION);
 			annoKeys.add(VariantRec.CDOT);
 			annoKeys.add(VariantRec.PDOT);
-			annoKeys.add(VariantRec.VQSR);
 			annoKeys.add(VariantRec.POP_FREQUENCY);
 			annoKeys.add(VariantRec.EXOMES_FREQ);
-			annoKeys.add(VariantRec.RSNUM);
+			//annoKeys.add(VariantRec.RSNUM);
 			annoKeys.add(VariantRec.EFFECT_PREDICTION2);
 			annoKeys.add(VariantRec.GO_EFFECT_PROD);
 			annoKeys.add(VariantRec.GENE_RELEVANCE);
 			annoKeys.add(VariantRec.FALSEPOS_PROB);
 			annoKeys.add(VariantRec.FS_SCORE);
 			annoKeys.add(VariantRec.VQSR);
+			annoKeys.add(VariantRec.MT_SCORE);
+			annoKeys.add(VariantRec.POLYPHEN_SCORE);
+			annoKeys.add(VariantRec.SIFT_SCORE);
+			annoKeys.add(VariantRec.GERP_SCORE);
+			annoKeys.add(VariantRec.PHYLOP_SCORE);
+			
 			varsA.listAll(outputStream, annoKeys);
 			outputStream.close();
 		} catch (IOException e) {
@@ -1753,6 +1831,103 @@ public class VarUtils {
 		return;
 	}
 
+	/**
+	 * Perform frequency comparison to 1000 Genomes
+	 * @param args
+	 */
+	private static void performFreqComp(String[] args) {
+		if (args.length < 3) {
+			System.out.println("Enter a BED file and then several variant files you'd like to calculate frequency from");
+			return;
+		}
+		
+		BEDFile regions = new BEDFile(new File(args[1]));
+		try {
+			regions.buildIntervalsMap();
+
+
+			System.err.println("Merging files and counting samples...");
+			VariantPool pool = getPool(new File(args[2]));
+			for(int i=3; i<args.length; i++) {
+				VariantLineReader reader = getReader(args[i]);
+				System.err.println("Merging " + args[i]);
+				do {
+					VariantRec var = reader.toVariantRec();
+					VariantRec existing = pool.findRecordNoWarn(var.getContig(), var.getStart());
+					if (existing == null) {
+						pool.addRecord(var);
+						pool.sortAllContigs();
+					}
+					else {
+						Double count = existing.getProperty(VariantRec.SAMPLE_COUNT);
+						if (count == null) {
+							existing.addProperty(VariantRec.SAMPLE_COUNT, 1.0);
+						}
+						else {
+							existing.addProperty(VariantRec.SAMPLE_COUNT, count+1.0);
+						}
+					}
+				} while(reader.advanceLine());
+				System.err.println("..done, pool has " + pool.size() + " variants");
+				pool.sortAllContigs();
+			}
+			
+			
+			System.err.println("Done merging...");
+			//Create DBNSFP reader....
+			DBNSFPReader reader = new DBNSFPReader();
+			
+			for(String contig : regions.getContigs() ) {
+				if (contig.length() > 2) {
+					System.err.println("Skipping weird contig " + contig);
+					continue;
+				}
+				for(Interval interval : regions.getIntervalsForContig(contig)) {
+					
+					int start = interval.begin;
+					int end = interval.end;
+					reader.advanceTo(contig, start);
+					while(reader.getCurrentPos() < end) {
+						Double tkgFreq = reader.getValue(DBNSFPReader.TKG_AF);
+						if (Double.isNaN(tkgFreq))
+							tkgFreq = 0.0;
+						
+						Double amrFreq = reader.getValue(DBNSFPReader.TKG_AMR);
+						if (Double.isNaN(amrFreq))
+							amrFreq = 0.0;
+						
+						VariantRec rec = pool.findRecordNoWarn(contig, reader.getCurrentPos());
+						Double sampleCount = 0.0;
+						if (rec != null) {
+								sampleCount = rec.getProperty(VariantRec.SAMPLE_COUNT);
+								if (sampleCount == null)
+									sampleCount = 0.0;
+						}
+						
+						double sampleFreq = sampleCount / (double)(args.length-2.0);
+						
+						double mtScore = reader.getValue(DBNSFPReader.MT);
+						double ppScore = reader.getValue(DBNSFPReader.PP);
+						double gerpScore = reader.getValue(DBNSFPReader.GERP);
+						double siftScore = reader.getValue(DBNSFPReader.SIFT);
+						
+						
+						if (tkgFreq > 0 || sampleFreq > 0.1)
+							System.out.println(reader.getText(DBNSFPReader.GENE) + "\t" + contig + "\t" + reader.getCurrentPos() + "\t" + mtScore + "\t" + ppScore + "\t" + gerpScore + "\t" + siftScore + "\t" + tkgFreq + "\t" + amrFreq + "\t" + sampleFreq);
+						
+						reader.advanceLine();
+					}
+				}
+			}
+		
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return;
+		}
+		
+	}
+	
 	private static void performFilter(String[] args) {
 		if (args.length < 4) {
 			System.out.println("Enter the property to filter by and the cutoff value");

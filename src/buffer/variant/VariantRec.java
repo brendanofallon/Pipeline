@@ -244,7 +244,7 @@ public class VariantRec {
 	public String getPropertyString(List<String> propKeys) {
 		StringBuffer buf = new StringBuffer();
 		for(String key : propKeys) {
-			buf.append("\t " + getPropertyOrAnnotation(key));
+			buf.append( getPropertyOrAnnotation(key) + "\t ");
 //			Double val = props.get(key);
 //			if (val != null)
 //				buf.append("\t" + val);
@@ -539,6 +539,7 @@ public class VariantRec {
 	public static final String RSNUM = "rsnum"; // rs# from dbSNP
 	public static final String OMIM_ID = "omim.id";
 	public static final String GENE_RELEVANCE = "relevance.score";
+	//public static final String GENE_SUMMARY = "ncbi.summary";
 	public static final String GO_FUNCTION = "go.function";
 	public static final String GO_PROCESS = "go.process";
 	public static final String GO_COMPONENT = "go.component";

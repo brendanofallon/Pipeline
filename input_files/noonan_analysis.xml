@@ -12,7 +12,7 @@
 
 
 
-<captureVCF class="buffer.VCFFile" filename="noonan7.capture.vcf" />
+<captureVCF class="buffer.VCFFile" filename="$$INPUTFILE" />
 
 
 <!-- Perform variant quality score recalibration VQSR, using GaTK -->
@@ -106,6 +106,12 @@
 </SummaryRank>
 
 
+<dbNSFPGeneRank class="operator.variant.DBNSFPGeneRanker">
+  <VariantPool />
+  <rankedSummaryTerms />
+</dbNSFPGeneRank>
+
+
 <InteractionRank class="operator.variant.InteractionRanker" source="PTPN11,KRAS,BRAF,RAF1,HRAS,SOS1">
   <VariantPool />
   <InteractionMatrix class="buffer.GeneInteractionGraph">
@@ -130,12 +136,12 @@
 
 <EverythingToFile class="operator.variant.ExcelWriter">
   <VariantPool />
-  <CSVFileAll class="buffer.CSVFile" filename="noonan7.all.csv" />
+  <CSVFileAll class="buffer.CSVFile" filename="$$PREFIX.all.csv" />
 </EverythingToFile>
 
 <ToFile class="operator.variant.ExcelWriter">
 	<filteredVariants />
-	<CSVFile class="buffer.CSVFile" filename="noonan7.analysis.output.csv" />
+	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.analysis.output.csv" />
 </ToFile>
 
 

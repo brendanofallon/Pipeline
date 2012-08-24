@@ -3,6 +3,7 @@ package buffer;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -26,6 +27,21 @@ public abstract class IntervalsFile extends FileBuffer {
 		//Blank on purpose
 	}
 	
+	/**
+	 * Return collection of all contigs in the intervals
+	 * @return
+	 */
+	public Collection<String> getContigs() {
+		return intervals.keySet();
+	}
+	
+	/**
+	 * Return sorted list of all intervals in the given contig
+	 * @return
+	 */
+	public List<Interval> getIntervalsForContig(String contig) {
+		return intervals.get(contig);
+	}
 	
 	/**
 	 * Read the source file and build a list of intervals in memory
@@ -166,8 +182,8 @@ public abstract class IntervalsFile extends FileBuffer {
 	
 	public class Interval implements Comparable {
 		
-		final int begin;
-		final int end;
+		public final int begin;
+		public final int end;
 		Object info = null; //Optional information associated with this interval. 
 		
 		public Interval(int begin, int end, Object info) {

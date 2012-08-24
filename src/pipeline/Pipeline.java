@@ -436,7 +436,8 @@ public class Pipeline {
 				fireOperatorCompleted(op);
 				op.setAttribute(END_TIME, "" + end.getTime());
 			} catch (OperationFailedException e) {
-				fireMessage("Operator failed : " + e);
+				fireOperatorError(op);
+				//fireMessage("Operator failed : " + e);
 				e.printStackTrace();
 				primaryLogger.severe("ERROR : Operator : " + op.getObjectLabel() + " (class " + op.getClass() + ") failed \n Cause : " + e.getMessage());
 				
@@ -519,6 +520,16 @@ public class Pipeline {
 	public void fireOperatorBeginning(Operator op) {
 		for(PipelineListener listener : listeners) {
 			listener.operatorBeginning(op);
+		}
+	}
+	
+	/**
+	 * Notify all listeners that an error has been encountered in the given operator
+	 * @param op
+	 */
+	public void fireOperatorError(Operator op) {
+		for(PipelineListener listener : listeners) {
+			listener.errorEncountered(op);
 		}
 	}
 	

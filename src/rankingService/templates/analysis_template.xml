@@ -43,7 +43,7 @@
   <VariantPool />
 </FPAnnotate>
 
-<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator" >
  <VariantPool />
 </dbNSFPAnnotate>
 
@@ -72,7 +72,7 @@
  <GOTermsList />
 </GoRank>
 
-<SummaryRank class="operator.variant.GeneSummaryRanker">
+<SummaryRank class="operator.variant.GeneSummaryRanker" gene.info.path="/usr/share/tomcat6/webapps/VarRanker/resources/Homo_sapiens.gene_info">
 	<passingVariants />
 	<rankedSummaryTerms />
 </SummaryRank>
@@ -84,7 +84,7 @@
 </InteractionRank>
 
 
-<PubmedRank class="operator.variant.PubmedRanker">
+<PubmedRank class="operator.variant.PubmedRanker" gene.info.path="/usr/share/tomcat6/webapps/VarRanker/resources/Homo_sapiens.gene_info" pubmed.path="/usr/share/tomcat6/webapps/VarRanker/resources/gene2pubmed_human">
   <passingVariants />
   <rankedSummaryTerms />
 </PubmedRank>
@@ -100,6 +100,11 @@
   <filteredVariants class="buffer.variant.VariantPool" />
  </output>
 </Analysis>
+
+<EverythingToFileNormal class="operator.variant.ExcelWriter">
+  <VariantPool />
+  <CSVFileAllNormal class="buffer.CSVFile" filename="${PREFIX}.normal.csv" />
+</EverythingToFileNormal>
 
 <EverythingToFile class="rankingService.ResultsWriter">
   <VariantPool />

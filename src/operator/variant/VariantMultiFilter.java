@@ -28,6 +28,7 @@ public class VariantMultiFilter extends IOOperator {
 	enum Zygosity {ALL, HET, HOM};
 	
 	public static final String POP_FREQ = "pop.freq.cutoff";
+	public static final String CG69_FREQ = "cg69.freq.cutoff";
 	public static final String INCLUDE_DBSNP = "inc.dbsnp";
 	public static final String DEPTH_CUTOFF = "depth.cutoff";
 	public static final String VAR_DEPTH_CUTOFF = "var.depth.cutoff";
@@ -57,6 +58,7 @@ public class VariantMultiFilter extends IOOperator {
 		final Double varFreqCutoff = readDoubleAttribute(VAR_FREQ_CUTOFF);
 		final Double strandBiasCutoff = readDoubleAttribute(STRAND_BIAS_CUTOFF);
 		final Double qualityCutoff = readDoubleAttribute(QUALITY_CUTOFF);
+		final Double cg69Cutoff = readDoubleAttribute(CG69_FREQ);
 		
 		Zygosity zygFilter = Zygosity.ALL;
 		String zygStr = this.getAttribute(ZYGOSITY);
@@ -80,6 +82,7 @@ public class VariantMultiFilter extends IOOperator {
 			includedbSNP = true;
 		message = message + " Including vars in dbSNP : " + includedbSNP + "\n";
 		message = message + " Pop freq. cutoff : " + popFreqCutoff + "\n";
+		message = message + " CG69 freq. cutoff : " + cg69Cutoff + "\n";
 		message = message + " Var depth cutoff : " + varDepthCutoff+ "\n";
 		message = message + " Var freq cutoff : " + varFreqCutoff+ "\n";
 		message = message + " Strand bias cutoff : " + strandBiasCutoff + "\n";
@@ -92,6 +95,18 @@ public class VariantMultiFilter extends IOOperator {
 		List<VariantFilter> filters = new ArrayList<VariantFilter>();
 		if (popFreqCutoff != null) {
 			filters.add(VarFilterUtils.getPopFreqFilter(popFreqCutoff));
+		}
+		
+		if (cg69Cutoff != null) {
+			filters.add(new VariantFilter() {
+				@Override
+				public boolean passes(VariantRec rec) {
+					Double cg69Freq = rec.getProperty(VariantRec.CG69_FREQUENCY);
+					if (cg69Freq == null || cg69Freq < cg69Freq)
+						return true;
+					return false;
+				}
+			});			
 		}
 		
 		

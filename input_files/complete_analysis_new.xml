@@ -221,21 +221,31 @@
 
 
 
-<qcops class="operator.ParallelOperator">
+<ParallelQCOps class="operator.ParallelOperator">
 
-<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+<dbSNP class="operator.annovar.DBSNPAnnotator">
+ <AnnoInput />
  <VariantPool />
-</dbNSFPAnnotate>
+</dbSNP>
 
-<FinalBamMetrics class="operator.qc.BamMetrics" >
+
+<ComputeFinalBamMetrics class="operator.qc.BamMetrics" >
  <input>
   <finalBAM />
  </input>
  <output>
-  <finalBamMetrics class="buffer.TextBuffer" filename="final.bam.metrics.txt" />
+  <finalBamMetrics class="buffer.BAMMetrics" filename="final.bam.metrics.txt" />
  </output>
-</FinalBamMetrics>
+</ComputeFinalBamMetrics>
 
+<ComputeRawBamMetrics class="operator.qc.BamMetrics">
+ <input>
+  <BigRawBAM />
+ </input>
+ <output>
+  <rawBamMetrics class="buffer.BAMMetrics" filename="final.bam.metrics.txt" />
+ </output>
+</ComputeRawBamMetrics>
 
 <rawdoc class="operator.gatk.DepthOfCoverage">
  <input>
@@ -259,14 +269,13 @@
  </output>
 </finaldoc>
 
-</qcops>
+</ParallelQCOps>
 
-
-<QC class="operator.qc.QCReport" filename="qcreport.html" sample="$$PREFIX" >
-  <BigRawBAM  />
+<QC class="operator.qc.QCReport" filename="qcreport.html" >
+  <rawBamMetrics  />
   <rawdocmetrics />
+  <finalBamMetrics />
   <capture />
-  <finalBAM />
   <finaldocmetrics />
   <VariantPool />
 </QC>

@@ -86,54 +86,104 @@ public class QCReport extends Operator {
 		logger.info("Creating qc report for raw bam file:" + rawBAMMetrics.path + "\n final BAM: " + finalBAMMetrics.path + " variant pool with:" + variantPool.size() + " variants");
 		
 		String projHome = getProjectHome();				
-		try {
+		
 			File outputDir = new File(projHome + "qc-report");
 			outputDir.mkdir();
 			
 			String outputPath = outputDir.getAbsolutePath();
 			
-			BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/qc-metrics.html"));
 			QCPageWriter pageWriter = new QCPageWriter( this.getAttribute("sample"));
 			
 			//Write summary (index) page
 			StringWriter summary = new StringWriter();
-			writeSummary(summary, getPipelineOwner());
-			pageWriter.writePage(writer, summary.toString());
-			writer.close();
+			try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/qc-metrics.html"));
+				writeSummary(summary, getPipelineOwner());
+				pageWriter.writePage(writer, summary.toString());
+				writer.close();	
+			}
+			catch (RuntimeException rex) {
+				rex.printStackTrace();
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing  QC summary page : " + rex.getMessage());
+			} catch (IOException e) {
+				e.printStackTrace();
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing  QC summary page : " + e.getMessage());
+			}
+			
 			
 			//Write base qualities page...
-			writer = new BufferedWriter(new FileWriter(outputPath + "/basequalities.html"));
-			StringWriter basequalities = new StringWriter();
-			writeBaseQualities(basequalities, rawBAMMetrics, outputDir);
-			pageWriter.writePage(writer, basequalities.toString());
-			writer.close();
+			try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/basequalities.html"));
+				StringWriter basequalities = new StringWriter();
+				writeBaseQualities(basequalities, rawBAMMetrics, outputDir);
+				pageWriter.writePage(writer, basequalities.toString());
+				writer.close();
+			}
+			catch (RuntimeException rex) {
+				rex.printStackTrace();
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing base quality QC page : " + rex.getMessage());
+			} catch (IOException e) {
+				e.printStackTrace();
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing base quality QC page : " + e.getMessage());
+			}
 			
-			//Write alignment metrics page...
-			writer = new BufferedWriter(new FileWriter(outputPath + "/alignment.html"));
-			StringWriter alnWriter = new StringWriter();
-			
-			//writeFakeBAMMetrics(alnWriter, outputDir);
-			writeBAMMetricsBlockNew(alnWriter, rawBAMMetrics, rawCoverageMetrics, finalBAMMetrics, finalCoverageMetrics, outputDir);
-			//writeBAMMetricsBlock(alnWriter, finalMetrics, finalCoverageMetrics, "Metrics for final bam file " + finalBAMFile.getFilename(), outputDir);
-			//writeBAMMetricsBlock(alnWriter, rawMetrics, rawCoverageMetrics, "Metrics for raw bam file " + rawBAMFile.getFilename(), outputDir);			
-			
-			pageWriter.writePage(writer, alnWriter.toString());
-			writer.close();
-			
-			//Writer variant report
-			writer = new BufferedWriter(new FileWriter(outputPath + "/variants.html"));
-			StringWriter variants = new StringWriter();
-			writeVariantReport(variants, variantPool, outputDir);
-			pageWriter.writePage(writer, variants.toString());
-			writer.close();
 
 			
-			writer.close();
-			writer = new BufferedWriter(new FileWriter(outputPath + "/log.html"));
-			StringWriter log = new StringWriter();
-			writeLogPage(log, outputDir);
-			pageWriter.writePage(writer, log.toString());
-			writer.close();
+			//Write alignment metrics page...
+			
+			
+			try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/alignment.html"));
+				StringWriter alnWriter = new StringWriter();
+				writeBAMMetricsBlockNew(alnWriter, rawBAMMetrics, rawCoverageMetrics, finalBAMMetrics, finalCoverageMetrics, outputDir);
+				pageWriter.writePage(writer, alnWriter.toString());
+				writer.close();
+			}
+			catch (RuntimeException rex) {
+				rex.printStackTrace();
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing BAM metrics QC page : " + rex.getMessage());
+			} catch (IOException e) {
+				e.printStackTrace();
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing BAM metrics QC page : " + e.getMessage());
+			}
+			
+			
+			//Writer variant report
+			
+			try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/variants.html"));
+				StringWriter variants = new StringWriter();
+				writeVariantReport(variants, variantPool, outputDir);
+				pageWriter.writePage(writer, variants.toString());
+				writer.close();
+			}
+			catch (RuntimeException rex) {
+				rex.printStackTrace();
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing variant QC page : " + rex.getMessage());
+			} catch (IOException e) {
+				e.printStackTrace();
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing variant QC page : " + e.getMessage());
+			}
+			
+
+			
+			
+			
+			try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/log.html"));
+				StringWriter log = new StringWriter();
+				writeLogPage(log, outputDir);
+				pageWriter.writePage(writer, log.toString());
+				writer.close();
+			}
+			catch (RuntimeException rex) {
+				rex.printStackTrace();
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing log QC page : " + rex.getMessage());
+			} catch (IOException e) {
+				e.printStackTrace();
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing log QC page : " + e.getMessage());
+			}
+			
 			
 			//Finally, copy style sheet to directory...
 			String styleSheetPath = getPipelineProperty(QC_STYLE_SHEET);
@@ -150,12 +200,14 @@ public class QCReport extends Operator {
 				}
 				
 				File styleSheetDest = new File(styleDir.getAbsolutePath() + "/style.css");
-				copyFile(styleSheetSrc, styleSheetDest);
+				try {
+					copyFile(styleSheetSrc, styleSheetDest);
+				} catch (IOException e) {
+					e.printStackTrace();
+					Logger.getLogger(Pipeline.primaryLoggerName).warning("Error copying style sheet to destination : " + e.getMessage());
+				}
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new OperationFailedException("Could not write qc eport : " + e.getMessage(), this);
-		}
+		
 		
 	}
 	
@@ -413,7 +465,7 @@ public class QCReport extends Operator {
 		double step = histo.getBinWidth();
 		
 		for(int i=0; i<histo.getBinCount(); i++) {
-			Point2D p = new Point2D.Double(x, histo.getCount(i));
+			Point2D p = new Point2D.Double(x, histo.getFreq(i));
 			data.add(p);
 			x+=step;
 		}
@@ -442,17 +494,10 @@ public class QCReport extends Operator {
 		writer.write("<p> Bases with quality > 10 : " + metrics.basesQAbove10 + " ( " + formatter.format(100.0*metrics.basesQAbove10 / metrics.basesRead) + "% )" + " </p>" +lineSep );
 		writer.write(" Mean quality :" + formatter.format(metrics.baseQualityHistogram.getMean()) + " </p>" +lineSep);		
 		writer.write(" Stdev quality:" + formatter.format(metrics.baseQualityHistogram.getStdev()) + " </p>" +lineSep );
-
-//		String rpFigStr =  "rpfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
-//		String rpFigFullPath = outputDir.getAbsolutePath() + "/" + rpFigStr;
-//		CreateFigure.generateHistoImage(metrics.readPosQualHistos, "Read position", "Quality score distribution", rpFigFullPath);
-//		writer.write("<h2> Base qualities by read position: " + " </h2>" +lineSep);
-//		writer.write("<img src=\"" + rpFigStr + "\">");
 		
 		String bqFigStr =  "bqfig-" + ("" + System.currentTimeMillis()).substring(6) + ".png";
 		String bqFigFullPath = outputDir.getAbsolutePath() + "/" + bqFigStr;
-		
-		
+				
 		Histogram[] histos = metrics.readPosQualHistos;
 		
 		double[][] heats = new double[histos.length][histos[0].getBinCount()];
@@ -725,12 +770,8 @@ public class QCReport extends Operator {
 				fakeHistogram.addValue( Math.random()*500 );
 			}
 			
-//			System.out.println("Creating insert size histogram, orig histo is : " + finalMetrics.insertSizeHistogram.toString());
-//			XYSeriesFigure fig = FigureFactory.createFigure("Insert Size", "Frequency", histoToPointList(fakeHistogram), "All reads", Color.blue);
-			
 			System.out.println("Creating insert size histogram, orig histo is : " + finalMetrics.insertSizeHistogram.toString());
-			XYSeriesFigure fig = FigureFactory.createFigure("Insert Size", "Frequency", histoToPointList(finalMetrics.insertSizeHistogram), "All reads", Color.blue); 
-			
+			XYSeriesFigure fig = FigureFactory.createFigure("Insert Size", "Frequency", histoToPointList(finalMetrics.insertSizeHistogram), "All reads", Color.blue); 		
 			
 			
 			FigureFactory.saveFigure(new Dimension(500, 500), fig, new File(figFullPath));
@@ -763,13 +804,9 @@ public class QCReport extends Operator {
 			}
 			
 			
-		}
-		
-	
-		
+		}		
 		
 	}
-	
 	
 
 

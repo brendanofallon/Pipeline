@@ -42,7 +42,6 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 	protected String maxEditDist = "3"; //Maximum edit distance for alignment
 	protected String pathToBWA = "bwa";
 	protected String pathToSamTools = "samtools";
-	//protected String skipSAI = "skipsai";
 	protected int defaultThreads = 4;
 	protected String readGroup = "unknown";
 	protected int seedLength = 1000; //Effectively the default
@@ -208,6 +207,7 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		else
 			threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
 		
+		
 		//Now build sam files in parallel since we can do that and bwa can't
 		for(StringPair saiFiles : saiFileNames) {
 			SamBuilderJob makeSam = null;
@@ -361,11 +361,6 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 			bamPath = bamPath.replace(".txt", "");
 			bamPath = bamPath + ".bam";
 			
-		//	command1 = "/bin/bash -c \"" + pathToBWA + " sampe -r " + rgStr + " " + referencePath + " " + threadsStr + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo + 
-		//			" | " +  pathToSamTools + " view -Sb - > " + bamPath + "\"";
-			
-			//Sneakily write command to a file...
-			
 			
 			String comStr = pathToBWA + " sampe -r \"" + rgStr + "\" " + referencePath + " " + threadsStr + " " + saiFileOne + " " + saiFileTwo + " " + readsOne + " " + readsTwo + 
 								" | " +  pathToSamTools + " view -Sb - > " + bamPath;
@@ -385,7 +380,6 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 
 			
 			command1 = "/bin/bash " + fileName;
-			//command2 = pathToSamTools + " view -Sb - ";
 		}
 		
 		/**
@@ -395,8 +389,39 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		 */
 		public SamBuilderJob(String readsOne, String saiFileOne) {
 			baseFilename = saiFileOne;
-			command1 = pathToBWA + " samse -r " + defaultRG + " " + referencePath + " " + saiFileOne + " " + readsOne;
-			//command2 = pathToSamTools + " view -Sb ";
+			baseFilename = saiFileOne;
+			String threadsStr = "";
+			if (sampeThreads > 1) {
+				threadsStr = " -t " + sampeThreads;
+			}
+				
+			String rgStr = defaultRG.replace("$SAMPLE$", SAMPLE);
+			
+			bamPath = baseFilename.replace(".sai", "");
+			bamPath = bamPath.replace(".fastq", "");
+			bamPath = bamPath.replace(".gz", "");
+			bamPath = bamPath.replace(".fq", "");
+			bamPath = bamPath.replace(".txt", "");
+			bamPath = bamPath + ".bam";
+			
+			String comStr = pathToBWA + " samse -r \"" + rgStr + "\" " + referencePath + " " + threadsStr + " " + saiFileOne + " " + readsOne + 
+								" | " +  pathToSamTools + " view -Sb - > " + bamPath;
+			String fileName = getProjectHome() + "sambuilder-" + ((1000000.0*Math.random())+"").substring(0, 6).replace(".", "") + ".sh";
+			
+			System.out.println("Writing command string : " + comStr);
+			System.out.println("To file : " + fileName);
+			BufferedWriter writer;
+			try {
+				writer = new BufferedWriter(new FileWriter(fileName));
+				writer.write(comStr + "\n");
+				writer.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			//command1 = pathToBWA + " samse -r " + defaultRG + " " + referencePath + " " + saiFileOne + " " + readsOne;
+			command1 = "/bin/bash " + fileName;
 		}
 		
 		@Override

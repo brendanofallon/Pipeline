@@ -115,6 +115,19 @@ public class DBNSFPReader {
 		}
 	}
 	
+	/**
+	 * Returns the contents of the column as the String
+	 * @param col
+	 * @return
+	 */
+	public String getText(int col) {
+		if (curToks == null)
+			return null;
+		
+		return curToks[col];
+ 
+	}
+	
 	public int getCurrentPos() {
 		return reader.getCurrentPos();
 	}
