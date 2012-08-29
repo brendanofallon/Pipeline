@@ -85,6 +85,13 @@ public class DBNSFPReader {
 		return true;
 	}
 	
+	public String getPDot() {
+		String aaRef = getText(AAREF);
+		String aaAlt = getText(AAALT);
+		String aaPos = getText(AAPOS);
+		return "p." + aaRef + aaPos + aaAlt;
+	}
+	
 	public String getRef() {
 		if (curToks == null)
 			return null;
@@ -148,6 +155,7 @@ public class DBNSFPReader {
 	 //public static final int HG18POS = 6;
 	 public static final int GENE = 7;
 	 public static final int UNIPROT_ACC = 8;
+	 public static final int AAPOS = 20;
 	 public static final int SIFT = 21;
 	 public static final int GERP = 31; 
 	 public static final int LRT = 26;
@@ -206,3 +214,4 @@ public class DBNSFPReader {
 	      
 	      **/
 }
+

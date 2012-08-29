@@ -388,12 +388,11 @@ public class Pipeline {
 		
 		//A quick scan for errors / validity would be a good idea
 		
-		fireMessage("Reading objects");
+		primaryLogger.info("Object handler is reading objects...");
 		handler.readObjects();
 		System.err.flush(); //Make sure info is written to logger if necessary
 		int opCount = handler.getOperatorList().size();
 		primaryLogger.info("Successfully read objects, found " + opCount + " operators ... pipeline is now initialized");
-		fireMessage("Pipeline initialized");
 	}
 	
 	public Date getStartTime() {

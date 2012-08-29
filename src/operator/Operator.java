@@ -3,9 +3,7 @@ package operator;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
-import pipeline.Pipeline;
 import pipeline.PipelineObject;
 
 /**
@@ -32,7 +30,7 @@ public abstract class Operator extends PipelineObject {
 	@Override
 	public void setAttribute(String key, String value) {
 		properties.put(key, value);
-		Logger.getLogger(Pipeline.primaryLoggerName).info("Operator : " + this.getObjectLabel() + " adding attribute " + key + " = " + value);
+		//Logger.getLogger(Pipeline.primaryLoggerName).info("Operator : " + this.getObjectLabel() + " adding attribute " + key + " = " + value);
 	}
 		
 	@Override

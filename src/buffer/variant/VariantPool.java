@@ -424,7 +424,7 @@ public class VariantPool extends Operator  {
 	public void listAll(PrintStream out, List<String> keys) {
 		StringBuilder header = new StringBuilder( VariantRec.getSimpleHeader() );
 		for(String key : keys) 
-			header.append(key);
+			header.append("\t" + key);
 		out.println( header );
 		for(String contig : getContigs() ) {
 			for(VariantRec rec : this.getVariantsForContig(contig)) {		

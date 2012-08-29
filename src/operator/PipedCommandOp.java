@@ -53,7 +53,7 @@ public abstract class PipedCommandOp extends IOOperator {
 	 * @param logger
 	 * @throws OperationFailedException
 	 */
-	protected void runAndCaptureOutput(String command, Logger logger, FileBuffer destinationBuffer) throws OperationFailedException {
+	protected void runAndCaptureOutput(final String command, Logger logger, FileBuffer destinationBuffer) throws OperationFailedException {
 		//Default to writing to first output buffer if it exists
 		OutputStream writer = null;
 		String outputPath = null;
@@ -75,9 +75,17 @@ public abstract class PipedCommandOp extends IOOperator {
 			
 			
 			Runtime r = Runtime.getRuntime();
-			Process p;
+			final Process p;
 			try {
 				p = r.exec(command);
+				
+				//Destroy child process if runtime is shut down 
+				Runtime.getRuntime().addShutdownHook(new Thread() {
+					public void run() {
+						System.err.println("Invoking shutdown thread, destroying task with command : " + command);
+						p.destroy();
+					}
+				});
 
 				//The process we just started may hang if the output buffer its writing into gets full
 				//to avoid this, we start a couple of threads whose job it is to immediately 

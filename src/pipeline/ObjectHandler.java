@@ -1,6 +1,5 @@
 package pipeline;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,8 +13,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import buffer.VCFFile;
-import pipeline.PipelineObject;
 
 /**
  * This class is responsible for reading an xml DOM document and creating Pipeline objects based
@@ -63,8 +60,10 @@ public class ObjectHandler {
 	
 	public void readObjects() throws ObjectCreationException {
 		
+		
 		//Instantiate top-level buffers
 		Element root = doc.getDocumentElement();
+		Logger.getLogger(Pipeline.primaryLoggerName).info("Reading objects for document with root element : " + root.getNodeName() );
 		if (verbose) {
 			System.out.println("Reading objects... root element is : " + root);
 		}

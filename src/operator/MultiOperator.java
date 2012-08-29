@@ -1,8 +1,5 @@
 package operator;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -85,6 +82,9 @@ public abstract class MultiOperator extends IOOperator {
 	@Override
 	public void performOperation() throws OperationFailedException {
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			
+		});
 		
 		Date start = new Date();
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);

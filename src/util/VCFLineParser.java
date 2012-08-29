@@ -223,7 +223,8 @@ public class VCFLineParser implements VariantLineReader {
 					
 				}
 				catch (Exception ex) {
-					System.err.println("ERROR: could not parse variant from line : " + currentLine + "\n Exception: " + ex.getMessage());
+					System.err.println("ERROR: could not parse variant from line : " + currentLine + "\n Exception: " + ex.getCause() + " " + ex.getMessage());
+					
 					return null;
 				}
 				return rec;
@@ -526,6 +527,10 @@ public class VCFLineParser implements VariantLineReader {
 			if (formatToks == null) {
 				createFormatString();
 			}
+			
+			if (adCol < 0)
+				return null;
+				
 			
 			String[] formatValues = lineToks[sampleColumn].split(":");
 			String adStr = formatValues[adCol];

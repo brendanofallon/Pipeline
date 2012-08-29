@@ -776,7 +776,6 @@ public class VarUtils {
 			performEmit(args);
 			return;
 		}
-		
 			
 		
 		//General filter, second arg must match a column header, third arg is value for filter
@@ -1873,7 +1872,10 @@ public class VarUtils {
 			}
 			
 			
-			System.err.println("Done merging...");
+			//System.err.println("Done merging...");
+			
+			System.out.println("Gene\tpdot\tmtscore\tppscore\tgerpscore\tsiftscore\ttkgfreq\tamrfreq\tsampleFreq");
+			
 			//Create DBNSFP reader....
 			DBNSFPReader reader = new DBNSFPReader();
 			
@@ -1889,11 +1891,11 @@ public class VarUtils {
 					reader.advanceTo(contig, start);
 					while(reader.getCurrentPos() < end) {
 						Double tkgFreq = reader.getValue(DBNSFPReader.TKG_AF);
-						if (Double.isNaN(tkgFreq))
+						if (tkgFreq == null || Double.isNaN(tkgFreq))
 							tkgFreq = 0.0;
 						
 						Double amrFreq = reader.getValue(DBNSFPReader.TKG_AMR);
-						if (Double.isNaN(amrFreq))
+						if (amrFreq == null || Double.isNaN(amrFreq))
 							amrFreq = 0.0;
 						
 						VariantRec rec = pool.findRecordNoWarn(contig, reader.getCurrentPos());
@@ -1910,10 +1912,10 @@ public class VarUtils {
 						double ppScore = reader.getValue(DBNSFPReader.PP);
 						double gerpScore = reader.getValue(DBNSFPReader.GERP);
 						double siftScore = reader.getValue(DBNSFPReader.SIFT);
+						String pDot = reader.getPDot();
 						
-						
-						if (tkgFreq > 0 || sampleFreq > 0.1)
-							System.out.println(reader.getText(DBNSFPReader.GENE) + "\t" + contig + "\t" + reader.getCurrentPos() + "\t" + mtScore + "\t" + ppScore + "\t" + gerpScore + "\t" + siftScore + "\t" + tkgFreq + "\t" + amrFreq + "\t" + sampleFreq);
+						if (amrFreq > 0 || tkgFreq > 0.0 )
+							System.out.println(reader.getText(DBNSFPReader.GENE) + "\t" + pDot + "\t" + mtScore + "\t" + ppScore + "\t" + gerpScore + "\t" + siftScore + "\t" + tkgFreq + "\t" + amrFreq + "\t" + sampleFreq);
 						
 						reader.advanceLine();
 					}

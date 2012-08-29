@@ -244,7 +244,7 @@ public class VariantRec {
 	public String getPropertyString(List<String> propKeys) {
 		StringBuffer buf = new StringBuffer();
 		for(String key : propKeys) {
-			buf.append( getPropertyOrAnnotation(key) + "\t ");
+			buf.append( "\t" +  getPropertyOrAnnotation(key) );
 //			Double val = props.get(key);
 //			if (val != null)
 //				buf.append("\t" + val);
@@ -510,12 +510,13 @@ public class VariantRec {
 		
 	}
 	
-	private final PositionComparator posComparator =  new PositionComparator();
+	//private final PositionComparator posComparator =  new PositionComparator();
 	
 	//A few oft-used property / annotation keys
 	public static final String EFFECT_PREDICTION = "effect.prediction";
 	public static final String EFFECT_PREDICTION2 = "effect.prediction2";
 	public static final String POP_FREQUENCY = "pop.freq";
+	public static final String AMR_FREQUENCY = "amr.freq";
 	public static final String CG69_FREQUENCY = "cg69.freq";
 	public static final String SIFT_SCORE = "sift.score";
 	public static final String POLYPHEN_SCORE = "pp.score";

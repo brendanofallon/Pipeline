@@ -10,7 +10,6 @@ import org.w3c.dom.NodeList;
 
 import pipeline.PipelineObject;
 import buffer.FileBuffer;
-import buffer.MultiFileBuffer;
 import buffer.ReferenceFile;
 
 /**
@@ -158,14 +157,19 @@ public abstract class IOOperator extends Operator {
 	 * @param command
 	 * @throws OperationFailedException
 	 */
-	protected void executeCommand(String command) throws OperationFailedException {
+	protected void executeCommand(final String command) throws OperationFailedException {
 		Runtime r = Runtime.getRuntime();
-		Process p;
+		final Process p;
 
 		try {
 			p = r.exec(command);
-			//Thread errorHandler = new StringPipeHandler(p.getErrorStream(), System.err);
-			//errorHandler.start();
+			
+			Runtime.getRuntime().addShutdownHook(new Thread() {
+				public void run() {
+					System.err.println("Invoking shutdown thread, destroying task with command : " + command);
+					p.destroy();
+				}
+			});
 
 			try {
 				if (p.waitFor() != 0) {
