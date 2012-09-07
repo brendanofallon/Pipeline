@@ -5,18 +5,15 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.Writer;
 import java.util.logging.Logger;
 
 import operator.IOOperator;
 import operator.OperationFailedException;
-
 import pipeline.Pipeline;
 import util.VCFLineParser;
-
 import buffer.BEDFile;
-import buffer.FileBuffer;
+import buffer.IntervalsFile;
 import buffer.VCFFile;
 
 /**
@@ -46,46 +43,62 @@ public class FilterVCFByBED extends IOOperator {
 		
 
 		try {
-			//Write header of old vcf to new vcf file
-			BufferedReader reader = new BufferedReader(new FileReader(inVCF.getFile()));
-			BufferedWriter writer = new BufferedWriter(new FileWriter(outVCF.getFile()));
-			String line = reader.readLine();
-			while (line != null && line.startsWith("#")) {
-				writer.write(line + "\n");
-				line = reader.readLine();
-			}
-
-			VCFLineParser vParser = new VCFLineParser(inVCF.getFile());
-			int totVars = 0;
-			int varsFound = 0;
-			int varsNotFound = 0;
-			Map<String, Integer> counts = new HashMap<String, Integer>();
-			while( vParser.advanceLine()) {
-				totVars++;
-				String contig = vParser.getContig().replace("chr", "")	;
-				int pos = vParser.getPosition();
-				//System.out.println("Searching for contig: " + contig + " pos: " + pos);
-				if (bedFile.contains(contig, pos)) {
-					varsFound++;
-					//System.out.println("found contig: " + contig + " pos:" + pos + ", have " + varsFound + " total");
-					writer.write(vParser.getCurrentLine() + "\n");
-				}
-				else {
-					//System.out.println("didnt find it :{");
-				}
-			}
-			writer.close();
 			
-			logger.info("Done filtering input vcf " + inVCF.getFilename() + " resulting file has " + varsFound + " variants (" + varsNotFound + " excluded)") ;
-			System.out.println("Total variants in vcf file: " + totVars);
-			System.out.println("Variants in bed: " + varsFound);
-			System.out.println("Variants not in bed: " + varsNotFound);
+			BufferedWriter writer = new BufferedWriter(new FileWriter(outVCF.getFile()));			
+			int varsRetained = doFilter(inVCF, bedFile, writer);
+			
+			logger.info("Done filtering input vcf " + inVCF.getFilename() + " resulting file has " + varsRetained + " variants") ;
+			
 		} catch (IOException e) {
 			throw new OperationFailedException("Could not read / write vcf file for filtration\n" + e.getMessage(), this);
 		}
 		
+	}
+	
+	
+	/**
+	 * Read the VCF file line by line and write only header lines or those lines contanining
+	 * variants that fall into the given intervals file to the writer. Output is in VCF format
+	 * @param inFile
+	 * @param bedFile
+	 * @param writer
+	 * @throws IOException
+	 */
+	public static int doFilter(VCFFile inFile, IntervalsFile bedFile, Writer writer) throws IOException {
+		if (! bedFile.isMapCreated()) {
+			try {
+				bedFile.buildIntervalsMap();
+			} catch (IOException e) {
+				throw new IllegalArgumentException("Could not create intervals map for bed file: " + bedFile.getAbsolutePath() + "\n" + e.getMessage());
+				
+			}
+		}
 		
 		
+		BufferedReader reader = new BufferedReader(new FileReader(inFile.getFile()));
+		String line = reader.readLine();
+		while (line != null && line.startsWith("#")) {
+			writer.write(line + "\n");
+			line = reader.readLine();
+		}
+
+		VCFLineParser vParser = new VCFLineParser(inFile.getFile());
+		int totVars = 0;
+		int varsFound = 0;
+//		int varsNotFound = 0;
+//		Map<String, Integer> counts = new HashMap<String, Integer>();
+		while( vParser.advanceLine()) {
+			totVars++;
+			String contig = vParser.getContig().replace("chr", "")	;
+			int pos = vParser.getPosition();
+			if (bedFile.contains(contig, pos)) {
+				varsFound++;
+				writer.write(vParser.getCurrentLine() + "\n");
+			}
+		}
+		
+		reader.close();
+		return varsFound;
 	}
 
 }

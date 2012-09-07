@@ -4,17 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import buffer.BAMFile;
-import buffer.BEDFile;
-import buffer.FileBuffer;
-import buffer.MultiFileBuffer;
-import buffer.GlobFileBuffer;
-import buffer.ReferenceFile;
-import buffer.VCFFile;
 import operator.CommandOperator;
 import operator.OperationFailedException;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
+import buffer.BAMFile;
+import buffer.BEDFile;
+import buffer.FileBuffer;
+import buffer.GlobFileBuffer;
+import buffer.MultiFileBuffer;
+import buffer.ReferenceFile;
+import buffer.VCFFile;
 
 public class MergeFiles extends CommandOperator {
 
@@ -22,6 +22,8 @@ public class MergeFiles extends CommandOperator {
 	protected String gatkPath = defaultGATKPath;
 	public static final String PATH = "path";
 	public static final String JVM_ARGS="jvmargs";
+	
+	private String finalVCFPath = null; //For use with JobWrangler / WranglerStatus writer
 	
 	@Override
 	public boolean requiresReference() {
@@ -123,9 +125,13 @@ public class MergeFiles extends CommandOperator {
 				command = command + " -L:intervals,BED " + bedFile.getAbsolutePath() + " ";
 			}
 			command = command + " -o " + outputPath;
+			finalVCFPath = outputPath;
 		}
 		
 		return command;
 	}
 
+	public String getFinalVCFPath() {
+		return finalVCFPath;
+	}
 }

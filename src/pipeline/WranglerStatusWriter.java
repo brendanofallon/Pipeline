@@ -4,10 +4,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import operator.OperationFailedException;
 import operator.Operator;
 
 /**
@@ -27,6 +29,11 @@ public class WranglerStatusWriter implements PipelineListener {
 	 */
 	public WranglerStatusWriter() {
 		statusFile = new File("wrangler.status.txt");
+	}
+	
+	public void addMessage(String key, String value) {
+		messages.put(key, value);
+		logMessage(messages);	
 	}
 	
 	private void logMessage(Map<String, String> keyVals) {
@@ -51,22 +58,21 @@ public class WranglerStatusWriter implements PipelineListener {
 	
 	@Override
 	public void operatorCompleted(Operator op) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void operatorBeginning(Operator op) {
 		messages.clear();
 		messages.put("Current operation", op.getObjectLabel());
+		messages.put("Operation start time ", (new Date()).toString() );
 		logMessage(messages);
 	}
 
 	@Override
-	public void errorEncountered(Operator op) {
+	public void errorEncountered(OperationFailedException opEx) {
 		messages.clear();
-		messages.put("Current operation", op.getObjectLabel());
-		messages.put("error", "true");
+		messages.put("Current operation", opEx.getSourceOperator().getObjectLabel());
+		messages.put("error", opEx.getMessage());
 		logMessage(messages);
 	}
 

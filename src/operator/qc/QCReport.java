@@ -64,6 +64,15 @@ public class QCReport extends Operator {
 	BAMMetrics finalBAMMetrics = null;
 	VariantPool variantPool = null;
 	BEDFile captureBed = null;
+	File outputDir = null; //Directory containing qc info
+
+	/**
+	 * Return directory containing qc output, will be null before report is written
+	 * @return
+	 */
+	public File getOutputDir() {
+		return outputDir;
+	}
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -87,128 +96,128 @@ public class QCReport extends Operator {
 		
 		String projHome = getProjectHome();				
 		
-			File outputDir = new File(projHome + "qc-report");
-			outputDir.mkdir();
+		outputDir = new File(projHome + "qc-report");
+		outputDir.mkdir();
 			
-			String outputPath = outputDir.getAbsolutePath();
+		String outputPath = outputDir.getAbsolutePath();
 			
-			QCPageWriter pageWriter = new QCPageWriter( this.getAttribute("sample"));
+		QCPageWriter pageWriter = new QCPageWriter( this.getAttribute("sample"));
 			
-			//Write summary (index) page
-			StringWriter summary = new StringWriter();
-			try {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/qc-metrics.html"));
-				writeSummary(summary, getPipelineOwner());
-				pageWriter.writePage(writer, summary.toString());
-				writer.close();	
-			}
-			catch (RuntimeException rex) {
-				rex.printStackTrace();
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing  QC summary page : " + rex.getMessage());
-			} catch (IOException e) {
-				e.printStackTrace();
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing  QC summary page : " + e.getMessage());
-			}
-			
-			
-			//Write base qualities page...
-			try {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/basequalities.html"));
-				StringWriter basequalities = new StringWriter();
-				writeBaseQualities(basequalities, rawBAMMetrics, outputDir);
-				pageWriter.writePage(writer, basequalities.toString());
-				writer.close();
-			}
-			catch (RuntimeException rex) {
-				rex.printStackTrace();
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing base quality QC page : " + rex.getMessage());
-			} catch (IOException e) {
-				e.printStackTrace();
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing base quality QC page : " + e.getMessage());
-			}
+		//Write summary (index) page
+		StringWriter summary = new StringWriter();
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/qc-metrics.html"));
+			writeSummary(summary, getPipelineOwner());
+			pageWriter.writePage(writer, summary.toString());
+			writer.close();	
+		}
+		catch (RuntimeException rex) {
+			rex.printStackTrace();
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing  QC summary page : " + rex.getMessage());
+		} catch (IOException e) {
+			e.printStackTrace();
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing  QC summary page : " + e.getMessage());
+		}
+
+
+		//Write base qualities page...
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/basequalities.html"));
+			StringWriter basequalities = new StringWriter();
+			writeBaseQualities(basequalities, rawBAMMetrics, outputDir);
+			pageWriter.writePage(writer, basequalities.toString());
+			writer.close();
+		}
+		catch (RuntimeException rex) {
+			rex.printStackTrace();
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing base quality QC page : " + rex.getMessage());
+		} catch (IOException e) {
+			e.printStackTrace();
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing base quality QC page : " + e.getMessage());
+		}
+
+
+
+		//Write alignment metrics page...
+
+
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/alignment.html"));
+			StringWriter alnWriter = new StringWriter();
+			writeBAMMetricsBlockNew(alnWriter, rawBAMMetrics, rawCoverageMetrics, finalBAMMetrics, finalCoverageMetrics, outputDir);
+			pageWriter.writePage(writer, alnWriter.toString());
+			writer.close();
+		}
+		catch (RuntimeException rex) {
+			rex.printStackTrace();
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing BAM metrics QC page : " + rex.getMessage());
+		} catch (IOException e) {
+			e.printStackTrace();
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing BAM metrics QC page : " + e.getMessage());
+		}
+
+
+		//Writer variant report
+
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/variants.html"));
+			StringWriter variants = new StringWriter();
+			writeVariantReport(variants, variantPool, outputDir);
+			pageWriter.writePage(writer, variants.toString());
+			writer.close();
+		}
+		catch (RuntimeException rex) {
+			rex.printStackTrace();
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing variant QC page : " + rex.getMessage());
+		} catch (IOException e) {
+			e.printStackTrace();
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing variant QC page : " + e.getMessage());
+		}
 			
 
 			
-			//Write alignment metrics page...
 			
 			
-			try {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/alignment.html"));
-				StringWriter alnWriter = new StringWriter();
-				writeBAMMetricsBlockNew(alnWriter, rawBAMMetrics, rawCoverageMetrics, finalBAMMetrics, finalCoverageMetrics, outputDir);
-				pageWriter.writePage(writer, alnWriter.toString());
-				writer.close();
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/log.html"));
+			StringWriter log = new StringWriter();
+			writeLogPage(log, outputDir);
+			pageWriter.writePage(writer, log.toString());
+			writer.close();
+		}
+		catch (RuntimeException rex) {
+			rex.printStackTrace();
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing log QC page : " + rex.getMessage());
+		} catch (IOException e) {
+			e.printStackTrace();
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing log QC page : " + e.getMessage());
+		}
+
+
+		//Finally, copy style sheet to directory...
+		String styleSheetPath = getPipelineProperty(QC_STYLE_SHEET);
+
+		if (styleSheetPath != null) {
+
+			File styleDir = new File(outputPath + "/styles");
+			styleDir.mkdir();
+
+			File styleSheetSrc = new File(styleSheetPath);
+			if (! styleSheetSrc.exists()) {
+				logger.warning("QC style sheet at path " + styleSheetSrc.getAbsolutePath() + " does not exist");
+				return;
 			}
-			catch (RuntimeException rex) {
-				rex.printStackTrace();
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing BAM metrics QC page : " + rex.getMessage());
+
+			File styleSheetDest = new File(styleDir.getAbsolutePath() + "/style.css");
+			try {
+				copyFile(styleSheetSrc, styleSheetDest);
 			} catch (IOException e) {
 				e.printStackTrace();
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing BAM metrics QC page : " + e.getMessage());
+				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error copying style sheet to destination : " + e.getMessage());
 			}
-			
-			
-			//Writer variant report
-			
-			try {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/variants.html"));
-				StringWriter variants = new StringWriter();
-				writeVariantReport(variants, variantPool, outputDir);
-				pageWriter.writePage(writer, variants.toString());
-				writer.close();
-			}
-			catch (RuntimeException rex) {
-				rex.printStackTrace();
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing variant QC page : " + rex.getMessage());
-			} catch (IOException e) {
-				e.printStackTrace();
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing variant QC page : " + e.getMessage());
-			}
-			
+		}
 
-			
-			
-			
-			try {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath + "/log.html"));
-				StringWriter log = new StringWriter();
-				writeLogPage(log, outputDir);
-				pageWriter.writePage(writer, log.toString());
-				writer.close();
-			}
-			catch (RuntimeException rex) {
-				rex.printStackTrace();
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing log QC page : " + rex.getMessage());
-			} catch (IOException e) {
-				e.printStackTrace();
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Error writing log QC page : " + e.getMessage());
-			}
-			
-			
-			//Finally, copy style sheet to directory...
-			String styleSheetPath = getPipelineProperty(QC_STYLE_SHEET);
 
-			if (styleSheetPath != null) {
-
-				File styleDir = new File(outputPath + "/styles");
-				styleDir.mkdir();
-
-				File styleSheetSrc = new File(styleSheetPath);
-				if (! styleSheetSrc.exists()) {
-					logger.warning("QC style sheet at path " + styleSheetSrc.getAbsolutePath() + " does not exist");
-					return;
-				}
-				
-				File styleSheetDest = new File(styleDir.getAbsolutePath() + "/style.css");
-				try {
-					copyFile(styleSheetSrc, styleSheetDest);
-				} catch (IOException e) {
-					e.printStackTrace();
-					Logger.getLogger(Pipeline.primaryLoggerName).warning("Error copying style sheet to destination : " + e.getMessage());
-				}
-			}
-		
-		
 	}
 	
 	private void writeLogPage(StringWriter writer, File outputDir) throws IOException {

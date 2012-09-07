@@ -51,14 +51,23 @@ public class DBNSFPEmitter {
 		}
 	}
 	
+	public static void emitCloseGene(DBNSFPReader reader, PrintWriter writer, String contig, int startPos) throws IOException {
+		
+		for(int i=startPos+10; i<startPos+200; i++) {
+				reader.advanceTo("" + contig, i);
+				String gene = reader.getString(DBNSFPReader.GENE);
+				System.out.println(contig + "\t" + startPos + "\t" + gene);
+				return;	
+		}
+	}
+	
 	public static void main(String[] args) throws IOException {
 		DBNSFPReader reader = new DBNSFPReader();
 		
-
 		PrintWriter writer = new PrintWriter(new FileWriter("/home/brendan/tgk-vars.amr.csv"));
 		
 		writer.println(VariantRec.getSimpleHeader() + "\tpop.freq");
-		String infilePath = "/home/brendan/resources/SureSelect_50mb_with_annotation_b37.bed";
+		String infilePath = "/home/brendan/MORE_DATA/superpanel/vascmalprobes.csv";
 		File inFile = new File(infilePath);
 		BufferedReader fileReader = new BufferedReader(new FileReader(inFile));
 		String line = fileReader.readLine();
@@ -70,9 +79,9 @@ public class DBNSFPEmitter {
 			String[] toks = line.split("\t");
 			String contig = toks[0];
 			Integer startPos = Integer.parseInt(toks[1]);
-			Integer endPos = Integer.parseInt(toks[2]);
-			System.out.println("Reading region chr" + contig + ":" + startPos + " - " + endPos);
-			emitRegion(reader, writer, "" + contig, startPos, endPos);
+			//Integer endPos = Integer.parseInt(toks[2]);
+			//System.out.println("Reading region chr" + contig + ":" + startPos );
+			emitCloseGene(reader, writer, "" + contig, startPos);
 			line = fileReader.readLine();
 		}
 		writer.flush();

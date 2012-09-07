@@ -46,4 +46,14 @@ public class TZTLineReader extends AbstractVariantParser {
 			var = reader.toVariantRec();
 		}
 	}
+
+	@Override
+	public String getCurrentLine() throws IOException {
+		return currentLine;
+	}
+
+	@Override
+	public String getHeader() throws IOException {
+		return null;
+	}
 }

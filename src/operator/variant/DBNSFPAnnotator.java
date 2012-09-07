@@ -78,7 +78,6 @@ public class DBNSFPAnnotator extends Annotator {
 				Double amrFreq = reader.getValue(DBNSFPReader.TKG_AMR);
 				if (! Double.isNaN(amrFreq)) {
 					var.addProperty(VariantRec.AMR_FREQUENCY, amrFreq);
-					System.out.println("Adding amr val: " + amrFreq);
 				}
 
 				Double espFreq = reader.getValue(DBNSFPReader.ESP5400);

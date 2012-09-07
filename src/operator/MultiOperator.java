@@ -82,9 +82,6 @@ public abstract class MultiOperator extends IOOperator {
 	@Override
 	public void performOperation() throws OperationFailedException {
 		threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool( getPreferredThreadCount() );
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			
-		});
 		
 		Date start = new Date();
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);

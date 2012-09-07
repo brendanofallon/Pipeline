@@ -13,16 +13,26 @@ import pipeline.WranglerStatusWriter;
  */
 public class StatusLogger extends Operator {
 
+	private WranglerStatusWriter writer = null;
+	
 	@Override
 	public void performOperation() throws OperationFailedException {
 		Pipeline ppl = this.getPipelineOwner();
-		WranglerStatusWriter writer = new WranglerStatusWriter();
+		writer = new WranglerStatusWriter();
 		ppl.addListener(writer);
 	}
 
 	@Override
 	public void initialize(NodeList children) {
 		//No initialization needed
+	}
+	
+	/**
+	 * A reference to the actual writer that listens to the pipeline and logs messages
+	 * @return
+	 */
+	public WranglerStatusWriter getWriter() {
+		return writer;
 	}
 
 }

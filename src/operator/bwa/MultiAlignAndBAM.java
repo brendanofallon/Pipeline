@@ -305,7 +305,7 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		
 		public AlignerJob(FileBuffer inputFile) {
 			baseFilename = inputFile.getFilename();
-			command = pathToBWA + " aln -n " + maxEditDist + " -l " + seedLength + " -t " + Math.max(1, getPreferredThreadCount() / threads) + " " + referencePath + " " + inputFile.getAbsolutePath();
+			command = pathToBWA + " aln -n " + maxEditDist + " -l " + seedLength + " -t " + Math.max(1, threads) + " " + referencePath + " " + inputFile.getAbsolutePath();
 		}
 		
 		@Override
@@ -366,8 +366,8 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 								" | " +  pathToSamTools + " view -Sb - > " + bamPath;
 			String fileName = getProjectHome() + "sambuilder-" + ((1000000.0*Math.random())+"").substring(0, 6).replace(".", "") + ".sh";
 			
-			System.out.println("Writing command string : " + comStr);
-			System.out.println("To file : " + fileName);
+			//System.out.println("Writing command string : " + comStr);
+			//System.out.println("To file : " + fileName);
 			BufferedWriter writer;
 			try {
 				writer = new BufferedWriter(new FileWriter(fileName));

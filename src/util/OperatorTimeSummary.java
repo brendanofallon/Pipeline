@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import operator.OperationFailedException;
 import operator.Operator;
 import pipeline.Pipeline;
 import pipeline.PipelineListener;
@@ -77,7 +78,7 @@ public class OperatorTimeSummary implements PipelineListener {
 	}
 
 	@Override
-	public void errorEncountered(Operator op) {
+	public void errorEncountered(OperationFailedException op) {
 		// TODO Auto-generated method stub
 		
 	}

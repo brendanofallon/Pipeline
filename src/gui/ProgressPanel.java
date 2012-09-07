@@ -2,24 +2,17 @@ package gui;
 
 import gui.PipelineOpPanel.State;
 
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
-import javax.swing.JScrollPane;
-import javax.swing.JViewport;
 import javax.swing.SwingWorker;
 
 import operator.OperationFailedException;
 import operator.Operator;
-
 import pipeline.ObjectCreationException;
 import pipeline.Pipeline;
 import pipeline.PipelineDocException;
@@ -162,6 +155,12 @@ public class ProgressPanel extends JPanel implements PipelineListener {
 
 	@Override
 	public void pipelineFinished() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void errorEncountered(OperationFailedException opEx) {
 		// TODO Auto-generated method stub
 		
 	}

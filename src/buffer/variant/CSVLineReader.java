@@ -23,7 +23,7 @@ public class CSVLineReader implements VariantLineReader {
 	protected String[] headerToks = null;
 	//Contains a map for a column header to a column index
 	private Map<String, Integer> headerMap = new HashMap<String, Integer>();
-	protected File sourceFile = null;
+	protected final File sourceFile;
 	
 	
 	public CSVLineReader(File csvFile) throws IOException {
@@ -42,6 +42,18 @@ public class CSVLineReader implements VariantLineReader {
 				headerMap.put(tokList.get(i).trim(), i);
 			currentLine = reader.readLine();
 		}
+	}
+	
+	public String getHeader() throws IOException {
+		BufferedReader headReader = new BufferedReader(new FileReader(sourceFile));
+		String line = headReader.readLine();
+		StringBuilder strB = new StringBuilder();
+		while(line != null && line.trim().startsWith("#")) {
+			strB.append(line + "\n");
+			line = headReader.readLine();
+		}
+		headReader.close();
+		return strB.toString();
 	}
 	
 	/**
@@ -231,6 +243,11 @@ public class CSVLineReader implements VariantLineReader {
 				return Double.parseDouble(trimmed);
 		else
 			return 0.0;
+	}
+
+	@Override
+	public String getCurrentLine() throws IOException {
+		return currentLine;
 	}
 	
 }

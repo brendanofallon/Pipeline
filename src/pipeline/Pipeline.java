@@ -39,7 +39,7 @@ import util.QueuedLogHandler;
 
 public class Pipeline {
 
-	public static final String PIPELINE_VERSION = "1.0";
+	public static final String PIPELINE_VERSION = "1.1";
 	protected File source;
 	protected Document xmlDoc;
 	public static final String PYTHON_SCRIPTS_DIR="python.scripts.dir";
@@ -435,7 +435,7 @@ public class Pipeline {
 				fireOperatorCompleted(op);
 				op.setAttribute(END_TIME, "" + end.getTime());
 			} catch (OperationFailedException e) {
-				fireOperatorError(op);
+				fireOperatorError(e);
 				//fireMessage("Operator failed : " + e);
 				e.printStackTrace();
 				primaryLogger.severe("ERROR : Operator : " + op.getObjectLabel() + " (class " + op.getClass() + ") failed \n Cause : " + e.getMessage());
@@ -526,7 +526,7 @@ public class Pipeline {
 	 * Notify all listeners that an error has been encountered in the given operator
 	 * @param op
 	 */
-	public void fireOperatorError(Operator op) {
+	public void fireOperatorError(OperationFailedException op) {
 		for(PipelineListener listener : listeners) {
 			listener.errorEncountered(op);
 		}

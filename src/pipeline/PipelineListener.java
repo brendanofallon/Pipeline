@@ -1,5 +1,6 @@
 package pipeline;
 
+import operator.OperationFailedException;
 import operator.Operator;
 
 /**
@@ -19,7 +20,7 @@ public interface PipelineListener {
 	 * Called when an severe error occurred during pipeline execution
 	 * @param op
 	 */
-	public void errorEncountered(Operator op);
+	public void errorEncountered(OperationFailedException opEx);
 	
 	/**
 	 * Called when the pipeline has finishing all operators

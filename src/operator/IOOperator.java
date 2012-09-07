@@ -164,9 +164,10 @@ public abstract class IOOperator extends Operator {
 		try {
 			p = r.exec(command);
 			
+			//If runtime is going down, destroy the process so it won't become orphaned
 			Runtime.getRuntime().addShutdownHook(new Thread() {
 				public void run() {
-					System.err.println("Invoking shutdown thread, destroying task with command : " + command);
+					//System.err.println("Invoking shutdown thread, destroying task with command : " + command);
 					p.destroy();
 				}
 			});

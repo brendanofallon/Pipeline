@@ -1,14 +1,8 @@
 package operator.samtools;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 import operator.CommandOperator;
-import operator.IOOperator;
-import operator.OperationFailedException;
-
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
@@ -65,7 +59,7 @@ public class MergeFiles extends CommandOperator {
 			command = "cp " + inputPaths + " " + outputPath;
 		}
 		else {
-			command = samtoolsPath + " merge " + outputPath + " " + inputPaths ;			
+			command = samtoolsPath + " merge -f " + outputPath + " " + inputPaths ;			
 		}
 		
 		

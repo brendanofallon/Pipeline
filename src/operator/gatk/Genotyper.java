@@ -1,24 +1,23 @@
 package operator.gatk;
 
 import operator.CommandOperator;
-import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.BEDFile;
-import buffer.CSVFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
 import buffer.VCFFile;
 
 public class Genotyper extends CommandOperator {
 
-	public final String defaultMemOptions = " -Xms2048m -Xmx8g";
+	public final String defaultMemOptions = " -Xms2048m -Xmx16g";
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
 	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
-	protected int threads = 1;
+	
+	
 	
 	@Override
 	public boolean requiresReference() {
@@ -37,10 +36,13 @@ public class Genotyper extends CommandOperator {
 			gatkPath = path;
 		}
 		
+		int threads = this.getPipelineOwner().getThreadCount();
+		
 		String threadsStr = properties.get(THREADS);
 		if (threadsStr != null) {
 			threads = Integer.parseInt(threadsStr);
 		}
+		
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {

@@ -1321,55 +1321,38 @@ public class VarUtils {
 			System.out.println("Enter the names of a variant (vcf or csv) file and a bed file to filter by");
 			return;
 		}
+
+		int count = 0;
+		int retained = 0;
 		
 		try {
 			VariantLineReader reader = getReader(args[1]);
 			BEDFile bedFile = new BEDFile(new File(args[2]));
 			bedFile.buildIntervalsMap();
-			VariantPool filteredVars = new VariantPool();
-			int count = 0;
+
+			
+			System.out.println(reader.getHeader());
+			
 			do {
+				
 				VariantRec var = reader.toVariantRec();
-				if (count%5000==0)
-					System.err.println("Processed " + count + " variants (including " + filteredVars.size() + " so far)");
+//				if (count%5000==0)
+//					System.err.println("Processed " + count + " variants (including " + retained + " so far)");
 				if (bedFile.contains(var.getContig(), var.getStart(), false))	{
-					filteredVars.addRecordNoSort(var);
+					retained++;
+					System.out.println(reader.getCurrentLine());
 				}
 				count++;
 
 			} while(reader.advanceLine());
-			
-			filteredVars.sortAllContigs();
-			
-			File outputFile = null;
-			if (args.length==4) {
-				outputFile = new File(args[3]);
-			}
-			
-			PrintStream outputStream = System.out;
-			if (outputFile != null) {
-				outputStream = new PrintStream(new FileOutputStream(outputFile));
-			}
-			List<String> annoKeys = new ArrayList<String>();
-			annoKeys.add(VariantRec.RSNUM);
-			annoKeys.add(VariantRec.POP_FREQUENCY);
-			annoKeys.add(VariantRec.GENE_NAME);
-			annoKeys.add(VariantRec.VARIANT_TYPE);
-			annoKeys.add(VariantRec.EXON_FUNCTION);
-			annoKeys.add(VariantRec.CDOT);
-			annoKeys.add(VariantRec.PDOT);
-			annoKeys.add(VariantRec.VQSR);
-			annoKeys.add(VariantRec.EFFECT_PREDICTION2);
-			annoKeys.add(VariantRec.DEPTH);
-			annoKeys.add(VariantRec.VAR_DEPTH);
-			annoKeys.add(VariantRec.FALSEPOS_PROB);
-			annoKeys.add(VariantRec.FS_SCORE);
-			filteredVars.listAll(outputStream, annoKeys);
-			outputStream.close();
+						
+	
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		System.err.println("Retained " + retained + " of " + count + " variants");
 		return;
 	}
 

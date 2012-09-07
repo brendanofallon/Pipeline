@@ -34,9 +34,11 @@ public class VCFLineParser implements VariantLineReader {
 				
 		private String sample = null; //Emit information for only this sample if specified (when not given, defaults to first sample)
 		private int sampleColumn = -1; //Column that stores information for the given sample
+		protected final File sourceFile;
 		
 		public VCFLineParser(File file, String sample) throws IOException {
 			this.reader = new BufferedReader(new FileReader(file));
+			this.sourceFile = file;
 			currentLine = reader.readLine();
 			this.sample = sample; //Sample must be specified before header is read
 			readHeader();
@@ -49,6 +51,7 @@ public class VCFLineParser implements VariantLineReader {
 		 */
 		public VCFLineParser(InputStream stream) throws IOException {
 			this.reader = new BufferedReader(new InputStreamReader(stream));
+			sourceFile = null;
 			currentLine = reader.readLine();
 			sampleColumn = 9; //First column with info, this is the default when no sample is specified
 			readHeader();
@@ -56,6 +59,7 @@ public class VCFLineParser implements VariantLineReader {
 		
 		public VCFLineParser(File file) throws IOException {
 			this.reader = new BufferedReader(new FileReader(file));
+			this.sourceFile = file;
 			currentLine = reader.readLine();
 			sampleColumn = 9; //First column with info, this is the default when no sample is specified
 			readHeader();
@@ -65,6 +69,22 @@ public class VCFLineParser implements VariantLineReader {
 		
 		public VCFLineParser(VCFFile file) throws IOException {
 			this(file.getFile());
+		}
+		
+		public String getHeader() throws IOException {
+			if (sourceFile == null) {
+				return null;
+			}
+			
+			BufferedReader headReader = new BufferedReader(new FileReader(sourceFile));
+			String line = headReader.readLine();
+			StringBuilder strB = new StringBuilder();
+			while(line != null && line.trim().startsWith("#")) {
+				strB.append(line + "\n");
+				line = headReader.readLine();
+			}
+			headReader.close();
+			return strB.toString();
 		}
 		
 		private void readHeader() throws IOException {

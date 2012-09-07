@@ -82,7 +82,7 @@ public abstract class PipedCommandOp extends IOOperator {
 				//Destroy child process if runtime is shut down 
 				Runtime.getRuntime().addShutdownHook(new Thread() {
 					public void run() {
-						System.err.println("Invoking shutdown thread, destroying task with command : " + command);
+						//System.err.println("Invoking shutdown thread, destroying task with command : " + command);
 						p.destroy();
 					}
 				});
