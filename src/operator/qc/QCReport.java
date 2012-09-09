@@ -31,6 +31,11 @@ import math.Histogram;
 import math.LazyHistogram;
 import operator.OperationFailedException;
 import operator.Operator;
+import operator.qc.checkers.BAMMetricsChecker;
+import operator.qc.checkers.CoverageChecker;
+import operator.qc.checkers.QCItemCheck;
+import operator.qc.checkers.QCItemCheck.QCCheckResult;
+import operator.qc.checkers.VariantPoolChecker;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -550,6 +555,9 @@ public class QCReport extends Operator {
 		
 		writer.write(sumT.getHTML());
 		
+		
+		writeWarningsSection(writer);
+		
 		writer.write("<h2> Operations performed </h2>");
 		List<Operator> opList = ppl.getOperatorList();
 		
@@ -591,6 +599,65 @@ public class QCReport extends Operator {
 			}
 		}
 		writer.write("</table>");
+	}
+
+	private void writeWarningsSection(Writer writer) throws IOException {
+		
+		if (finalCoverageMetrics != null) {
+			CoverageChecker covCheck = new CoverageChecker();
+			QCCheckResult finalCov = covCheck.checkItem(finalCoverageMetrics);
+		
+			if (finalCov.getResult() == QCItemCheck.ResultType.WARNING) {
+				writer.write("<p id=\"warning\"> QC Warning : " + finalCov.getMessage() + "</p>\n");
+			}
+			if (finalCov.getResult() == QCItemCheck.ResultType.SEVERE) {
+				writer.write("<p id=\"error\"> QC Failure : " + finalCov.getMessage() + "</p>\n");
+			}
+			if (finalCov.getResult() == QCItemCheck.ResultType.OK) {
+				writer.write("<p id=\"okitem\"> QC coverage metrics appear normal </p>\n");
+			}
+			
+		}
+		else {
+			writer.write("<p id=\"warning\"> QC Warning : No coverage metrics found, could not assess QC metrics</p>\n");
+		}
+		
+		if (finalBAMMetrics != null) {
+			BAMMetricsChecker bamCheck = new BAMMetricsChecker();
+			QCCheckResult bamResult = bamCheck.checkItem(finalBAMMetrics);
+			
+			if (bamResult.getResult() == QCItemCheck.ResultType.WARNING) {
+				writer.write("<p id=\"warning\"> QC Warning : " + bamResult.getMessage() + "</p>\n");
+			}
+			if (bamResult.getResult() == QCItemCheck.ResultType.SEVERE) {
+				writer.write("<p id=\"error\"> QC Failure : " + bamResult.getMessage() + "</p>\n");
+			}
+			if (bamResult.getResult() == QCItemCheck.ResultType.OK) {
+				writer.write("<p id=\"okitem\"> QC base qualities appear normal </p>\n");
+			}
+		}
+		else {
+			writer.write("<p id=\"warning\"> QC Warning : No BAM metrics found, could not assess QC metrics</p>\n");
+		}
+		
+		if (variantPool != null) {
+			VariantPoolChecker varCheck = new VariantPoolChecker(captureBed.getExtent());
+			QCCheckResult varResult = varCheck.checkItem(variantPool);
+		
+			if (varResult.getResult() == QCItemCheck.ResultType.WARNING) {
+				writer.write("<p id=\"warning\"> QC Warning : " + varResult.getMessage() + "</p>\n");
+			}
+			if (varResult.getResult() == QCItemCheck.ResultType.SEVERE) {
+				writer.write("<p id=\"error\"> QC Failure : " + varResult.getMessage() + "</p>\n");
+			}
+			if (varResult.getResult() == QCItemCheck.ResultType.OK) {
+				writer.write("<p id=\"okitem\"> QC variant calls appear normal </p>\n");
+			}
+		}
+		else {
+			writer.write("<p id=\"warning\"> QC Warning : No variants found, could not assess QC metrics</p>\n");
+		}
+		
 	}
 
 	private static String formatPercent(double num, double denom) {

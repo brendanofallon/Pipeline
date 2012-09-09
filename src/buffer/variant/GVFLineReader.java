@@ -192,6 +192,18 @@ public class GVFLineReader implements VariantLineReader {
 			e.printStackTrace();
 		}
 	}
+
+	@Override
+	public String getCurrentLine() throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getHeader() throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 	
 }

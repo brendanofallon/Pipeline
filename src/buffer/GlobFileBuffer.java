@@ -29,28 +29,15 @@ public class GlobFileBuffer extends MultiFileBuffer {
 	 */
 	public void findFiles() {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-		File[] listing = fileMatcher.parent.listFiles(fileMatcher);
-//		if (fileMatcher.inputPattern.startsWith("/")) {
-//			File parent = (new File( fileMatcher.inputPattern )).getParentFile();
-//						
-//			listing = parent.listFiles(fileMatcher);
-//			System.out.println("Input pattern starts with /, looking for files in parent directory : " + parent.getAbsolutePath());
-//		}
-//		else {
-//			String projHomeAttr = properties.get(Pipeline.PROJECT_HOME);
-//			if (projHomeAttr != null) {
-//				projHome = projHomeAttr;
-//			}
-//			File projDir = new File(projHome);
-//			listing = projDir.listFiles(fileMatcher);
-//		}
+		File[] listing = fileMatcher.parent.listFiles(fileMatcher);	
 		
+		String warnAttr = this.getAttribute("warn");
+		boolean warn = true;
+		if (warnAttr != null)
+			warn = Boolean.parseBoolean(warnAttr);
 		
-		
-		
-		if (listing == null || listing.length == 0) {
-			logger.severe("GlobFileBuffer with pattern " + fileMatcher.pattern + " matched zero files!");
-		//	throw new IllegalArgumentException("Glob file buffer did not match any files, this is probably an error");
+		if (warn && (listing == null || listing.length == 0)) {
+			logger.warning("GlobFileBuffer with pattern " + fileMatcher.pattern + " matched zero files!");
 		}
 		
 		for(int i=0; i<listing.length; i++) {

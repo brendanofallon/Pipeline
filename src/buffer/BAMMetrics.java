@@ -36,32 +36,21 @@ public class BAMMetrics extends FileBuffer implements JSONString {
 	public String toJSONString()  {
 		JSONObject obj = null;
 		try {
-			obj = new JSONObject("{ \"total.reads\" : " + totalReads + "}");
-			//obj.
+			obj = new JSONObject();
+			obj.put("total.reads", totalReads);
+			obj.put("unmapped.reads", unmappedReads);
+			obj.put("bases.read", unmappedReads);
+			obj.put("bases.above.q30", basesQAbove30);
+			obj.put("bases.above.q20", basesQAbove20);
+			obj.put("bases.above.q10", basesQAbove10);
+			
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		if (obj == null)
-			return null;
-		else 
-			return obj.toString();
-	}
-	
-//	public static JSONObject toKeyDouble(String key, int val) {
-//		return new JSONStringer()
-//		      .object()
-//		         .key(key)
-//		         .value(val)
-//		      .endObject();
-//	}
 
-	
-	public static void main(String[] args) {
-		BAMMetrics bm  = new BAMMetrics();
-		bm.totalReads = 100;
-		
-		System.out.println( bm.toJSONString() );
+		return obj.toString();
 	}
+	
+
 }

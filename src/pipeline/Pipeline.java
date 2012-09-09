@@ -276,7 +276,7 @@ public class Pipeline {
 		primaryLogger.addHandler(memLogHandler);
 
 		Date beginTime = new Date();
-		primaryLogger.info("\n\n***************************************************************** \n " + beginTime + " Beginning new Pipeline run");
+		primaryLogger.info("Logger initialized at " +  beginTime + "\n Beginning new Pipeline run");
 	}
 	
 	/**
@@ -382,13 +382,8 @@ public class Pipeline {
 			
 			initialized = true;
 		}
-
-	
-		
 		
 		//A quick scan for errors / validity would be a good idea
-		
-		primaryLogger.info("Object handler is reading objects...");
 		handler.readObjects();
 		System.err.flush(); //Make sure info is written to logger if necessary
 		int opCount = handler.getOperatorList().size();

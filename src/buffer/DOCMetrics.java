@@ -2,6 +2,10 @@ package buffer;
 
 import java.util.List;
 
+import json.JSONException;
+import json.JSONObject;
+import json.JSONString;
+
 import org.w3c.dom.NodeList;
 
 /**
@@ -9,7 +13,7 @@ import org.w3c.dom.NodeList;
  * @author brendan
  *
  */
-public class DOCMetrics extends FileBuffer {
+public class DOCMetrics extends FileBuffer implements JSONString {
 
 	protected String sourceFile = null;
 	protected double meanCoverage = -1;
@@ -17,6 +21,29 @@ public class DOCMetrics extends FileBuffer {
 	protected double[] fractionAboveCutoff;
 	protected List<FlaggedInterval> flaggedIntervals = null;
 	protected double[] coverageProportions = null; //When non-null should be proportion of reads with coverage greater than index
+	
+	
+	@Override
+	public String toJSONString() {
+		JSONObject obj = null;
+		try {
+			obj = new JSONObject();
+			obj.put("mean.coverage", meanCoverage);
+			obj.put("coverage.cutoffs", cutoffs);
+			obj.put("fraction.above.cov.cutoff", fractionAboveCutoff);
+			if (coverageProportions != null)
+				obj.put("fraction.above.index", coverageProportions);
+			
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		if (obj == null)
+			return null;
+		else 
+			return obj.toString();
+	}
 	
 
 	public double[] getCoverageProportions() {
@@ -93,8 +120,5 @@ public class DOCMetrics extends FileBuffer {
 		public double mean = 0;
 		public double frac = 0;
 	}
-
-
-
 	
 }
