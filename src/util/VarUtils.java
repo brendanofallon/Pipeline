@@ -286,10 +286,10 @@ public class VarUtils {
 		annoKeys.add(VariantRec.RSNUM);
 		annoKeys.add(VariantRec.POP_FREQUENCY);
 		annoKeys.add(VariantRec.EFFECT_PREDICTION2);
-		annoKeys.add(VariantRec.GENE_RELEVANCE);
-		annoKeys.add(VariantRec.SUMMARY_SCORE);
-		annoKeys.add(VariantRec.PUBMED_SCORE);
-		annoKeys.add(VariantRec.PUBMED_HIT);
+//		annoKeys.add(VariantRec.GENE_RELEVANCE);
+//		annoKeys.add(VariantRec.SUMMARY_SCORE);
+//		annoKeys.add(VariantRec.PUBMED_SCORE);
+//		annoKeys.add(VariantRec.PUBMED_HIT);
 		annoKeys.add(VariantRec.GO_EFFECT_PROD);
 		annoKeys.add(VariantRec.VQSR);
 		annoKeys.add(VariantRec.SIFT_SCORE);
@@ -874,7 +874,7 @@ public class VarUtils {
 				annoKeys.add(VariantRec.VQSR);
 				annoKeys.add(VariantRec.DEPTH);
 				annoKeys.add(VariantRec.EFFECT_PREDICTION2);
-				annoKeys.add(VariantRec.PUBMED_SCORE);
+				//annoKeys.add(VariantRec.PUBMED_SCORE);
 				annoKeys.add(VariantRec.FALSEPOS_PROB);
 				annoKeys.add(VariantRec.TAUFP_SCORE);
 				annoKeys.add(VariantRec.FS_SCORE);
@@ -1239,50 +1239,47 @@ public class VarUtils {
 
 	private static void performSubtraction(String[] args) {
 		if (args.length < 3) {
-			System.out.println("Enter the names of two variant (vcf or csv) files to subtract");
+			System.out.println("Enter the names of two or more variant (vcf or csv) files to subtract.");
+			System.out.println("If more than two, result will be A - B - C... - N, so all subsequence files are subtracted from first given file");
 			return;
 		}
 		
-		File outputFile = null;
-		if (args.length==4) {
-			outputFile = new File(args[3]);
+		List<VariantPool> pools = new ArrayList<VariantPool>();
+		
+		for(int i=2; i<args.length; i++) {
+			try {
+				pools.add( getPool(new File(args[i])) );
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.exit(1);
+			}
 		}
 		
 		try {
-			VariantPool varsA = getPool(new File(args[1]));
-			VariantPool varsB = getPool(new File(args[2]));
+			VariantLineReader baseVars = getReader(args[1]);
+			System.out.println(baseVars.getHeader());
+			do {
+				VariantRec var = baseVars.toVariantRec();
+				
+				boolean subtract = false;
+				for(VariantPool pool : pools) {
+					if (pool.findRecordNoWarn(var.getContig(), var.getStart()) != null) {
+						subtract = true;
+						break;
+					}
+				}
+				
+				if (! subtract) {
+					System.out.println(baseVars.getCurrentLine());
+				}
+								
+			} while(baseVars.advanceLine());
 			
-			varsA.removeVariants(varsB);
-			PrintStream outputStream = System.out;
-			if (outputFile != null) {
-				outputStream = new PrintStream(new FileOutputStream(outputFile));
-			}
 			
-			List<String> annoKeys = new ArrayList<String>();
-			annoKeys.add(VariantRec.RSNUM);
-			annoKeys.add(VariantRec.POP_FREQUENCY);
-			annoKeys.add(VariantRec.GENE_NAME);
-			annoKeys.add(VariantRec.VARIANT_TYPE);
-			annoKeys.add(VariantRec.EXON_FUNCTION);
-			annoKeys.add(VariantRec.CDOT);
-			annoKeys.add(VariantRec.PDOT);
-			annoKeys.add(VariantRec.POP_FREQUENCY);
-			annoKeys.add(VariantRec.EXOMES_FREQ);
-			//annoKeys.add(VariantRec.RSNUM);
-			annoKeys.add(VariantRec.EFFECT_PREDICTION2);
-			annoKeys.add(VariantRec.GO_EFFECT_PROD);
-			annoKeys.add(VariantRec.GENE_RELEVANCE);
-			annoKeys.add(VariantRec.FALSEPOS_PROB);
-			annoKeys.add(VariantRec.FS_SCORE);
-			annoKeys.add(VariantRec.VQSR);
-			annoKeys.add(VariantRec.MT_SCORE);
-			annoKeys.add(VariantRec.POLYPHEN_SCORE);
-			annoKeys.add(VariantRec.SIFT_SCORE);
-			annoKeys.add(VariantRec.GERP_SCORE);
-			annoKeys.add(VariantRec.PHYLOP_SCORE);
 			
-			varsA.listAll(outputStream, annoKeys);
-			outputStream.close();
+			
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -1970,7 +1967,7 @@ public class VarUtils {
 				annoKeys.add(VariantRec.VQSR);
 				annoKeys.add(VariantRec.DEPTH);
 				annoKeys.add(VariantRec.EFFECT_PREDICTION2);
-				annoKeys.add(VariantRec.PUBMED_SCORE);
+				//annoKeys.add(VariantRec.PUBMED_SCORE);
 				annoKeys.add(VariantRec.FALSEPOS_PROB);
 				annoKeys.add(VariantRec.TAUFP_SCORE);
 				annoKeys.add(VariantRec.FS_SCORE);
@@ -2022,7 +2019,7 @@ public class VarUtils {
 		annoKeys.add(VariantRec.VQSR);
 		annoKeys.add(VariantRec.DEPTH);
 		annoKeys.add(VariantRec.EFFECT_PREDICTION2);
-		annoKeys.add(VariantRec.PUBMED_SCORE);
+		//annoKeys.add(VariantRec.PUBMED_SCORE);
 		annoKeys.add(VariantRec.FALSEPOS_PROB);
 		annoKeys.add(VariantRec.TAUFP_SCORE);
 		annoKeys.add(VariantRec.FS_SCORE);

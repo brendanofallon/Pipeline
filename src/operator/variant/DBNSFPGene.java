@@ -67,11 +67,11 @@ public class DBNSFPGene {
 	}
 	
 	
-	class GeneInfo {
-		String geneName = null;
-		String mimDisease =  null; //Column 16
-		String diseaseDesc = null; //Column 15
-		String functionDesc = null; //Column 14
+	public class GeneInfo {
+		public String geneName = null;
+		public String mimDisease =  null; //Column 16
+		public String diseaseDesc = null; //Column 15
+		public String functionDesc = null; //Column 14
 	}
 	
 }

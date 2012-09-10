@@ -1,5 +1,7 @@
 package buffer.variant;
 
+import gene.Gene;
+
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -22,7 +24,7 @@ public class VariantRec {
 	boolean isHetero;
 	private Map<String, Double> props = new HashMap<String, Double>();
 	private Map<String, String> annotations = new HashMap<String, String>();
-
+	Gene gene;
 	
 	public VariantRec(String contig, 
 			int start, 
@@ -64,6 +66,28 @@ public class VariantRec {
 	
 	public String getRef() {
 		return ref;
+	}
+	
+	/**
+	 * Set a reference to the Gene object associated with this variant
+	 * @param g
+	 */
+	public void setGene(Gene g) {
+		String geneNameAnno = getAnnotation(VariantRec.GENE_NAME);
+		if (geneNameAnno != null) {
+			if (! g.getName().equals(geneNameAnno)) {
+				System.err.println("Warning : Assigning gene with name " + g.getName() + " to variant with gene name already assigned to : " + geneNameAnno);
+			}
+		}
+		this.gene = g;
+	}
+
+	/**
+	 * Obtain the gene associated with this variant, if one has been set 
+	 * @return
+	 */
+	public Gene getGene() {
+		return gene;
 	}
 	
 	/**
@@ -510,7 +534,6 @@ public class VariantRec {
 		
 	}
 	
-	//private final PositionComparator posComparator =  new PositionComparator();
 	
 	//A few oft-used property / annotation keys
 	public static final String EFFECT_PREDICTION = "effect.prediction";
@@ -539,15 +562,7 @@ public class VariantRec {
 	public static final String altB = "altB"; //Alternate allele in other pool when performing intersections
 	public static final String RSNUM = "rsnum"; // rs# from dbSNP
 	public static final String OMIM_ID = "omim.id";
-	public static final String GENE_RELEVANCE = "relevance.score";
-	//public static final String GENE_SUMMARY = "ncbi.summary";
-	public static final String GO_FUNCTION = "go.function";
-	public static final String GO_PROCESS = "go.process";
-	public static final String GO_COMPONENT = "go.component";
-	public static final String GO_SCORE = "go.score";
-	public static final String GO_HITS = "go.hits";
 	public static final String GO_EFFECT_PROD = "go.effect.prod";
-	public static final String SUMMARY_SCORE = "summary.score";
 	public static final String GENOTYPE_QUALITY = "genotype.quality";
 	public static final String SOURCE = "source.file";
 	public static final String VAR_DEPTH = "var.depth";
@@ -556,16 +571,11 @@ public class VariantRec {
 	public static final String VQSR = "vqsr.score";
 	public static final String EXOMES_FREQ = "exomes5400.frequency";
 	public static final String HGMD_INFO = "hgmd.info";
-	public static final String INTERACTION_SCORE = "interaction.score";
-	public static final String PUBMED_SCORE = "pubmed.score";
-	public static final String PUBMED_HIT = "pubmed.hit";
-	public static final String SAMPLE_COUNT = "sample.count";
+	public static final String SAMPLE_COUNT = "sample.count";	
+	public static final String EFFECT_RELEVANCE_PRODUCT = "effect.rel.product";
 	
-	public static final String DBNSFP_FUNCTIONDESC = "dbnsfp.function.desc";
-	public static final String DBNSFP_DISEASEDESC = "dbnsfp.disease.desc";
-	public static final String DBNSFP_MIMDISEASE = "dbnsfp.mim.disease";
-	public static final String DBNSFPGENE_SCORE = "dbnsfp.score";
-	
+	public static final String JACKKNIFE_SCORE = "jkscores";
+	public static final String JACKKNIFE_RANKS = "jkrank";
 	
 }
 

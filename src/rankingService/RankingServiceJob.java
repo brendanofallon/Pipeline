@@ -8,11 +8,11 @@ import javax.swing.SwingWorker;
 
 import operator.Operator;
 import operator.annovar.GeneAnnotator;
+import operator.gene.GOTermRanker;
+import operator.gene.InteractionRanker;
+import operator.gene.PubmedRanker;
 import operator.variant.DBNSFPAnnotator;
-import operator.variant.GOTermRanker;
 import operator.variant.GeneSummaryRanker;
-import operator.variant.InteractionRanker;
-import operator.variant.PubmedRanker;
 import pipeline.Pipeline;
 import buffer.CSVFile;
 import buffer.variant.VariantPool;

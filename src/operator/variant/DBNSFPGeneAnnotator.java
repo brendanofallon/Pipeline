@@ -1,5 +1,7 @@
 package operator.variant;
 
+import gene.Gene;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -44,9 +46,9 @@ public class DBNSFPGeneAnnotator extends Annotator {
 		if (info == null)
 			return;
 		
-		var.addAnnotation(VariantRec.DBNSFP_DISEASEDESC, info.diseaseDesc);
-		var.addAnnotation(VariantRec.DBNSFP_FUNCTIONDESC, info.functionDesc);
-		var.addAnnotation(VariantRec.DBNSFP_MIMDISEASE, info.mimDisease);
+		var.addAnnotation(Gene.DBNSFP_DISEASEDESC, info.diseaseDesc);
+		var.addAnnotation(Gene.DBNSFP_FUNCTIONDESC, info.functionDesc);
+		var.addAnnotation(Gene.DBNSFP_MIMDISEASE, info.mimDisease);
 		
 	}
 }
