@@ -39,15 +39,6 @@
 	<VariantPool />
 </GeneAnnotate>
 
-<FPAnnotate class="operator.variant.FPComputer">
-  <VariantPool />
-</FPAnnotate>
-
-<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator" >
- <VariantPool />
-</dbNSFPAnnotate>
-
-
 <!--  Do some filtering of the variants -->
 <VarFilter class="operator.variant.VariantMultiFilter" pop.freq.cutoff="${POPFREQ}" inc.dbsnp="${INCDBSNP}" var.depth.cutoff="${VARDEPTH}" var.freq.cutoff="${VARFREQ}" depth.cutoff="${DEPTH}" zygosity="${ZYGOSITY}">
  <input>
@@ -58,61 +49,74 @@
  </output>   
 </VarFilter>
 
+<VarsToGenes class="operator.gene.GeneListFromVariants">
+ 	<passingVariants />
+	<Genes class="buffer.GeneList" />
+</VarsToGenes>
+
+
+<GeneSummaryAnnotate class="operator.gene.NCBISummaryAnnotator" gene.info.path="/usr/share/tomcat6/webapps/VarRanker/resources/Homo_sapiens.gene_info">
+  <Genes />
+</GeneSummaryAnnotate>
+
+<SummaryRank class="operator.gene.GeneSummaryRanker" no.downloads="true" >
+        <Genes />
+        <rankedSummaryTerms />
+</SummaryRank>
+
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+ <VariantPool />
+</dbNSFPAnnotate>
 
 <EffectPred class="operator.annovar.EffectPredictionAnnotator">
  <VariantPool />
 </EffectPred>
 
-<GOAnnotate class="operator.annovar.GOAnnotator" >
-  <passingVariants />
+
+
+
+<GOAnnotate class="operator.gene.GoTermAnnotator" >
+  <Genes />
 </GOAnnotate>
 
-<GoRank class="operator.variant.GOTermRanker">
- <passingVariants />
+<GoRank class="operator.gene.GOTermRanker">
+ <Genes />
  <GOTermsList />
 </GoRank>
 
-<SummaryRank class="operator.variant.GeneSummaryRanker" gene.info.path="/usr/share/tomcat6/webapps/VarRanker/resources/Homo_sapiens.gene_info">
-	<passingVariants />
-	<rankedSummaryTerms />
-</SummaryRank>
-
-
-<InteractionRank class="operator.variant.InteractionRanker" source="${SOURCEGENES}">
-  <passingVariants />
-  <InteractionMatrix />
-</InteractionRank>
-
-
-<PubmedRank class="operator.variant.PubmedRanker" gene.info.path="/usr/share/tomcat6/webapps/VarRanker/resources/Homo_sapiens.gene_info" pubmed.path="/usr/share/tomcat6/webapps/VarRanker/resources/gene2pubmed_human">
-  <passingVariants />
+<PubmedRank class="operator.gene.PubmedRanker" no.downloads="true" 
+    	gene.info.path="/usr/share/tomcat6/webapps/VarRanker/resources/Homo_sapiens.gene_info"
+    	pubmed.path="/usr/share/tomcat6/webapps/VarRanker/resources/gene2pubmed_human">
+  <Genes />
   <rankedSummaryTerms />
 </PubmedRank>
 
 
+<InteractionRank class="operator.gene.InteractionRanker" source="${SOURCEGENES}">
+  <Genes />
+  <InteractionMatrix />
+</InteractionRank>
 
-<Analysis class="operator.AnalysisFilter">
- <input>
-   <passingVariants />
-   <genesOfInterest />
- </input>
- <output>
-  <filteredVariants class="buffer.variant.VariantPool" />
- </output>
-</Analysis>
+<FinalRanker class="operator.GeneEffectRanker">
+  <Genes />
+  <passingVariants />
+</FinalRanker>
 
 <EverythingToFileNormal class="operator.variant.ExcelWriter">
+   <Genes />
   <VariantPool />
   <CSVFileAllNormal class="buffer.CSVFile" filename="${PREFIX}.normal.csv" />
 </EverythingToFileNormal>
 
 <EverythingToFile class="rankingService.ResultsWriter">
+  <Genes />
   <VariantPool />
   <CSVFileAll class="buffer.CSVFile" filename="${PREFIX}.all.csv" />
 </EverythingToFile>
 
 <ToFile class="rankingService.ResultsWriter">
-	<filteredVariants />
+    <Genes />
+	<passingVariants />
 	<CSVFile class="buffer.CSVFile" filename="${PREFIX}.analysis.csv" />
 </ToFile>
 

@@ -1,13 +1,20 @@
-package util;
+package util.bamreading;
 
 import java.io.File;
 import java.util.ArrayDeque;
+import java.util.Iterator;
 
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileReader.ValidationStringency;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 
+/**
+ * Not really a window, a collections of SAMRecords that covers a particular spot
+ * and which can be moved in one direction
+ * @author brendan
+ *
+ */
 public class BamWindow {
 
 	final File bamFile;
@@ -16,8 +23,8 @@ public class BamWindow {
 	private SAMRecord nextRecord; //The next record to be added to the window, may be null if there are no more
 	
 	private String currentContig = null;
-	private int currentPos = -1;
-	final ArrayDeque<SAMRecord> records = new ArrayDeque<SAMRecord>(1024);
+	private int currentPos = -1; //In reference coordinates
+	final ArrayDeque<MappedRead> records = new ArrayDeque<MappedRead>(1024);
 	
 	public BamWindow(File bamFile) {
 		this.bamFile = bamFile;
@@ -33,21 +40,39 @@ public class BamWindow {
 		return currentPos;
 	}
 	
-	public int getCoverage() {
+	/**
+	 * Return total number of reads at the current position
+	 * @return
+	 */
+	public int size() {
 		//number of records on current position
 		return records.size();
 	}
 	
+	/**
+	 * Return the mean inferred insertion size of all records in this window
+	 * @return
+	 */
 	public double meanInsertSize() {
 		double sum = 0;
-		for(SAMRecord rec : records) {
-			sum += Math.abs(rec.getInferredInsertSize());
+		for(MappedRead rec : records) {
+			sum += Math.abs(rec.getRecord().getInferredInsertSize());
 		}
 		return sum / (double)records.size();
 	}
 	
+	/**
+	 * Obtain an interator for the SAMRecords at the current position
+	 * @return
+	 */
+	public Iterator<MappedRead> getIterator() {
+		return records.iterator();
+	}
 	
-	
+	/**
+	 * Advance the current position by the given number of bases
+	 * @param bases
+	 */
 	public void advanceBy(int bases) {
 		int newTarget = currentPos + bases;
 		advanceTo(currentContig, newTarget);
@@ -61,30 +86,23 @@ public class BamWindow {
 		shrinkTrailingEdge();
 		while(nextRecord != null && nextRecord.getAlignmentStart() <= pos) {
 			//System.out.println("Expanding, next record start is  " + nextRecord.getAlignmentStart() );
-			step();
+			expand();
+			shrinkTrailingEdge();
 		}
 	}
 	
 	public int getLeadingEdgePos() {
-		return records.getFirst().getAlignmentEnd();
+		return records.getFirst().getRecord().getAlignmentEnd();
 	}
 	
 	public int getTrailingEdgePos() {
-		return records.getLast().getAlignmentStart();
+		return records.getLast().getRecord().getAlignmentStart();
 	}
 	
-	public SAMRecord getTrailingRecord() {
+	public MappedRead getTrailingRecord() {
 		if (records.size()==0)
 			return null;
 		return records.getLast();
-	}
-
-	/**
-	 * Identical to expand() followed by shrinkTrailingEdge()
-	 */
-	private void step() {
-		expand();
-		shrinkTrailingEdge();
 	}
 	
 	/**
@@ -95,7 +113,7 @@ public class BamWindow {
 			return;
 		
 		//System.out.println("Pushing record starting at : " + nextRecord.getAlignmentStart());
-		records.push(nextRecord);
+		records.push(new MappedRead(nextRecord));
 		
 		//Find next suitable record
 		nextRecord = recordIt.next();
@@ -111,11 +129,12 @@ public class BamWindow {
 	 * Remove from queue those reads whose right edge is less than the current pos
 	 */
 	private void shrinkTrailingEdge() {
-		SAMRecord trailingRecord = getTrailingRecord();
+		MappedRead trailingRecord = getTrailingRecord();
 		
-		while(trailingRecord != null && (trailingRecord.getAlignmentStart() + trailingRecord.getReadLength() < currentPos)) {
-			SAMRecord removed = records.pollLast();
-			//System.out.println("Trimming record starting at : " + removed.getAlignmentStart() + "-" + (removed.getAlignmentStart()+removed.getReadLength()));
+		while(trailingRecord != null && 
+				(trailingRecord.getRecord().getAlignmentStart() + trailingRecord.getRecord().getReadLength() < currentPos)) {
+			MappedRead removed = records.pollLast();
+			//System.out.println("Trimming record starting at : " + removed.getRecord().getAlignmentStart() + "-" + (removed.getRecord().getAlignmentStart()+removed.getRecord().getReadLength()));
 			trailingRecord = getTrailingRecord();
 		}
 	}

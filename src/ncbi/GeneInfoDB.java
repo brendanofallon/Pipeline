@@ -150,7 +150,7 @@ public class GeneInfoDB {
 			String[] toks = line.split("\t");
 			String id = toks[1];
 			String symbol = toks[2];
-			String[] synonyms = toks[4].split("|");
+			String[] synonyms = toks[4].split("\\|");
 			
 			GeneInfo rec = new GeneInfo();
 
@@ -164,10 +164,10 @@ public class GeneInfoDB {
 		System.out.println("Built gene info db with " + map.size() + " elements");
 	}
 	
-	class GeneInfo {
-		String symbol;
-		String id;
-		String[] synonyms;		
+	public class GeneInfo {
+		public String symbol;
+		public String id;
+		public String[] synonyms;		
 	}
 	
 }

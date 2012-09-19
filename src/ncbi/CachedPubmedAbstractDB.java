@@ -16,8 +16,6 @@ import java.util.logging.Logger;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import ncbi.PubMedFetcher.XMLParseException;
-
 import org.xml.sax.SAXException;
 
 import pipeline.Pipeline;
@@ -137,7 +135,7 @@ public class CachedPubmedAbstractDB {
 		}
 
 		
-		if (missesSinceLastWrite > 20 && (!disableCacheWrites)) {
+		if (missesSinceLastWrite > 200 && (!disableCacheWrites)) {
 			try {
 				writeMapToFile();
 			} catch (IOException e) {
@@ -221,7 +219,7 @@ public class CachedPubmedAbstractDB {
 
 				map.put(pubmedID, rec);
 				missesSinceLastWrite++;
-				if (missesSinceLastWrite > 20)
+				if (missesSinceLastWrite > 100)
 					writeMapToFile();
 				return rec;
 			} catch (Exception e) {

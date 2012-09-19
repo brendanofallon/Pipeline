@@ -1,37 +1,71 @@
 package operator.variant;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+import gene.Gene;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.w3c.dom.Element;
+import ncbi.GeneInfoDB;
+import operator.OperationFailedException;
+import operator.Operator;
+
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import buffer.CSVFile;
-import buffer.FileBuffer;
-import buffer.ReferenceFile;
-import buffer.variant.VariantPool;
-import buffer.variant.GenePool;
-import buffer.variant.VariantFilter;
-import buffer.variant.VariantRec;
-
-import operator.IOOperator;
-import operator.OperationFailedException;
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
+import buffer.GeneList;
+import buffer.variant.GenePool;
+import buffer.variant.VariantFilter;
+import buffer.variant.VariantPool;
+import buffer.variant.VariantRec;
 
-public class CompoundHetFinder extends IOOperator {
+public class CompoundHetFinder extends Operator {
 
 	private VariantPool kidPool = null;
 	private VariantPool parent1Pool = null;
 	private VariantPool parent2Pool = null;
 	
-	//User to filter input variant pools for nonsynonymous variants only
-	private static VariantFilter nonSynFilter = new NonSynFilter();
+	GeneList genes = null;
+	
+	
+	//User to filter input variant pools for interesting variants only
+	private static VariantFilter nonSynFilter = new VariantFilter() {
+		public boolean passes(VariantRec var) {
+			String varType = var.getAnnotation(VariantRec.VARIANT_TYPE);
+			if (varType != null) {
+				if (varType.contains("splic"))
+					return true;
+				if (varType.contains("intronic"))
+					return false;
+				if (varType.contains("intergenic"))
+					return false;
+			}
+			
+			String exonFunc = var.getAnnotation(VariantRec.EXON_FUNCTION);
+			if (exonFunc != null) {
+				if (exonFunc.contains("nonsynon"))
+					return true;
+				if (exonFunc.contains("delet")) {
+					return true;
+				}
+				if (exonFunc.contains("insert")) {
+					return true;
+				}
+				if (exonFunc.contains("stopgain")) {
+					return true;
+				}
+				if (exonFunc.contains("stoploss")) {
+					return true;
+				}
+			}
+			
+			return false;
+		}
+	};
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -39,20 +73,40 @@ public class CompoundHetFinder extends IOOperator {
 
 		
 		logger.info("CompoundHetFinder : Assuming " + kidPool.getObjectLabel() + " contains offspring variants \n " + parent1Pool.getObjectLabel() + " contains parent 1 variants \n " + parent2Pool.getObjectLabel() + " contains parent 2 variants");
-	
-		File outputFile = outputBuffers.get(0).getFile();
-		try {
-			PrintStream outputStream = new PrintStream(new FileOutputStream(outputFile));
+
+		
+		List<CompoundHetHit> hits = computeCompoundHets(kidPool, parent1Pool, parent2Pool, genes);
 			
-			computeCompoundHets(kidPool, parent1Pool, parent2Pool, outputStream);
-			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			throw new OperationFailedException(e.getMessage(), this);
+		Collections.sort(hits, new HitRankComparator());
+		
+		int count = 0;
+		for(CompoundHetHit hit : hits) {
+			Gene g = hit.gene;
+			Double score = g.getProperty(Gene.GENE_RELEVANCE);
+			if (score != null && score > 0) {
+				count++;
+				
+			}
 		}
 		
+		if (count == 0) {
+			System.out.println("No scores found in any compound het gene");
+		}
 		
-		
+		for(CompoundHetHit hit : hits) {
+			Gene g = hit.gene;
+			if (g.getProperty(Gene.GENE_RELEVANCE) != null && g.getProperty(Gene.GENE_RELEVANCE)>0) {
+				System.out.print("\n\nGene : " + g.getName() + " score: " + g.getProperty(Gene.GENE_RELEVANCE) + "\n");
+				System.out.println("\t Variant 1:\t" + hit.kidVar1.getAnnotation(VariantRec.PDOT) + "\t (" + hit.kidVar1.getAnnotation(VariantRec.NM_NUMBER) + ":" + hit.kidVar1.getAnnotation(VariantRec.CDOT) + "   " + hit.kidVar1.getContig() + ":" + hit.kidVar1.getStart() + ")");
+				System.out.println("\t Variant 2:\t" + hit.kidVar2.getAnnotation(VariantRec.PDOT) + "\t (" + hit.kidVar2.getAnnotation(VariantRec.NM_NUMBER) + ":" + hit.kidVar2.getAnnotation(VariantRec.CDOT) + "   " + hit.kidVar2.getContig() + ":" + hit.kidVar2.getStart() + ")");
+				System.out.println("\t Disease:\t" + g.getAnnotation(Gene.DBNSFP_DISEASEDESC) );
+				System.out.println("\t OMIM #s:\t" + g.getAnnotation(Gene.DBNSFP_MIMDISEASE) );
+				System.out.println("\t    HGMD:\t" + g.getAnnotation(Gene.HGMD_INFO) );
+				System.out.println("\t Summary:\t" + g.getAnnotation(Gene.SUMMARY) );
+				System.out.println("\t  Pubmed:\t" + g.getAnnotation(Gene.PUBMED_HIT) );
+			}
+			
+		}		
 	}
 
 	/**
@@ -62,12 +116,16 @@ public class CompoundHetFinder extends IOOperator {
 	 * @param parent2Vars
 	 * @param outputStream
 	 */
-	public static void computeCompoundHets(VariantPool kidVars,
+	public static List<CompoundHetHit> computeCompoundHets(VariantPool kidVars,
 			VariantPool parent1Vars, 
 			VariantPool parent2Vars,
-			PrintStream outputStream) {
+			GeneList genes) {
 
 
+		GeneInfoDB geneDB = GeneInfoDB.getDB();
+		
+		List<CompoundHetHit> hits = new ArrayList<CompoundHetHit>();
+		
 		GenePool kidGenes = new GenePool(kidVars.filterPool( nonSynFilter ));
 		GenePool par1Genes = new GenePool(parent1Vars.filterPool( nonSynFilter ));
 		GenePool par2Genes = new GenePool(parent2Vars.filterPool( nonSynFilter ));
@@ -77,17 +135,29 @@ public class CompoundHetFinder extends IOOperator {
 			List<VariantRec> par1List = par1Genes.getVariantsForGene(gene);
 			List<VariantRec> par2List = par2Genes.getVariantsForGene(gene);
 
-			boolean isCompoundHet = hasCompoundHet(kidList, par1List, par2List);
+			CompoundHetHit hit = hasCompoundHet(kidList, par1List, par2List);
 
-			if (isCompoundHet) {
-				outputStream.println("Gene : " + gene);
-				outputStream.println("Kid variants: ");
-				for(VariantRec rec : kidList) {
-					outputStream.println( rec.toSimpleString() + "\t" + rec.getPropertyOrAnnotation(VariantRec.VARIANT_TYPE) + "\t" + rec.getPropertyOrAnnotation(VariantRec.EXON_FUNCTION) + "\t" + rec.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) );
+			if (hit != null) {
+				hit.gene = genes.getGeneByName( gene );
+				if ( hit.gene == null) {
+					System.err.println("Hmm, could not find gene for name : " + gene);
+					String synonym = geneDB.symbolForSynonym(gene);
+					if (synonym != null) {
+						System.out.println("Found synonym for gene :" + gene + " -> " + synonym);
+						hit.gene = genes.getGeneByName(synonym);
+					}
+					else {
+						System.out.println("No synonym for gene :" + gene + " :(");
+					}
 				}
-
+				else {
+					hits.add(hit);
+				}
+				
 			}
 		}
+		
+		return hits;
 	}
 	
 	
@@ -101,19 +171,22 @@ public class CompoundHetFinder extends IOOperator {
 	 * @param par2List
 	 * @return
 	 */
-	private static boolean hasCompoundHet(List<VariantRec> kidList,
+	private static CompoundHetHit hasCompoundHet(List<VariantRec> kidList,
 										  List<VariantRec> par1List, 
 										  List<VariantRec> par2List) {
 		
-		if (kidList == null || kidList.size() < 2) //Need at least two hets in kid list
-			return false;
+		if (kidList == null || kidList.size() < 2 || kidList.size()>8) //Need at least two hets in kid list
+			return null;
 		if (par1List == null || par1List.size()==0)
-			return false;
+			return null;
 		if (par2List == null || par2List.size()==0)
-			return false;
+			return null;
 		
 		boolean hasPar1Het = false; //True if any kid var is het and also het in par 1 and absent par2
 		boolean hasPar2Het = false; 
+		
+		VariantRec kidHit1 = null;
+		VariantRec kidHit2 = null;
 		
 		for(VariantRec rec : kidList) {
 			if (rec.isHetero()) {
@@ -123,17 +196,28 @@ public class CompoundHetFinder extends IOOperator {
 				boolean par2Het = isHetero(rec.getStart(), par2List);
 				boolean par1Contains = contains(rec.getStart(), par1List);
 				
+				if ( (!hasPar1Het) && (par1Het && (!par2Contains))) {
+					kidHit1 = rec;
+				}
+				
+				if ( (!hasPar2Het) && (par2Het && (!par1Contains))) {
+					kidHit2 = rec;
+				}
+				
 				hasPar1Het = hasPar1Het || (par1Het && (!par2Contains));
 				hasPar2Het = hasPar2Het || (par2Het && (!par1Contains)); 
 
 				if (hasPar1Het && hasPar2Het) {
-					return true;
+					CompoundHetHit hit = new CompoundHetHit();
+					hit.kidVar1 = kidHit1;
+					hit.kidVar2 = kidHit2;
+					return hit;
 				}
 			}
 			
 		}
 		
-		return false;
+		return null;
 	}
 
 	/**
@@ -170,64 +254,42 @@ public class CompoundHetFinder extends IOOperator {
 	
 	
 	public void initialize(NodeList children) {	
-		Element inputList = getChildForLabel("input", children);
-		Element outputList = getChildForLabel("output", children);
-		
-		if (inputList != null) {
-			NodeList inputChildren = inputList.getChildNodes();
-			for(int i=0; i<inputChildren.getLength(); i++) {
-				Node iChild = inputChildren.item(i);
-				if (iChild.getNodeType() == Node.ELEMENT_NODE) {
-					PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
-					if (obj instanceof VariantPool) {
-						if (kidPool == null) {
-							kidPool = (VariantPool) obj;
+		for(int i=0; i<children.getLength(); i++) {
+			Node iChild = children.item(i);
+			if (iChild.getNodeType() == Node.ELEMENT_NODE) {
+				PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
+
+				if (obj instanceof GeneList) {
+					genes = (GeneList)obj;
+				}
+				
+				if (obj instanceof VariantPool) {
+					if (kidPool == null) {
+						kidPool = (VariantPool) obj;
+					}
+					else {
+						if (parent1Pool == null) {
+							parent1Pool = (VariantPool) obj;
 						}
 						else {
-							if (parent1Pool == null) {
-								parent1Pool = (VariantPool) obj;
+							if (parent2Pool == null) {
+								parent2Pool = (VariantPool) obj;
 							}
-							else {
-								if (parent2Pool == null) {
-									parent2Pool = (VariantPool) obj;
-								}
-								else {
-									throw new IllegalArgumentException("Found too many input variant pools (should be exactly 3)");
-								}
 							}
-						}
 					}
-					else {
-						throw new IllegalArgumentException("Found a non-variant pool input to CompoundHetFinder : " + obj.getObjectLabel());
-					}
-					
-					
 				}
+
 			}
 		}
 		
-		if (outputList != null) {
-			NodeList outputChilden = outputList.getChildNodes();
-			for(int i=0; i<outputChilden.getLength(); i++) {
-				Node iChild = outputChilden.item(i);
-				if (iChild.getNodeType() == Node.ELEMENT_NODE) {
-					PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
-					if (obj instanceof FileBuffer) {
-						addOutputBuffer( (FileBuffer)obj );
-					}
-					else {
-						throw new IllegalArgumentException("Found non-FileBuffer object in output list for Operator " + getObjectLabel());
-					}
-				}
-			}
-		}
-		
-		if ( requiresReference() ) {
-			ReferenceFile ref = (ReferenceFile) getInputBufferForClass(ReferenceFile.class);
-			if (ref == null) {
-				throw new IllegalArgumentException("Operator " + getObjectLabel() + " requires reference file, but none were found");
-			}
-		}
+		if (kidPool == null)
+			throw new IllegalArgumentException("Kid Variant pool not specified");
+		if (parent1Pool == null)
+			throw new IllegalArgumentException("Parent 1 Variant pool not specified");
+		if (parent2Pool == null)
+			throw new IllegalArgumentException("Parent 2 Variant pool not specified");
+
+
 	}
 	
 	/**
@@ -249,4 +311,35 @@ public class CompoundHetFinder extends IOOperator {
 		
 	}
 	
+	public static class CompoundHetHit {
+		Gene gene = null;
+		VariantRec kidVar1 = null;
+		VariantRec kidVar2 = null;
+	}
+	
+	class HitRankComparator implements Comparator<CompoundHetHit> {
+
+		@Override
+		public int compare(CompoundHetHit o1, CompoundHetHit o2) {
+			Gene g0 = o1.gene;
+			Gene g1 = o2.gene;
+			Double s0 = g0.getProperty(Gene.GENE_RELEVANCE);
+			Double s1 = g1.getProperty(Gene.GENE_RELEVANCE);
+			
+			if (s0 == null) {
+				System.err.println("Could not compute gene relevance score for gene " + g0.getName());
+				return 0;
+			}
+			
+			if (s1 == null) {
+				System.err.println("Could not compute gene relevance score for gene " + g1.getName());
+				return 0;
+			}
+				
+			
+			return s0 < s1 ? 1 : -1;
+			
+		}
+		
+	}
 }

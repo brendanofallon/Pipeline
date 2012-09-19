@@ -89,7 +89,7 @@ public class VariantMultiFilter extends IOOperator {
 		message = message + " Strand bias cutoff : " + strandBiasCutoff + "\n";
 		message = message + " Quality cutoff : " + qualityCutoff + "\n";
 		message = message + " Zygosities included cutoff : " + zygFilter + "\n";
-		message = message + " * Removing Intronic, Intergenic, and Synonymous variants \n";
+		//message = message + " * Removing Intronic, Intergenic, and Synonymous variants \n";
 		logger.info(message);
 		
 		
@@ -101,27 +101,27 @@ public class VariantMultiFilter extends IOOperator {
 		}
 		
 		
-		filters.add(new VariantFilter() {
-			@Override
-			public boolean passes(VariantRec rec) {
-				String varType = rec.getAnnotation(VariantRec.VARIANT_TYPE);
-				if (varType == null)
-					return true;
-				if (varType.equalsIgnoreCase("intergenic") || varType.equalsIgnoreCase("intronic")) {
-					return false;
-				}
-				
-				String func = rec.getAnnotation(VariantRec.EXON_FUNCTION);
-				if (func == null)
-					return true;
-				if (func.contains("synonymous") && (!func.contains("nonsyn"))) {
-					return false;
-				}
-				
-				return true;
-			}
-			
-		});
+//		filters.add(new VariantFilter() {
+//			@Override
+//			public boolean passes(VariantRec rec) {
+//				String varType = rec.getAnnotation(VariantRec.VARIANT_TYPE);
+//				if (varType == null)
+//					return true;
+//				if (varType.equalsIgnoreCase("intergenic") || varType.equalsIgnoreCase("intronic")) {
+//					return false;
+//				}
+//				
+//				String func = rec.getAnnotation(VariantRec.EXON_FUNCTION);
+//				if (func == null)
+//					return true;
+//				if (func.contains("synonymous") && (!func.contains("nonsyn"))) {
+//					return false;
+//				}
+//				
+//				return true;
+//			}
+//			
+//		});
 		
 		if (cg69Cutoff != null) {
 			filters.add(new VariantFilter() {

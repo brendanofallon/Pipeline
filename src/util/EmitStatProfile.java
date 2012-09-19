@@ -2,6 +2,8 @@ package util;
 
 import java.io.File;
 
+import util.bamreading.BamWindow;
+
 import math.Histogram;
 
 import buffer.BAMFile;

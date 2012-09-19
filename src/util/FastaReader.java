@@ -1,16 +1,14 @@
 package util;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Writer;
 
 
 public class FastaReader {
 	protected String currentLine = null;
-	protected Integer currentTrack = null;
+	protected String currentTrack = null;
 	protected int currentPos = -1;
 	protected int lineOffset = 0;
 	
@@ -23,27 +21,23 @@ public class FastaReader {
 			throw new IOException("First line doesn't start with >");
 		}
 		String chrStr = currentLine.trim().replace(">", "").replace("chr", "");
-		int startIndex = chrStr.indexOf(">");
-		int endIndex = chrStr.indexOf(" ");
-		Integer tr;
-
-		if (endIndex > 0)
-			tr = Integer.parseInt(chrStr.substring(startIndex+1, endIndex));
-		else 
-			tr = Integer.parseInt(chrStr);
-		currentTrack = tr;
+		int endPos = chrStr.indexOf(" ");
+		if (endPos > 0) {
+			chrStr = chrStr.substring(0, endPos);
+		}
+		
+		currentTrack = chrStr;
 		advanceLine();
 	}
 	
-	public char getBaseAt(int track, int pos) throws IOException {
+	public char getBaseAt(String track, int pos) throws IOException {
 		if (pos <= 0) {
 			throw new IllegalArgumentException("Remember, bases are ONE-INDEXED, so the first base is base #1, not 0, so please enter a pos > " + pos);
 		}
 		pos--;
-		if (track < currentTrack)
-			throw new IllegalArgumentException("Can't go back in tracks (current track is " + currentTrack + " but requested " + track + " )");
-		if (track > currentTrack)
+		if (! track.equals(currentTrack))
 			advanceToTrack(track);
+		
 		if (pos < currentPos) {
 			throw new IllegalArgumentException("Can't go backwards, current pos is : " + currentPos + " but requested pos : " + pos);
 		}
@@ -56,7 +50,7 @@ public class FastaReader {
 	 * Get number of current track
 	 * @return
 	 */
-	public int getCurrentTrack() {
+	public String getCurrentTrack() {
 		return currentTrack;
 	}
 	
@@ -85,7 +79,7 @@ public class FastaReader {
 		if (currentLine ==null) 
 			throw new IllegalArgumentException("line is null, end of file probably reached");
 		
-		int currentTrack= getCurrentTrack();
+		String currentTrack= getCurrentTrack();
 		
 		int toEndOfLine = currentLine.length() - lineOffset -1; //Number of bases to end of current line, 0 means lineOffset is pointing at last character in line
 		
@@ -94,7 +88,7 @@ public class FastaReader {
 			if (currentLine ==null) {
 				return;
 			}
-			if (currentTrack != getCurrentTrack())
+			if (! currentTrack.equals( getCurrentTrack()))
 				throw new IllegalArgumentException("Advance went past end of track " + currentTrack);
 			toEndOfLine = currentLine.length() - lineOffset-1; 
 			toAdvance -= advanced;
@@ -127,9 +121,9 @@ public class FastaReader {
 	 * @throws IOException 
 	 */
 	public void emitBasesTo(int endPos, Writer out) throws IOException {
-		int startTrack = getCurrentTrack();
+		String startTrack = getCurrentTrack();
 		while (currentPos < endPos) {
-			if (getCurrentTrack() != startTrack) {
+			if (! getCurrentTrack().equals( startTrack)) {
 				throw new IllegalArgumentException("Advanced past end of track " + startTrack);
 			}
 			//out.write((1+currentPos) + "\t" + nextPos() + "\n");
@@ -146,9 +140,9 @@ public class FastaReader {
 	 * @throws IOException
 	 */
 	public void emitBasesTo(int endPos, Writer out1, Writer out2) throws IOException {
-		int startTrack = getCurrentTrack();
+		String startTrack = getCurrentTrack();
 		while (currentPos < endPos) {
-			if (getCurrentTrack() != startTrack) {
+			if (! getCurrentTrack().equals( startTrack)) {
 				throw new IllegalArgumentException("Advanced past end of track " + startTrack);
 			}
 			//out.write((1+currentPos) + "\t" + nextPos() + "\n");
@@ -165,8 +159,8 @@ public class FastaReader {
 	 * @throws IOException
 	 */
 	public void emitBasesToContigEnd(Writer out) throws IOException {
-		int startTrack = getCurrentTrack();
-		while (getCurrentTrack() == startTrack) {
+		String startTrack = getCurrentTrack();
+		while ( getCurrentTrack().equals( startTrack)) {
 			out.write( nextPos() );
 			if (currentLine == null)
 				return;
@@ -196,45 +190,34 @@ public class FastaReader {
 	 * @param track
 	 * @throws IOException
 	 */
-	public void advanceToTrack(int track) throws IOException {
-		if (getCurrentTrack() == track)
-			return;
+	public void advanceToTrack(String track) throws IOException {
 		
-		while(currentLine != null && (! currentLine.startsWith(">"))) {
+		while(currentLine != null && (! currentTrack.equals(track))) {
+			while(currentLine != null && (! currentLine.startsWith(">"))) {
+				advanceLine();
+			}
+			
+			String chrStr = currentLine.trim().replace(">", "").replace("chr", "");
+			int endPos = chrStr.indexOf(" ");
+			if (endPos > 0) {
+				chrStr = chrStr.substring(0, endPos);
+			}
+			
+			System.out.println("Searching for contig: "+ track + ".. looking at " + chrStr);
+			
+			if (chrStr.equals(track)) {
+				currentPos=0;
+				currentTrack = track;
+				advanceLine();
+				return;
+			}	
 			advanceLine();
 		}
-		String chrStr = currentLine.replace(">chr", "");
-		int startIndex = chrStr.indexOf(">");
-		int endIndex = chrStr.indexOf(" ");
-		Integer tr;
-		if (endIndex > 0)
-			tr = Integer.parseInt(chrStr.substring(startIndex+1, endIndex));
-		else
-			tr = Integer.parseInt(chrStr);
-
-		if (chrStr.contains("X"))
-			tr = 23;
-		else {
-			if (endIndex > 0)
-				tr = Integer.parseInt(chrStr.substring(startIndex+1, endIndex));
-			else
-				tr = Integer.parseInt(chrStr);
-		}
 		
-		if (tr < track) {
-			advanceLine();
-			advanceToTrack(track);
-		}
 		
-		if (tr.equals(track)) {
-			currentPos=0;
-			currentTrack = track;
-			advanceLine();
-			return;
-		}
 		
-		if (tr > track) {
-			System.err.println("Oops, somehow missed track " + track + " maybe tracks are not in order?");
+		if (currentLine == null) {
+			System.err.println("Oops, somehow missed contig " + track + " maybe contigs are not in order?");
 			throw new IOException("Bad tracks");
 		}
 	}

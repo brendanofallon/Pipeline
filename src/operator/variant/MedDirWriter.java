@@ -1,5 +1,7 @@
 package operator.variant;
 
+import gene.Gene;
+
 import java.io.PrintStream;
 
 import buffer.variant.VariantRec;
@@ -22,16 +24,13 @@ public class MedDirWriter extends VariantPoolWriter {
 		 VariantRec.RSNUM, 
 		 VariantRec.OMIM_ID,
 		 VariantRec.HGMD_INFO,
-		 VariantRec.DBNSFP_MIMDISEASE,
 		 VariantRec.SIFT_SCORE, 
 		 VariantRec.POLYPHEN_SCORE, 
 		 VariantRec.PHYLOP_SCORE, 
 		 VariantRec.MT_SCORE,
 		 VariantRec.GERP_SCORE,
 		 VariantRec.LRT_SCORE,
-		 VariantRec.SIPHY_SCORE,
-		 VariantRec.DBNSFP_DISEASEDESC,
-		 VariantRec.DBNSFP_FUNCTIONDESC};
+		 VariantRec.SIPHY_SCORE};
 
 	@Override
 	public void writeHeader(PrintStream outputStream) {
@@ -41,6 +40,9 @@ public class MedDirWriter extends VariantPoolWriter {
 			builder.append("\t " + keys[i]);
 		}
 
+		if (genes == null)
+			outputStream.println( "No gene information supplied, some annotations will not be written");
+		
 		outputStream.println(builder.toString());
 	}
 
@@ -53,7 +55,22 @@ public class MedDirWriter extends VariantPoolWriter {
 			builder.append("\t" + val);
 		}
 
-
+		Gene g = rec.getGene();
+		if (g == null && genes != null) {
+			String geneName = rec.getAnnotation(VariantRec.GENE_NAME);
+			if (geneName != null)
+				g = genes.getGeneByName(geneName);
+		}
+		
+		if (g == null) {
+			builder.append("\n\t (no gene information found)");
+		}
+		else {
+			builder.append("\n\t Disease associations:\t" + rec.getGene().getAnnotation(Gene.DBNSFP_DISEASEDESC));
+			builder.append("\n\t OMIM #s:\t" + rec.getGene().getAnnotation(Gene.DBNSFP_MIMDISEASE));
+			builder.append("\n\t Summary:\t" + rec.getGene().getAnnotation(Gene.SUMMARY));
+		}
 		outputStream.println(builder.toString());
 	}
 }
+

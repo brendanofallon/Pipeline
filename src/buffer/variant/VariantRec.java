@@ -428,51 +428,7 @@ public class VariantRec {
 //	}
 	
 	public String toString() {
-		String variantType = "-";
-		String vType = getAnnotation(VariantRec.VARIANT_TYPE);
-		if (vType != null)
-			variantType = vType;
-
-		String exFunc = "-";
-		String exType = getAnnotation(VariantRec.EXON_FUNCTION);
-		if (exType != null)
-			exFunc = exType;
-		
-		String het = "het";
-		if (! isHetero())
-			het = "hom";
-		
-		String sift = "NA";
-		Double score = getProperty(VariantRec.SIFT_SCORE);
-		if (score != null)
-			sift = "" + score;
-
-		String polyphen = "NA";
-		Double ppScore = getProperty(VariantRec.POLYPHEN_SCORE);
-		if (ppScore != null)
-			polyphen = "" + ppScore;
-		
-		String mt = "NA";
-		Double mtScore = getProperty(VariantRec.MT_SCORE);
-		if (mtScore != null)
-			mt = "" + mtScore;
-
-		String phylopStr = "NA";
-		Double phylop = getProperty(VariantRec.POP_FREQUENCY);
-		if (phylop != null)
-			phylopStr = "" + phylop;
-		
-		String freq = "0.0";
-		Double pFreq = getProperty(VariantRec.POP_FREQUENCY);
-		if (pFreq != null)
-			freq = "" + pFreq;
-		
-		String gene = getAnnotation(VariantRec.GENE_NAME);
-		if (gene == null)
-			gene = "-";
-		
-		return contig + "\t" + start + "\t" + end + "\t" + ref + "\t" + alt;
-		//return contig + "\t" + start + "\t" + end + "\t" + gene + "\t" + variantType + "\t" + exFunc + "\t" + freq + "\t" + het + "\t" + qual + "\t" + sift + "\t" + polyphen + "\t" + mt + "\t" + phylopStr;  
+		return toSimpleString();
 	}
 	
 	/**
@@ -573,7 +529,7 @@ public class VariantRec {
 	public static final String HGMD_INFO = "hgmd.info";
 	public static final String SAMPLE_COUNT = "sample.count";	
 	public static final String EFFECT_RELEVANCE_PRODUCT = "effect.rel.product";
-	
+	public static final String HGMD_HIT = "hgmd.hit";
 	public static final String JACKKNIFE_SCORE = "jkscores";
 	public static final String JACKKNIFE_RANKS = "jkrank";
 	

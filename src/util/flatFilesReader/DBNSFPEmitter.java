@@ -31,11 +31,15 @@ public class DBNSFPEmitter {
 				}
 
 				String popStr = reader.getString(DBNSFPReader.TKG_AMR);
+				String mtStr = reader.getString(DBNSFPReader.MT);
 				if (! popStr.equals(".")) {
 					Double freq = Double.parseDouble(popStr);
 					VariantRec var = new VariantRec("" + contig, curPos, curPos+1, reader.getRef(), reader.getAlt() );
 					var.addProperty(VariantRec.POP_FREQUENCY, freq);
-					writer.println(var.toSimpleString() + "\t" + freq);
+					Double mtVal = Double.NaN;
+					if (mtStr.length()>2)
+						mtVal = Double.parseDouble(mtStr);
+					writer.println(var.toSimpleString() + "\t" + freq + "\t" + mtVal);
 					
 					i = bases.length; //If we've found one for this position, skip all additional alts at this site
 				}
@@ -64,10 +68,10 @@ public class DBNSFPEmitter {
 	public static void main(String[] args) throws IOException {
 		DBNSFPReader reader = new DBNSFPReader();
 		
-		PrintWriter writer = new PrintWriter(new FileWriter("/home/brendan/tgk-vars.amr.csv"));
+		PrintWriter writer = new PrintWriter(new FileWriter("/home/brendan/top50data.csv"));
 		
-		writer.println(VariantRec.getSimpleHeader() + "\tpop.freq");
-		String infilePath = "/home/brendan/MORE_DATA/superpanel/vascmalprobes.csv";
+		writer.println(VariantRec.getSimpleHeader() + "\tamr.freq\tmt.score");
+		String infilePath = "/home/brendan/MORE_DATA/HHT/top50.bed";
 		File inFile = new File(infilePath);
 		BufferedReader fileReader = new BufferedReader(new FileReader(inFile));
 		String line = fileReader.readLine();
@@ -78,10 +82,12 @@ public class DBNSFPEmitter {
 			}
 			String[] toks = line.split("\t");
 			String contig = toks[0];
-			Integer startPos = Integer.parseInt(toks[1]);
-			//Integer endPos = Integer.parseInt(toks[2]);
+			Integer startPos = Integer.parseInt(toks[1].replace("chr", ""));
+			Integer endPos = Integer.parseInt(toks[2]);
 			//System.out.println("Reading region chr" + contig + ":" + startPos );
-			emitCloseGene(reader, writer, "" + contig, startPos);
+			
+			emitRegion(reader, writer, contig, startPos, endPos);
+			//emitCloseGene(reader, writer, "" + contig, startPos);
 			line = fileReader.readLine();
 		}
 		writer.flush();
@@ -92,4 +98,5 @@ public class DBNSFPEmitter {
 	
 	public static final char[] bases = new char[]{'A', 'C', 'G', 'T'};
 }
+
 

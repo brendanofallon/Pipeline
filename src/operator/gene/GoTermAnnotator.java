@@ -1,43 +1,41 @@
-package operator.annovar;
+package operator.gene;
+
+import gene.Gene;
 
 import java.util.List;
 
-import buffer.variant.VariantPool;
-import buffer.variant.VariantRec;
 import operator.OperationFailedException;
+import operator.annovar.GOTerms;
 
-public class GOAnnotator extends Annotator {
+/**
+ * Adds GO-term annotations to gene
+ * @author brendan
+ *
+ */
+public class GoTermAnnotator extends AbstractGeneAnnotator {
 
 	GOTerms goTerms = null;
 	
-	/**
-	 * Set the variant pool to be annotated
-	 * @param pool
-	 */
-	public void setVariantPool(VariantPool pool) {
-		this.variants = pool;
-	}
-
 	@Override
-	public void annotateVariant(VariantRec rec) {
+	public void annotateGene(Gene g) throws OperationFailedException {
 		if (goTerms == null)
 			goTerms = new GOTerms(getObjectHandler());
 		
-		String gene = rec.getAnnotation(VariantRec.GENE_NAME);
+		String gene = g.getName();
 		if (gene == null) {
 			return;
 		}
 		List<String> functions = goTerms.getFunctionsForGene(gene);
 		String funcStr = combineStrings(functions);
-		rec.addAnnotation(VariantRec.GO_FUNCTION, funcStr);
+		g.addAnnotation(Gene.GO_FUNCTION, funcStr);
 		
 		List<String> procs = goTerms.getProcessesForGene(gene);
 		String procsStr = combineStrings(procs);
-		rec.addAnnotation(VariantRec.GO_PROCESS, procsStr);
+		g.addAnnotation(Gene.GO_PROCESS, procsStr);
 		
 		List<String> comps = goTerms.getComponentsForGene(gene);
 		String compsStr = combineStrings(comps);
-		rec.addAnnotation(VariantRec.GO_COMPONENT, compsStr);
+		g.addAnnotation(Gene.GO_COMPONENT, compsStr);
 	}
 
 	private static String combineStrings(List<String> strs) {
@@ -52,7 +50,5 @@ public class GOAnnotator extends Annotator {
 			return strB.toString();
 		}
 	}
-
-
 
 }

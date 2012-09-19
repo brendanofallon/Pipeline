@@ -1,5 +1,7 @@
 package buffer.variant;
 
+import gene.Gene;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -314,7 +316,12 @@ public class GenePool extends Operator {
 	public static double computeMeanProd(List<VariantRec> vars) {
 		double sum = 0;
 		for(VariantRec rec : vars) {
-			Double prod = rec.getProperty(VariantRec.GO_EFFECT_PROD);
+			
+			//Uncomment me for normal, sort-by-variant-effect behavior
+			//Double prod = rec.getProperty(VariantRec.GO_EFFECT_PROD);
+			
+			//Hack for compatibility with old, variant-only annotation scheme
+			Double prod = rec.getProperty(Gene.GENE_RELEVANCE);
 			if (prod != null) {
 				if (prod >= 0) //Treat negative vals as equal to zero so means dont get very skewed by some low-effect vars
 					sum += prod;
@@ -347,3 +354,4 @@ public class GenePool extends Operator {
 	public static final String FILENAME = "filename";
 	private File geneListFile = null;
 }
+

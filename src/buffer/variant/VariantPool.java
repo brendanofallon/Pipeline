@@ -270,7 +270,7 @@ public class VariantPool extends Operator  {
 	/**
 	 * Returns the result of binary search for a record at the given position. If the 
 	 * record is found the result will be the index of the found record. If no record is
-	 * found the result is -1*insertionPoint -1 (ala Collectionc.binarySearch), where
+	 * found the result is -1*insertionPoint -1 (ala Collections.binarySearch), where
 	 * insertionPoint is where the record would be inserted if it was added 
 	 * @param contig
 	 * @param pos
@@ -676,6 +676,28 @@ public class VariantPool extends Operator  {
 		List<VariantRec> contigVars = vars.get( rec.getContig() ); 
 		Collections.sort(contigVars, VariantRec.getPositionComparator());
 	}
+	
+	/**
+	 * Add all variants from given pool to this pool. Existing records are not replaced by 
+	 * new records.
+	 * @param otherPool
+	 */
+//	public void mergePool(VariantPool otherPool) {
+//		for(String contig : otherPool.getContigs()) {
+//			
+//			List<VariantRec> existingContig = this.getVariantsForContig(contig);
+//			
+//			for(VariantRec var : otherPool.getVariantsForContig(contig)) {
+//				int insertionPoint = this.findInsertionPosition(contig, var.getStart());
+//				if (insertionPoint < 0) {
+//					int actualPoint = -1*insertionPoint - 1;
+//					existingContig.add(actualPoint, var);
+//				}
+//					
+//				
+//			}
+//		}
+//	}
 	
 	/**
 	 * Add a new record to the pool but do not sort the contig it was added to. This is 

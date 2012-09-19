@@ -1,5 +1,7 @@
 package util;
 
+import gene.Gene;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -14,7 +16,6 @@ import math.LazyHistogram;
 import operator.qc.BamMetrics;
 import operator.variant.CompareVCF;
 import operator.variant.CompoundHetFinder;
-import operator.variant.ExcelWriter;
 import operator.variant.FPComputer;
 import util.flatFilesReader.DBNSFPReader;
 import buffer.BAMFile;
@@ -128,32 +129,16 @@ public class VarUtils {
 		}
 		
 		File kidVars = new File(args[1]);
-		if (! kidVars.exists()) {
-			System.err.println("Counld not find file " + args[1]);
-			return;
-		}
-		
 		File par1Vars = new File(args[2]);
-		if (! kidVars.exists()) {
-			System.err.println("Could not find file " + args[2]);
-			return;
-		}
-		
 		File par2Vars = new File(args[3]);
-		if (! kidVars.exists()) {
-			System.err.println("Could not find file " + args[3]);
-			return;
-		}
-		
 		
 		try {
 			VariantPool kidPool  = getPool(kidVars);
 			VariantPool par1Pool = getPool(par1Vars);
 			VariantPool par2Pool = getPool(par2Vars);
 			
-			CompoundHetFinder.computeCompoundHets(kidPool, par1Pool, par2Pool, System.out);
-			
-			
+			CompoundHetFinder.computeCompoundHets(kidPool, par1Pool, par2Pool, null);
+				
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -224,16 +209,27 @@ public class VarUtils {
 					boolean passes = true;
 					passes = var.getQuality() > 25.0;
 					
-//					String func = var.getAnnotation(VariantRec.EXON_FUNCTION); 
-//					String type = var.getAnnotation(VariantRec.VARIANT_TYPE);
+//					String func = var.getAnnotation(VariantRec.EXON_FUNCTION);
+					
+					String type = var.getAnnotation(VariantRec.VARIANT_TYPE);
+					if (type == null || (!type.contains("UTR3"))) {
+						passes = false;
+					}
+					
+					Double freq = var.getProperty(VariantRec.POP_FREQUENCY);
+					if (freq != null && freq > 0.01)
+						passes = false;
+					
 //					if (type == null || (!type.contains("exonic"))) {
 //						passes = false;
 //					}
 					
-					String gene = var.getAnnotation(VariantRec.GENE_NAME);
-					if (gene == null || (! gene.contains("MIR"))) {
-						passes = false;
-					}
+//					String gene = var.getAnnotation(VariantRec.GENE_NAME);
+//					if (gene == null || (! gene.contains("MIR"))) {
+//						passes = false;
+//					}
+					
+					
 					
 //					if (func != null && (func.contains("nonsyn") 
 //							|| func.contains("splic")
@@ -286,7 +282,7 @@ public class VarUtils {
 		annoKeys.add(VariantRec.RSNUM);
 		annoKeys.add(VariantRec.POP_FREQUENCY);
 		annoKeys.add(VariantRec.EFFECT_PREDICTION2);
-//		annoKeys.add(VariantRec.GENE_RELEVANCE);
+		annoKeys.add(Gene.GENE_RELEVANCE);
 //		annoKeys.add(VariantRec.SUMMARY_SCORE);
 //		annoKeys.add(VariantRec.PUBMED_SCORE);
 //		annoKeys.add(VariantRec.PUBMED_HIT);
@@ -1214,23 +1210,26 @@ public class VarUtils {
 			return;
 		}
 
+		int tried = 0;
+		int found = 0;
 		
 		try {
-			VariantPool vars = getPool(new File(args[1]));
+			VariantLineReader vars = getReader(args[1]);
 			
-			for(int i=2; i<args.length; i++) {
-				VariantPool varsB = getPool(new File(args[i]));
-				VariantPool intersection = (VariantPool) vars.intersect(varsB);
-				vars = intersection;
-			}
+			System.out.println(vars.getHeader().trim());
 			
-			List<String> annos = new ArrayList<String>();
-			annos.addAll(Arrays.asList(ExcelWriter.keys));
+			VariantPool bigPool = getPool(new File(args[2]));
+			do {
+				VariantRec var  = vars.toVariantRec();
+				tried++;
+				if (bigPool.findRecordNoWarn(var.getContig(), var.getStart()) != null) {
+					System.out.println(vars.getCurrentLine());
+					found++;
+				}
+			} while(vars.advanceLine());
+			
 
-			PrintStream outputStream = System.out;
-
-			vars.listAll(outputStream, annos);
-			outputStream.close();
+			System.err.println("Found " + found + " intersecting variants in pool of size " + tried);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -1258,7 +1257,7 @@ public class VarUtils {
 		
 		try {
 			VariantLineReader baseVars = getReader(args[1]);
-			System.out.println(baseVars.getHeader());
+			System.out.println(baseVars.getHeader().trim());
 			do {
 				VariantRec var = baseVars.toVariantRec();
 				
@@ -1328,7 +1327,7 @@ public class VarUtils {
 			bedFile.buildIntervalsMap();
 
 			
-			System.out.println(reader.getHeader());
+			System.out.println(reader.getHeader().trim());
 			
 			do {
 				

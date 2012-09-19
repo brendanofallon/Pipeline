@@ -5,7 +5,6 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -19,6 +18,7 @@ import org.w3c.dom.NodeList;
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
 import buffer.CSVFile;
+import buffer.GeneList;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
@@ -33,12 +33,21 @@ public abstract class VariantPoolWriter extends Operator {
 	
 	private VariantPool variants = null;
 	private CSVFile outputFile = null;
+	protected GeneList genes = null; //Optional parameter
 	
 	/**
 	 * Write a suitable header for the output file
 	 * @param outputStream
 	 */
 	public abstract void writeHeader(PrintStream outputStream);
+	
+	/**
+	 * If true, will throw an error if no GeneList provided
+	 * @return
+	 */
+	public boolean requiresGeneList() {
+		return false;
+	}
 	
 	/**
 	 * Write the given variant record to the given output stream
@@ -106,15 +115,22 @@ public abstract class VariantPoolWriter extends Operator {
 					outputFile = (CSVFile)obj;
 				}
 
+				if (obj instanceof GeneList) {
+					genes = (GeneList)obj;
+				}
 			}
 		}
 		
-		if (outputFile == null) {
-			throw new IllegalArgumentException("Output CSV file not specified");
-		}
+//		if (outputFile == null) {
+//			throw new IllegalArgumentException("Output CSV file not specified");
+//		}
 		
 		if (variants == null) {
 			throw new IllegalArgumentException("Variant pool not specified");
+		}
+		
+		if (requiresGeneList() && genes == null) {
+			throw new IllegalArgumentException("GeneList required but not provided");
 		}
 	}
 

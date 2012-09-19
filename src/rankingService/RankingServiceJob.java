@@ -10,9 +10,9 @@ import operator.Operator;
 import operator.annovar.GeneAnnotator;
 import operator.gene.GOTermRanker;
 import operator.gene.InteractionRanker;
+import operator.gene.NCBISummaryAnnotator;
 import operator.gene.PubmedRanker;
 import operator.variant.DBNSFPAnnotator;
-import operator.variant.GeneSummaryRanker;
 import pipeline.Pipeline;
 import buffer.CSVFile;
 import buffer.variant.VariantPool;
@@ -129,7 +129,7 @@ public class RankingServiceJob extends SwingWorker {
 			if (op.getClass().equals(PubmedRanker.class)) {
 				opStr = "Examining pubmed abstracts";
 			}
-			if (op.getClass().equals(GeneSummaryRanker.class)) {
+			if (op.getClass().equals(NCBISummaryAnnotator.class)) {
 				opStr = "Examining gene summaries";
 			}
 			if (op.getClass().equals(InteractionRanker.class)) {

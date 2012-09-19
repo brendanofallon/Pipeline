@@ -1,8 +1,7 @@
-package operator.annovar;
+package operator.gene;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -25,6 +24,8 @@ public class HGMDB {
 
 	protected Map<String, List<HGMDInfo>> db = new HashMap<String, List<HGMDInfo>>();
 	
+	protected Map<String, List<HGMDInfo>> geneMap = new HashMap<String, List<HGMDInfo>>();
+	
 	/**
 	 * Create the db by reading in information from the given db file
 	 * @param dbFile
@@ -37,6 +38,7 @@ public class HGMDB {
 			importFromLine(line);
 			line = reader.readLine();
 		}
+		reader.close();
 		sortAll();
 	}
 	
@@ -72,6 +74,15 @@ public class HGMDB {
 	}
 	
 	/**
+	 * Return list of all records associated with given gene name
+	 * @param geneName
+	 * @return
+	 */
+	public List<HGMDInfo> getRecordsForGene(String geneName) {
+		return geneMap.get(geneName);
+	}
+	
+	/**
 	 * Read information in this single line into the map that stores all of the data
 	 * @param line
 	 */
@@ -101,7 +112,7 @@ public class HGMDB {
 			pDot = pToks[1];
 		}
 		String gene = toks[11];
-		String condition = toks[12];
+		String condition = toks[12].replace("$$", " ").trim();
 		HGMDInfo info = new HGMDInfo();
 		info.geneName = gene;
 		info.condition = condition;
@@ -119,6 +130,12 @@ public class HGMDB {
 		}
 		list.add(info);
 		
+		List<HGMDInfo> geneList = geneMap.get(info.geneName);
+		if (geneList == null) {
+			geneList = new ArrayList<HGMDInfo>(256);
+			geneMap.put(info.geneName, geneList);
+		}
+		geneList.add(info);
 	}
 	
 	class InfoComparator implements Comparator<HGMDInfo> {
@@ -161,12 +178,12 @@ public class HGMDB {
 	 * @author brendan
 	 *
 	 */
-	class HGMDInfo {
+	public class HGMDInfo {
 		int pos; //Chromosomal position 
-		String nm;
-		String geneName;
-		String cDot;
-		String condition;
+		public String nm;
+		public String geneName;
+		public String cDot;
+		public String condition;
 		String hgmdID;
 		boolean strand;
 		
