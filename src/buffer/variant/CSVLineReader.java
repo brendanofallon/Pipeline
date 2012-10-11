@@ -95,7 +95,7 @@ public class CSVLineReader implements VariantLineReader {
 	public boolean advanceLine() throws IOException {
 		currentLine = reader.readLine();
 		//Skip zero-length lines
-		while (currentLine != null && currentLine.length()==0)
+		while (currentLine != null && currentLine.trim().length()==0)
 			currentLine = reader.readLine();
 		return currentLine != null;
 	}

@@ -2,6 +2,7 @@ package operator.variant;
 
 import gene.Gene;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -30,7 +31,7 @@ public class ClassicRecessiveFinder extends Operator {
 	private VariantPool parent2Pool = null;
 	
 	GeneList genes = null;
-	
+	DecimalFormat formatter = new DecimalFormat("0.0###");
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -56,22 +57,68 @@ public class ClassicRecessiveFinder extends Operator {
 			System.out.println("No scores found in any classic recessive gene");
 		}
 		
+		System.out.println("Gene\t cdot\t pDot \t variant.type \t coverage\t quality \t zygosity \t 1000G.frequency \t rs# \t gene.in.hgmd \t SIFT \t PolyPhen-2 \t MutationTaster \t GERP");
+		
 		for(VariantRec hit : hits) {
 			Gene g = hit.getGene();
-			if (g.getProperty(Gene.GENE_RELEVANCE) != null && g.getProperty(Gene.GENE_RELEVANCE)>5) {
-				System.out.print("\n\nGene : " + g.getName() + " score: " + g.getProperty(Gene.GENE_RELEVANCE) + "\n");
-				System.out.println("\t Variant :\t" + hit.getAnnotation(VariantRec.EXON_FUNCTION) + "   " + hit.getAnnotation(VariantRec.PDOT) + "\t (" + hit.getAnnotation(VariantRec.NM_NUMBER) + ":" + hit.getAnnotation(VariantRec.CDOT) + "   " + hit.getContig() + ":" + hit.getStart() + ")");
-				System.out.println("\t Disease:\t" + g.getAnnotation(Gene.DBNSFP_DISEASEDESC) );
-				System.out.println("\t OMIM #s:\t" + g.getAnnotation(Gene.DBNSFP_MIMDISEASE) );
-				System.out.println("\t    HGMD:\t" + g.getAnnotation(Gene.HGMD_INFO) );
-				System.out.println("\t Summary:\t" + g.getAnnotation(Gene.SUMMARY) );
-				System.out.println("\t  Pubmed:\t" + g.getAnnotation(Gene.PUBMED_HIT) );
-			}
+			//if (g.getProperty(Gene.GENE_RELEVANCE) != null && g.getProperty(Gene.GENE_RELEVANCE)>5) {
+//				System.out.print("\n\nGene : " + g.getName() + " score: " + g.getProperty(Gene.GENE_RELEVANCE) + "\n");
+//				System.out.println("\t Variant :\t" + hit.getAnnotation(VariantRec.EXON_FUNCTION) + "   " + hit.getAnnotation(VariantRec.PDOT) + "\t (" + hit.getAnnotation(VariantRec.NM_NUMBER) + ":" + hit.getAnnotation(VariantRec.CDOT) + "   " + hit.getContig() + ":" + hit.getStart() + ")");
+//				System.out.println("\t Disease:\t" + g.getAnnotation(Gene.DBNSFP_DISEASEDESC) );
+//				System.out.println("\t OMIM #s:\t" + g.getAnnotation(Gene.DBNSFP_MIMDISEASE) );
+//				System.out.println("\t    HGMD:\t" + g.getAnnotation(Gene.HGMD_INFO) );
+//				System.out.println("\t Summary:\t" + g.getAnnotation(Gene.SUMMARY) );
+//				System.out.println("\t  Pubmed:\t" + g.getAnnotation(Gene.PUBMED_HIT) );
+			//}
 			
+				String hetStr = "het";
+				if (! hit.isHetero()) {
+					hetStr = "hom";
+				}
+				String varType = hit.getAnnotation(VariantRec.VARIANT_TYPE);
+				if (varType != null && varType.contains("exonic")) {
+					varType = hit.getAnnotation(VariantRec.EXON_FUNCTION);
+				}
+				if (varType == null)
+					varType = "?";
+				
+				String cDot = hit.getAnnotation(VariantRec.CDOT);
+				String pDot = hit.getAnnotation(VariantRec.PDOT);
+		
+				Double freq = hit.getProperty(VariantRec.POP_FREQUENCY);
+				if (freq == null)
+					freq = 0.0;
+				
+				Double rel = g.getProperty(Gene.GENE_RELEVANCE);
+				if (rel == null)
+					rel = 0.0;
+				
+				String inHGMD = "no";
+				if (g.getAnnotation(Gene.HGMD_INFO) != null) {
+					inHGMD = "yes";
+				}
+				
+				String rsNum = hit.getAnnotation(VariantRec.RSNUM);
+				
+				Double depth = hit.getProperty(VariantRec.DEPTH);
+				Double qual = hit.getQuality();
+	
+				Double sift = hit.getProperty(VariantRec.SIFT_SCORE);
+				Double polyphen = hit.getProperty(VariantRec.POLYPHEN_SCORE);
+				Double mt = hit.getProperty(VariantRec.MT_SCORE);
+				Double gerp = hit.getProperty(VariantRec.GERP_SCORE);
+				
+				
+				System.out.println(g.getName() + "\t" + cDot + "\t" + pDot + "\t" + varType + "\t" + depth + "\t" + formatter.format(qual) + "\t" + hetStr + "\t" + formatter.format(freq) + "\t" + rsNum + "\t" + inHGMD + "\t" + rel + "\t" + toUserStr(sift) + "\t" + toUserStr(polyphen) + "\t" + toUserStr(mt) + "\t" + toUserStr(gerp));
 		}		
 	}
 	
-	
+	private static String toUserStr(Double val) {
+		if (val == null || Double.isNaN(val)) {
+			return "?";
+		}
+		return "" + val;
+	}
 	
 	private static List<VariantRec> findRecessiveHomos(VariantPool kidVars,
 			VariantPool p1Vars, VariantPool p2Vars, GeneList genes) {

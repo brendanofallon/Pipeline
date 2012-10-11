@@ -85,7 +85,7 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			line = reader.readLine();
 		}
 		
-		if (errorVars > totalVars*0.01) {
+		if (totalVars > 200 && (errorVars > totalVars*0.01)) {
 			for(String err : lastFewErrors) {
 				System.err.println(err);
 			}

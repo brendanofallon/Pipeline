@@ -2,16 +2,17 @@ package operator.gene;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
+
+import pipeline.Pipeline;
 
 /**
  * A class to read and store entries from the HGMD database file. The file is in a custom, BED-like format, with
@@ -40,6 +41,13 @@ public class HGMDB {
 		}
 		reader.close();
 		sortAll();
+		
+		int count = 0;
+		for(String contig : db.keySet()) {
+			count += db.get(contig).size();
+		}
+		
+		Logger.getLogger(Pipeline.primaryLoggerName).info("HGMDb initialzed with " + count + " total variants in " + geneMap.size() + " genes");
 	}
 	
 	/**
@@ -82,11 +90,52 @@ public class HGMDB {
 		return geneMap.get(geneName);
 	}
 	
+	private void importFromLine(String line) {
+		String[] toks = line.split("\t");
+		HGMDInfo info = new HGMDInfo();
+		info.contig = toks[0];
+		
+		try {
+			info.pos = Integer.parseInt(toks[1]);
+		}
+		catch(NumberFormatException nfe) {
+			//Logger.getLogger(Pipeline.primaryLoggerName).warning("Could not import HGMD variant from line: " + line);
+			return;
+		}
+		info.cDot = toks[2];
+		info.pDot = toks[3];
+		info.geneName = toks[4];
+		info.condition = toks[5];
+		info.assocType = toks[6];
+		info.citation = toks[7];
+		
+		if (toks.length>8) {
+			info.pmid = toks[8];
+		}
+		else {
+			info.pmid = "";
+		}
+
+		List<HGMDInfo> list = db.get(info.contig);
+		if (list == null) {
+			list = new ArrayList<HGMDInfo>(1024);
+			db.put(info.contig, list);
+		}
+		list.add(info);
+
+		List<HGMDInfo> geneList = geneMap.get(info.geneName);
+		if (geneList == null) {
+			geneList = new ArrayList<HGMDInfo>(256);
+			geneMap.put(info.geneName, geneList);
+		}
+		geneList.add(info);
+	}
+	
 	/**
 	 * Read information in this single line into the map that stores all of the data
 	 * @param line
 	 */
-	private void importFromLine(String line) {
+	private void importFromLineOld(String line) {
 		String[] toks = line.split("\t");
 		
 		String contig = toks[0].replace("chr", "");
@@ -117,10 +166,10 @@ public class HGMDB {
 		info.geneName = gene;
 		info.condition = condition;
 		info.cDot = cDot;
-		info.hgmdID = id;
+		//info.hgmdID = id;
 		info.nm = nm;
 		info.pos = pos;
-		info.strand = strand;
+		//info.strand = strand;
 		
 		//System.out.println(contig + ":" + pos + " " + info.toString());
 		List<HGMDInfo> list = db.get(contig);
@@ -147,23 +196,23 @@ public class HGMDB {
 		
 	}
 	
-	public void emitAsCSV(PrintStream out) {
-		for(String contig: db.keySet()) {
-			for(HGMDInfo info : db.get(contig)) {
-				String cd = info.cDot;
-				if (! cd.startsWith("c.")) {
-					continue;
-				}
-				char ref = cd.charAt(cd.length()-3);
-				char alt = cd.charAt(cd.length()-1);
-				if (! info.strand) {
-					ref = complement(ref);
-					alt = complement(alt);
-				}
-				out.println(contig + "\t" + info.pos + "\t" + ref + "\t" + alt);
-			}
-		}
-	}
+//	public void emitAsCSV(PrintStream out) {
+//		for(String contig: db.keySet()) {
+//			for(HGMDInfo info : db.get(contig)) {
+//				String cd = info.cDot;
+//				if (! cd.startsWith("c.")) {
+//					continue;
+//				}
+//				char ref = cd.charAt(cd.length()-3);
+//				char alt = cd.charAt(cd.length()-1);
+//				if (! info.strand) {
+//					ref = complement(ref);
+//					alt = complement(alt);
+//				}
+//				out.println(contig + "\t" + info.pos + "\t" + ref + "\t" + alt);
+//			}
+//		}
+//	}
 	
 	public static char complement(char b) {
 		if (b=='A')	return 'T';
@@ -179,34 +228,39 @@ public class HGMDB {
 	 *
 	 */
 	public class HGMDInfo {
+		public String pDot;
+		public String pmid;
+		String contig;
 		int pos; //Chromosomal position 
 		public String nm;
 		public String geneName;
 		public String cDot;
 		public String condition;
-		String hgmdID;
-		boolean strand;
+		public String assocType;
+		String pubmedID;
+		public String citation;
+		String rsNum;
 		
 		public String toString() {
-			return "ID: " + hgmdID + " nm: " + nm + " gene: " + geneName + " condition: " + condition + " cdot: " + cDot;
+			return " nm: " + nm + " gene: " + geneName + " condition: " + condition + " cdot: " + cDot;
 		}
 	}
 	
 	
-	public static void main(String[] args) {
-		HGMDB db = new HGMDB();
-		try {
-			db.initializeMap(new File("/home/brendan/resources/HGMD_DMonly_b37.csv"));
-			
-			PrintStream dbStream = new PrintStream(new FileOutputStream("HGMD_DMonly.vars.csv"));
-			db.emitAsCSV(dbStream);
-			dbStream.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
+//	public static void main(String[] args) {
+//		HGMDB db = new HGMDB();
+//		try {
+//			db.initializeMap(new File("/home/brendan/resources/HGMD_DMonly_b37.csv"));
+//			
+//			PrintStream dbStream = new PrintStream(new FileOutputStream("HGMD_DMonly.vars.csv"));
+//			db.emitAsCSV(dbStream);
+//			dbStream.close();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//	}
 	
 	//Used to speed up db lookups
 	private HGMDInfo qInfo = new HGMDInfo();

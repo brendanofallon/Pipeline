@@ -30,7 +30,7 @@ public class ObjectHandler {
 	
 	protected Map<String, PipelineObject> objectMap = new HashMap<String, PipelineObject>();
 
-	private final boolean verbose = true;
+	private final boolean verbose = false;
 	private Pipeline pipelineOwner = null;
 	
 	private ClassLoader classLoader = null;
@@ -202,7 +202,6 @@ public class ObjectHandler {
 		//TODO We'd like to be able to search other paths, not just already loaded classes
 		if (classLoader == null)
 			classLoader = ClassLoader.getSystemClassLoader();
-		System.out.println("Attempting to instantiate " + classStr + " from loader :" + classLoader);
 		Class<?> clazz = classLoader.loadClass(classStr);
 		return clazz;
 	}

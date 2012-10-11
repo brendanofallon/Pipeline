@@ -27,11 +27,15 @@
  <VariantPool />
 </dbSNP -->
 
-<!-- PopFreqAnnotate class="operator.annovar.TKGAnnotator">
+<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
  <AnnoInput />
  <VariantPool />
-</PopFreqAnnotate -->
+</PopFreqAnnotate>
 
+<ExomesAnnotate class="operator.annovar.Exomes5400Annotator">
+ <AnnoInput />
+ <VariantPool />
+</ExomesAnnotate>
 
 <dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />

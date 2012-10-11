@@ -411,14 +411,11 @@ public class QCReport extends Operator {
 		List<Color> colors = Arrays.asList(new Color[]{Color.blue, Color.red});
 		
 		
-//		for(int i=0; i<data.size(); i++) {
-//			System.out.println("Got point " + data.get(i).getX() + ", " + data.get(i).getY());
-//		}
 		XYSeriesFigure fig = FigureFactory.createFigure("Variant allele frequency", "Count", dataLists, names, colors);
 		
 		FigureFactory.saveFigure(new Dimension(500, 500), fig, destFile);
 		
-		//CreateFigure.generateFigure(getPipelineOwner(), histo, "Fraction", "Allele fraction", "Frequency", figPath);
+		writer.write("<div id=\"separator\">  </div>");
 		writer.write("<h2> Distribution of variant depths: " + " </h2>" +lineSep);
 		writer.write("<img src=\"" + figName + "\">");
 		
@@ -453,7 +450,7 @@ public class QCReport extends Operator {
 			qualityFig.getAxes().setNumXTicks(5);
 			FigureFactory.saveFigure(new Dimension(500, 500), qualityFig, new File(figPath));
 			
-			//CreateFigure.generateFigure(getPipelineOwner(), histos, labels, "Allele fraction", "Frequency", figPath);
+			writer.write("<div id=\"separator\">  </div>");
 			writer.write("<h2> Distribution of variant qualities: " + " </h2>" +lineSep);
 			writer.write("<img src=\"" + figName + "\">");
 		}
@@ -524,6 +521,7 @@ public class QCReport extends Operator {
 		FigureFactory.saveFigure(new Dimension(500, 500), readPosFig, new File(bqFigFullPath));
 		
 		//CreateFigure.generateFigure(getPipelineOwner(), metrics.baseQualityHistogram, "Quality score", "Base qualities", "Frequency", bqFigFullPath);
+		writer.write("<div id=\"separator\">  </div>");
 		writer.write("<h2> Distribution of base qualities: " + " </h2>" +lineSep);
 		writer.write("<img src=\"" + bqFigStr + "\">");
 	}
@@ -586,6 +584,7 @@ public class QCReport extends Operator {
 		}
 		writer.write( opT.getHTML() );
 		
+		writer.write("<div id=\"separator\">  </div>");
 		writer.write("<h2> Pipeline properties </h2>");
 		writer.write("<table border=\"0\" padding=\"5\" width=\"700\"> ");
 		for(Object keyObj : ppl.getPropertyKeys()) {
@@ -603,18 +602,23 @@ public class QCReport extends Operator {
 
 	private void writeWarningsSection(Writer writer) throws IOException {
 		
+		
+		writer.write("<div id=\"separator\">  </div>");
+		writer.write("<h2> QC flags summary: </h2>");
+		writer.write("<ul id=\"warningslist\"> \n");
+		
 		if (finalCoverageMetrics != null) {
 			CoverageChecker covCheck = new CoverageChecker();
 			QCCheckResult finalCov = covCheck.checkItem(finalCoverageMetrics);
 		
 			if (finalCov.getResult() == QCItemCheck.ResultType.WARNING) {
-				writer.write("<p id=\"warning\"> QC Warning : " + finalCov.getMessage() + "</p>\n");
+				writer.write("<li id=\"warning\"> QC Warning : " + finalCov.getMessage() + "</li>\n");
 			}
 			if (finalCov.getResult() == QCItemCheck.ResultType.SEVERE) {
-				writer.write("<p id=\"error\"> QC Failure : " + finalCov.getMessage() + "</p>\n");
+				writer.write("<li id=\"error\"> QC Failure : " + finalCov.getMessage() + "</li>\n");
 			}
 			if (finalCov.getResult() == QCItemCheck.ResultType.OK) {
-				writer.write("<p id=\"okitem\"> QC coverage metrics appear normal </p>\n");
+				writer.write("<li id=\"okitem\"> QC coverage metrics appear normal </li>\n");
 			}
 			
 		}
@@ -627,17 +631,17 @@ public class QCReport extends Operator {
 			QCCheckResult bamResult = bamCheck.checkItem(finalBAMMetrics);
 			
 			if (bamResult.getResult() == QCItemCheck.ResultType.WARNING) {
-				writer.write("<p id=\"warning\"> QC Warning : " + bamResult.getMessage() + "</p>\n");
+				writer.write("<li id=\"warning\"> QC Warning : " + bamResult.getMessage() + "</li>\n");
 			}
 			if (bamResult.getResult() == QCItemCheck.ResultType.SEVERE) {
-				writer.write("<p id=\"error\"> QC Failure : " + bamResult.getMessage() + "</p>\n");
+				writer.write("<li id=\"error\"> QC Failure : " + bamResult.getMessage() + "</li>\n");
 			}
 			if (bamResult.getResult() == QCItemCheck.ResultType.OK) {
-				writer.write("<p id=\"okitem\"> QC base qualities appear normal </p>\n");
+				writer.write("<li id=\"okitem\"> QC base qualities appear normal </li>\n");
 			}
 		}
 		else {
-			writer.write("<p id=\"warning\"> QC Warning : No BAM metrics found, could not assess QC metrics</p>\n");
+			writer.write("<li id=\"warning\"> QC Warning : No BAM metrics found, could not assess QC metrics</li>\n");
 		}
 		
 		if (variantPool != null) {
@@ -645,19 +649,20 @@ public class QCReport extends Operator {
 			QCCheckResult varResult = varCheck.checkItem(variantPool);
 		
 			if (varResult.getResult() == QCItemCheck.ResultType.WARNING) {
-				writer.write("<p id=\"warning\"> QC Warning : " + varResult.getMessage() + "</p>\n");
+				writer.write("<li id=\"warning\"> QC Warning : " + varResult.getMessage() + "</li>\n");
 			}
 			if (varResult.getResult() == QCItemCheck.ResultType.SEVERE) {
-				writer.write("<p id=\"error\"> QC Failure : " + varResult.getMessage() + "</p>\n");
+				writer.write("<li id=\"error\"> QC Failure : " + varResult.getMessage() + "</li>\n");
 			}
 			if (varResult.getResult() == QCItemCheck.ResultType.OK) {
-				writer.write("<p id=\"okitem\"> QC variant calls appear normal </p>\n");
+				writer.write("<li id=\"okitem\"> QC variant calls appear normal </li>\n");
 			}
 		}
 		else {
-			writer.write("<p id=\"warning\"> QC Warning : No variants found, could not assess QC metrics</p>\n");
+			writer.write("<li id=\"warning\"> QC Warning : No variants found, could not assess QC metrics</li>\n");
 		}
 		
+		writer.write("</ul> <!-- warningslist --> \n");
 	}
 
 	private static String formatPercent(double num, double denom) {
@@ -761,6 +766,7 @@ public class QCReport extends Operator {
 		bamT.addRow(new String[]{"Pairs w. insert > 10K :", "" + rawMetrics.hugeInsertSize, "" + finalMetrics.hugeInsertSize, formatPercent(finalMetrics.hugeInsertSize , rawMetrics.hugeInsertSize )});
 		writer.write( bamT.getHTML() );
 		
+		writer.write("<div id=\"separator\">  </div>");
 		writer.write("<h2>  Coverage statistics : " + " </h2>\n");
 		if (rawDOCMetrics == null) {
 			writer.write("<p id=\"error\">  No coverage information found </p> \n");
@@ -824,6 +830,7 @@ public class QCReport extends Operator {
 				XYSeriesFigure fig = FigureFactory.createFigure("Coverage", "Proportion of bases", data, names, colors); 
 				FigureFactory.saveFigure(new Dimension(500, 500), fig, destFile);
 			
+				writer.write("<div id=\"separator\">  </div>");
 				writer.write("<h2> Proportion of bases covered to given depth " + " </h2>\n");
 				writer.write("<img src=\"" + figStr + "\">");
 				
@@ -856,6 +863,7 @@ public class QCReport extends Operator {
 			writer.write("</div> <!-- bammetrics -->\n");
 			
 			
+			writer.write("<div id=\"separator\">  </div>");
 			//Emit 'flagged' low coverage intervals...
 			if (finalDOCMetrics.getFlaggedIntervals() == null) {
 				writer.write("<p> Number of low coverage intervals : No information found </p>\n");

@@ -3,9 +3,9 @@ package operator.annovar;
 import java.io.File;
 import java.io.IOException;
 
+import operator.OperationFailedException;
 import buffer.variant.FileAnnotator;
 import buffer.variant.VariantRec;
-import operator.OperationFailedException;
 
 public class DBSNPAnnotator extends AnnovarAnnotator {
 
@@ -13,6 +13,18 @@ public class DBSNPAnnotator extends AnnovarAnnotator {
 	public void performOperation() throws OperationFailedException {
 		if (variants == null)
 			throw new OperationFailedException("Variant pool not initialized", this);
+		
+		if (annovarInputFile == null) {
+			throw new OperationFailedException("AnnovarInputFile object not specified", this);
+		}
+		
+		if (annovarInputFile.getFile() == null) {
+			throw new OperationFailedException("AnnovarInputFile file not specified", this);
+		}
+		
+		if (!annovarInputFile.getFile().exists()) {
+			throw new OperationFailedException("AnnovarInputFile file " + annovarInputFile.getFile().getAbsolutePath() + " does not exist", this);
+		}
 		
 		String command = "perl " + annovarPath + "annotate_variation.pl -filter -dbtype snp132 --buildver " + buildVer + " " + annovarInputFile.getAbsolutePath() + " --outfile " + annovarPrefix + " " + annovarPath + "humandb/";
 

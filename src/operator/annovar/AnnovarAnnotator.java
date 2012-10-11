@@ -1,6 +1,10 @@
 package operator.annovar;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.logging.Logger;
 
 import operator.OperationFailedException;
@@ -12,8 +16,13 @@ import org.w3c.dom.NodeList;
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
 import pipeline.PipelineXMLConstants;
+import util.VCFLineParser;
 import buffer.AnnovarInputFile;
-import buffer.FileBuffer;
+import buffer.CSVFile;
+import buffer.VCFFile;
+import buffer.variant.CSVLineReader;
+import buffer.variant.SimpleLineReader;
+import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
 /**
@@ -30,10 +39,29 @@ public abstract class AnnovarAnnotator extends Annotator {
 	protected String format = "vcf4"; //Default assumed input format
 	protected String annovarPrefix = "annovar.output";
 
-	protected FileBuffer annovarInputFile = null;
+	protected AnnovarInputFile annovarInputFile = null;
 	
 	public void annotateVariant(VariantRec rec) {
 		//Blank on purpose, annovar annotators do something else
+	}
+	
+	@Override
+	public void performOperation() throws OperationFailedException {
+		if (annovarInputFile == null) {
+			Logger.getLogger(Pipeline.primaryLoggerName).info("No annovar input file found, creating one on the fly for annotator: " + getObjectLabel());
+			
+			annovarInputFile = new AnnovarInputFile(new File(getProjectHome() + "/." + getObjectLabel() + ".annovar.input"));
+			try {
+				annovarInputFile.getFile().createNewFile();
+				createAnnovarInput(variants, annovarInputFile);	
+			} catch (IOException e) {
+				Logger.getLogger(Pipeline.primaryLoggerName).severe("Could not create annovar input file for for annotator : " + getObjectLabel());
+				e.printStackTrace();
+			}
+			
+		}
+		
+		super.performOperation();
 	}
 	
 	public void initialize(NodeList children) {
@@ -54,8 +82,7 @@ public abstract class AnnovarAnnotator extends Annotator {
 
 			}
 		}
-		if (annovarInputFile == null)
-			throw new IllegalArgumentException("Annovar-based annotators require an annovar input file to run");
+		
 		
 		Object path = getPipelineProperty(PipelineXMLConstants.ANNOVAR_PATH);
 		if (path != null)
@@ -151,6 +178,76 @@ public abstract class AnnovarAnnotator extends Annotator {
 			System.err.println("Variant found at modified position, but alt allele is still wrong");
 			return null;
 		}
+	}
+	
+	public void createAnnovarInput(VariantPool vars, AnnovarInputFile destination) {
+		try {
+			int count = 0;
+			BufferedWriter writer = new BufferedWriter(new FileWriter(destination.getAbsolutePath()));
+			for(String contig : vars.getContigs()) {
+				for (VariantRec var : vars.getVariantsForContig(contig)) {
+					writeVariantToAnnovarInput(var, writer);	
+					count++;
+				}
+			}
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Wrote " + count + " variants to temporary annovar input file");
+			writer.close();
+		} catch (IOException e) {
+			Logger.getLogger(Pipeline.primaryLoggerName).severe("Error converting csv to annovar input: " + e.getMessage());
+			e.printStackTrace();
 
+		}
+	}
+	
+	public void createAnnovarInput(VCFFile inputFile, AnnovarInputFile destination) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(destination.getAbsolutePath()));
+			VCFLineParser reader = new VCFLineParser(inputFile.getFile());
+			do {
+				VariantRec rec = reader.toVariantRec();
+				writeVariantToAnnovarInput(rec, writer);
+
+			} while(reader.advanceLine());
+			writer.close();
+		} catch (IOException e) {
+			Logger.getLogger(Pipeline.primaryLoggerName).severe("Error converting csv to annovar input: " + e.getMessage());
+			e.printStackTrace();
+
+		}
+	}
+	
+	public void createAnnovarInput(CSVFile inputFile, AnnovarInputFile destination) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(destination.getAbsolutePath()));
+			//CSVLineReader csvReader = new CSVLineReader(input.getFile());
+			CSVLineReader csvReader = new SimpleLineReader(inputFile.getFile());
+			do {
+				VariantRec rec = csvReader.toVariantRec();
+				writeVariantToAnnovarInput(rec, writer);
+				
+			} while(csvReader.advanceLine());
+			writer.close();
+		} catch (IOException e) {
+			Logger.getLogger(Pipeline.primaryLoggerName).severe("Error converting csv to annovar input: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	public static void writeVariantToAnnovarInput(VariantRec rec, Writer writer) throws IOException {
+		String het = "het";
+		if (!rec.isHetero())
+			het = "hom";
+		writer.write(rec.getContig() + "\t" + 
+					 rec.getStart() + "\t" + 
+					 (rec.getStart() + rec.getRef().length()-1) + "\t" + 
+					 rec.getRef() + "\t" +
+					 //"- \t" +
+					 rec.getAlt() + "\t" +
+					 //"A \t" +
+					 rec.getQuality() + "\t" + 
+					 rec.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t" + 
+					 het + "\t" +
+					 rec.getProperty(VariantRec.GENOTYPE_QUALITY) + "\n");
+		writer.flush();
 	}
 }

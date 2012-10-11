@@ -33,7 +33,7 @@ import buffer.variant.VariantRec;
 public class GeneEffectRanker extends Operator {
 
 	int jackknifeVarCount = 100; //Only jackknife the top # of variants so as to save time
-	int jackknifeReps = 10; //Number of jackknife replicates to perform
+	int jackknifeReps = 0; //Number of jackknife replicates to perform
 	
 	GeneList genes = null;
 	VariantPool vars = null;
@@ -72,7 +72,8 @@ public class GeneEffectRanker extends Operator {
 				
 				double effectProd = computeScore(var);
 				var.addProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT, effectProd);
-
+				
+				
 				if (effectProd > 0) {
 					topHits.add(var);
 					Collections.sort(topHits, new ScoreComparator());
@@ -86,13 +87,13 @@ public class GeneEffectRanker extends Operator {
 			}
 		}
 		
-		for(VariantRec hit : topHits) {
-			System.out.println("Gene : " + hit.getAnnotation(VariantRec.GENE_NAME) + " var: "+ hit.getAnnotation(VariantRec.PDOT) + " score : " + hit.getProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT) +
-					" pubmed:" + hit.getGene().getProperty(Gene.PUBMED_SCORE)
-					+ " dbNSFP:" + hit.getGene().getProperty(Gene.DBNSFPGENE_SCORE) + 
-					" summary:" + hit.getGene().getProperty(Gene.SUMMARY_SCORE) + 
-					" goterms:" + hit.getGene().getProperty(Gene.GO_SCORE));
-		}
+//		for(VariantRec hit : topHits) {
+//			System.out.println("Gene : " + hit.getAnnotation(VariantRec.GENE_NAME) + " var: "+ hit.getAnnotation(VariantRec.PDOT) + " score : " + hit.getProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT) +
+//					" pubmed:" + hit.getGene().getProperty(Gene.PUBMED_SCORE)
+//					+ " dbNSFP:" + hit.getGene().getProperty(Gene.DBNSFPGENE_SCORE) + 
+//					" summary:" + hit.getGene().getProperty(Gene.SUMMARY_SCORE) + 
+//					" goterms:" + hit.getGene().getProperty(Gene.GO_SCORE));
+//		}
 		
 		System.out.println("Skipped " + skipped + " of " + vars.size() + " total variants");
 		
@@ -105,56 +106,56 @@ public class GeneEffectRanker extends Operator {
 	}
 
 	
-	private void performJackknife(List<VariantRec> topHits) {
-		
-		//Some initialization...
-		searchTerms = summaryRanker.getRankingMap();
-		SearchTermJackknife searchTermJK = new SearchTermJackknife();
-		
-		//GOterm jackknife
-		//gene jackknife
-		
-		for(int i=0; i<jackknifeReps; i++) {
-			System.out.println("Computing JK rep #" + i);
-			jackknifeAndCompute(searchTermJK, topHits);
-		}
-		
-		
-		//Summarize jk scores...
-		System.out.println("Jackknife ranking results");
-		for(VariantRec var : topHits) {
-			System.out.println(var.toBasicString() + "\n" + var.getAnnotation(VariantRec.JACKKNIFE_RANKS));
-		}
-		
-	}
+//	private void performJackknife(List<VariantRec> topHits) {
+//		
+//		//Some initialization...
+//		searchTerms = summaryRanker.getRankingMap();
+//		SearchTermJackknife searchTermJK = new SearchTermJackknife();
+//		
+//		//GOterm jackknife
+//		//gene jackknife
+//		
+//		for(int i=0; i<jackknifeReps; i++) {
+//			System.out.println("Computing JK rep #" + i);
+//			jackknifeAndCompute(searchTermJK, topHits);
+//		}
+//		
+//		
+//		//Summarize jk scores...
+//		System.out.println("Jackknife ranking results");
+//		for(VariantRec var : topHits) {
+//			System.out.println(var.toBasicString() + "\n" + var.getAnnotation(VariantRec.JACKKNIFE_RANKS));
+//		}
+//		
+//	}
 
 
-	protected void jackknifeAndCompute(Jackknifeable jk, List<VariantRec> vars) {
-		
-		int itemToRemove = (int)Math.floor(Math.random() * jk.getRemoveableElementCount());
-		jk.removeElement(itemToRemove);
-		
-		//Now compute scores for all variants
-		for(VariantRec var : vars) {
-			
-			// Tell all rankers to re-rank....
-			//var.addProperty(VariantRec.JACKKNIFE_SCORE, score);				
-		}
-		
-		//Sort by newly computed jk score
-		Collections.sort(vars, new JKScoreComparator());
-		for(int i=0; i<vars.size(); i++) {
-			String jkRanks = vars.get(i).getAnnotation(VariantRec.JACKKNIFE_RANKS);
-			if (jkRanks == null)
-				jkRanks = "" + i;
-			else 
-				jkRanks = jkRanks + "," + i;
-			vars.get(i).addAnnotation(VariantRec.JACKKNIFE_RANKS, jkRanks);
-		}
-		
-		
-		jk.restore();
-	}
+//	protected void jackknifeAndCompute(Jackknifeable jk, List<VariantRec> vars) {
+//		
+//		int itemToRemove = (int)Math.floor(Math.random() * jk.getRemoveableElementCount());
+//		jk.removeElement(itemToRemove);
+//		
+//		//Now compute scores for all variants
+//		for(VariantRec var : vars) {
+//			
+//			// Tell all rankers to re-rank....
+//			//var.addProperty(VariantRec.JACKKNIFE_SCORE, score);				
+//		}
+//		
+//		//Sort by newly computed jk score
+//		Collections.sort(vars, new JKScoreComparator());
+//		for(int i=0; i<vars.size(); i++) {
+//			String jkRanks = vars.get(i).getAnnotation(VariantRec.JACKKNIFE_RANKS);
+//			if (jkRanks == null)
+//				jkRanks = "" + i;
+//			else 
+//				jkRanks = jkRanks + "," + i;
+//			vars.get(i).addAnnotation(VariantRec.JACKKNIFE_RANKS, jkRanks);
+//		}
+//		
+//		
+//		jk.restore();
+//	}
 	
 	/**
 	 * Compute the combined ranking score for the given variant. 

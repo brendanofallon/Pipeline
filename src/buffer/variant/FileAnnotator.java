@@ -139,6 +139,11 @@ public class FileAnnotator extends PipelineObject {
 
 			rec = variants.findRecord(contig, modPos);
 
+			if (rec == null) {
+				System.out.println("Could not find record for variant at " + contig + ":" + pos);
+				return null;
+			}
+			
 			if (! rec.getAlt().equals(alt)) {
 				System.out.println("Record found, but alt for record is " + rec.getAlt() + " and alt from file is " + alt);
 				return null;

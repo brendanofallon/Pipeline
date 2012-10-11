@@ -755,8 +755,13 @@ public class VarUtils {
 		}
 			
 	
-		if (firstArg.equals("interestingFilter")) {
-			performInterestingFilter(args);
+		if (firstArg.equals("novelFilter")) {
+			try {
+				performNovelFilter(args);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			return;
 		}
 			
@@ -1055,7 +1060,7 @@ public class VarUtils {
 					if (var.isVariant() && sampleVar == null) {
 						totHapMapVar++;
 						falseNeg++;
-						falseNegList.add(contig + "\t" + var.getStart() + "\t" + var.getRef() + "\t" + var.getAlt());
+						falseNegList.add(contig + "\t" + var.getStart() + "\t-\t" + var.getRef() + "\t" + var.getAlt());
 					}
 					if (var.isVariant() && sampleVar != null) {
 						totHapMapVar++;
@@ -1095,11 +1100,11 @@ public class VarUtils {
 			
 			System.out.println("False positives TT ratio : " + falsePosPool.computeTTRatio());
 			
-			//System.out.println("False negatives:");
+//			System.out.println("False negatives:");
 //			for(String str : falseNegList) {
 //				System.out.println(str);
 //			}
-			
+
 			System.out.println("False positives:");
 			
 			falsePosPool.listAll(System.out, Arrays.asList(new String[]{VariantRec.FS_SCORE, VariantRec.FALSEPOS_PROB, VariantRec.TAUFP_SCORE}));
@@ -1411,100 +1416,42 @@ public class VarUtils {
 		return;
 	}
 
-	private static void performInterestingFilter(String[] args) {
+//	private static void performTsTvByQuality(String[] args) throws IOException {
+//		VariantLineReader reader = getReader( args[1] );
+//		final int BINS = 10;
+//		List<VariantRec>[] bins = new (ArrayList<VariantRec>)[BINS];
+//		
+//	}
+	
+	private static void performNovelFilter(String[] args) throws IOException {
 		if (args.length < 2) {
 			System.out.println("Enter the names of one or more variant (vcf or csv) files to examine");
 			return;
 		}
 
-		List<String> annoKeys = new ArrayList<String>();
-		annoKeys.add(VariantRec.GENE_NAME);
-		annoKeys.add(VariantRec.CDOT);
-		annoKeys.add(VariantRec.PDOT);
-		annoKeys.add(VariantRec.NM_NUMBER);
-		annoKeys.add(VariantRec.VARIANT_TYPE);
-		annoKeys.add(VariantRec.EXON_FUNCTION);
-		
-		annoKeys.add(VariantRec.RSNUM);
-		annoKeys.add(VariantRec.POP_FREQUENCY);
-		annoKeys.add(VariantRec.EXOMES_FREQ);
-		
-		annoKeys.add(VariantRec.OMIM_ID);
-		annoKeys.add(VariantRec.HGMD_INFO);
-		annoKeys.add(VariantRec.SIFT_SCORE);
-		annoKeys.add(VariantRec.POLYPHEN_SCORE);
-		annoKeys.add(VariantRec.MT_SCORE);
-		annoKeys.add(VariantRec.PHYLOP_SCORE);
-		annoKeys.add(VariantRec.GERP_SCORE);
-		//annoKeys.add(VariantRec.VQSR);
-		//annoKeys.add(VariantRec.FALSEPOS_PROB);
-		//annoKeys.add(VariantRec.FS_SCORE);
-		StringBuilder header = new StringBuilder( VariantRec.getSimpleHeader() );
-		for(String key : annoKeys) 
-			header.append("\t" + key);
-		System.out.println( header );
-		
-		try {
-			double frequencyCutoff = 0.01;
-			boolean hasUserCutoff = false;
-			//See if we can parse a double from args[1]
-			try {
-				Double val = Double.parseDouble(args[1]);
-				frequencyCutoff = val;
-				hasUserCutoff = true;
-			}
-			catch (NumberFormatException nfe) {
-				//dont worry about it
-				hasUserCutoff = false;
-			}
-			
-			VariantPool pool;
-			if (hasUserCutoff)
-				pool = getPool(new File(args[2]));
-			else
-				pool = getPool(new File(args[1]));
-			
-			for(String contig : pool.getContigs()) {
-				for(VariantRec var : pool.getVariantsForContig(contig)) {
-					boolean passes = false;
-					
-					if (var.getProperty(VariantRec.POP_FREQUENCY) == null || (var.getProperty(VariantRec.POP_FREQUENCY) != null && var.getProperty(VariantRec.POP_FREQUENCY) < frequencyCutoff)) {
-						passes = true;
-						
-						//If variant was found in ESP5400 and with a relatively high frequency, it doesn't pass
-						if (var.getProperty(VariantRec.EXOMES_FREQ) != null && var.getProperty(VariantRec.EXOMES_FREQ) > frequencyCutoff) {
-							passes = false;
-						}
-					}
-					
-					
-					
-					String varType = var.getAnnotation(VariantRec.VARIANT_TYPE);
-					String exonFunc = var.getAnnotation(VariantRec.EXON_FUNCTION);
-					
-					//Exclude variants that are not in exons or splicing 
-					if (passes && !(varType != null && (varType.contains("exon") || varType.contains("splic")))) {
-						passes = false;
-					}
-					
-					if (passes && (exonFunc != null && exonFunc.trim().startsWith("synony"))) {
-						passes = false;
-					}
-					
-					if ((var.getAnnotation(VariantRec.OMIM_ID) != null && var.getAnnotation(VariantRec.OMIM_ID).length()>3) || (var.getAnnotation(VariantRec.HGMD_INFO) != null && var.getAnnotation(VariantRec.HGMD_INFO).length()>3)) {
-						passes = true;
-					}
-					
-					if (passes) {
-						System.out.println(var.toSimpleString() + var.getPropertyString(annoKeys));
-					}
+		double frequencyCutoff = 1e-5;
+		VariantLineReader reader = getReader( args[1] );
+		System.out.print( reader.getHeader() );
+		do {
+			boolean passes = false;
+			VariantRec var = reader.toVariantRec();
+			if (var.getProperty(VariantRec.POP_FREQUENCY) == null || (var.getProperty(VariantRec.POP_FREQUENCY) != null && var.getProperty(VariantRec.POP_FREQUENCY) < frequencyCutoff)) {
+				passes = true;
+				
+				//If variant was found in ESP5400 and with a relatively high frequency, it doesn't pass
+				if (var.getProperty(VariantRec.EXOMES_FREQ) != null && var.getProperty(VariantRec.EXOMES_FREQ) > frequencyCutoff) {
+					passes = false;
 				}
 			}
 			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+			if (passes) {
+				System.out.println(reader.getCurrentLine());
+			}
+			
+		} while(reader.advanceLine());
+		
+		
+		
 		return;
 	}
 
@@ -1557,28 +1504,15 @@ public class VarUtils {
 				
 			}
 			
+			System.out.println(VariantRec.getSimpleHeader());
+			for(String contig : union.getContigs()) {
+				for(VariantRec var : union.getVariantsForContig(contig)) {
+					if (var.getProperty(VariantRec.SAMPLE_COUNT) > 1) {
+						System.out.println(var.toSimpleString());
+					}
+				}
+			}
 			
-			PrintStream outputStream = System.out;
-			
-			List<String> annoKeys = new ArrayList<String>();
-			annoKeys.add(VariantRec.RSNUM);
-			annoKeys.add(VariantRec.POP_FREQUENCY);
-			annoKeys.add(VariantRec.GENE_NAME);
-			annoKeys.add(VariantRec.VARIANT_TYPE);
-			annoKeys.add(VariantRec.EXON_FUNCTION);
-			annoKeys.add(VariantRec.CDOT);
-			annoKeys.add(VariantRec.PDOT);
-			annoKeys.add(VariantRec.VQSR);
-			annoKeys.add(VariantRec.DEPTH);
-			annoKeys.add(VariantRec.VAR_DEPTH);
-			annoKeys.add(VariantRec.FALSEPOS_PROB);
-			annoKeys.add(VariantRec.FS_SCORE);
-			annoKeys.add(VariantRec.POP_FREQUENCY);
-			annoKeys.add(VariantRec.SAMPLE_COUNT);
-			annoKeys.add(VariantRec.EFFECT_PREDICTION2);
-			union.listAll(outputStream, annoKeys);
-			outputStream.close();
-			System.err.println("Final pool has " + union.size() + " variants");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -1941,14 +1875,14 @@ public class VarUtils {
 							}
 						}
 
-						if (varVal == null) {
+						if ((!greater) && varVal == null) {
 							filteredVars.addRecord(var);
 						}
 						else {
 							if ( (!greater) && varVal < val) {
 								filteredVars.addRecord(var);
 							}
-							if (greater && varVal > val) {
+							if (greater && (varVal != null) && varVal > val) {
 								filteredVars.addRecord(var);
 							}
 						}

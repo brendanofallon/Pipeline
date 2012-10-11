@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -31,9 +33,10 @@ import buffer.variant.VariantRec;
  */
 public abstract class VariantPoolWriter extends Operator {
 	
-	private VariantPool variants = null;
-	private CSVFile outputFile = null;
+	protected VariantPool variants = null;
+	protected CSVFile outputFile = null;
 	protected GeneList genes = null; //Optional parameter
+	private Comparator<VariantRec> recSorter = null;
 	
 	/**
 	 * Write a suitable header for the output file
@@ -55,6 +58,14 @@ public abstract class VariantPoolWriter extends Operator {
 	 * @param outputStream
 	 */
 	public abstract void writeVariant(VariantRec rec, PrintStream outputStream);
+	
+	/**
+	 * Provide a sorting mechanism for records
+	 * @param sorter
+	 */
+	public void setComparator(Comparator<VariantRec> sorter) {
+		this.recSorter = sorter;
+	}
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -78,22 +89,34 @@ public abstract class VariantPoolWriter extends Operator {
 			
 			writeHeader(outStream);
 			
-			Collection<String> contigCollection = variants.getContigs();
-			
-			//Sort contigs so they're always in the same order
-			String[] contigs = contigCollection.toArray(new String[]{});
-			Arrays.sort(contigs);
 			int tot = 0;
-			for(int i=0; i<contigs.length; i++) {
-				String contig = contigs[i];
-				List<VariantRec> vars = variants.getVariantsForContig(contig);
-				for(VariantRec rec : vars) {
-					writeVariant(rec, outStream);
+			
+			if (recSorter != null) {
+				List<VariantRec> varList = variants.toList();
+				Collections.sort(varList, recSorter);
+				for(VariantRec var : varList) {
+					writeVariant(var, outStream);
 					tot++;
 				}
 			}
+			else {
+				Collection<String> contigCollection = variants.getContigs();
+
+				//Sort contigs so they're always in the same order
+				String[] contigs = contigCollection.toArray(new String[]{});
+				Arrays.sort(contigs);
 			
-			logger.info("VariantWriter wrote " + tot + " variants in " + contigs.length + " contigs to output.");
+				for(int i=0; i<contigs.length; i++) {
+					String contig = contigs[i];
+					List<VariantRec> vars = variants.getVariantsForContig(contig);
+					for(VariantRec rec : vars) {
+						writeVariant(rec, outStream);
+						tot++;
+					}
+				}
+			}
+			
+			logger.info("VariantWriter wrote " + tot + " variants in " + variants.getContigCount() + " contigs to output.");
 			outStream.close();
 		} catch (FileNotFoundException e) {
 			throw new OperationFailedException("Could not write to file : " + outputFile.getFile().getAbsolutePath(), this);

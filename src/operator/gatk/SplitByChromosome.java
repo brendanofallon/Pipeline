@@ -7,16 +7,15 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import buffer.BAMFile;
-import buffer.FileBuffer;
-import buffer.MultiFileBuffer;
-import buffer.ReferenceFile;
-
 import operator.IOOperator;
 import operator.OperationFailedException;
 import operator.StringPipeHandler;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
+import buffer.BAMFile;
+import buffer.FileBuffer;
+import buffer.MultiFileBuffer;
+import buffer.ReferenceFile;
 
 /**
  * Splits a single input BAM file into contigs based on chromosome and 
@@ -88,7 +87,6 @@ public class SplitByChromosome extends IOOperator {
 
 		//Submit all jobs to the thread pool
 		for(int i=0; i<chromsToMake.length; i++) {
-			System.out.println("Creating split job for contig "+ chromsToMake[i]);
 			String contig = chromsToMake[i];
 			Split job = new Split(contig);
 			threadPool.submit(job);
@@ -173,11 +171,6 @@ public class SplitByChromosome extends IOOperator {
 		
 		@Override
 		public void run() {
-			Logger.getLogger(Pipeline.primaryLoggerName).info("Split operator is splitting contig " + contig );		
-
-			Logger.getLogger(Pipeline.primaryLoggerName).info("input BAM is : " + inputBam);		
-			Logger.getLogger(Pipeline.primaryLoggerName).info("input BAM is : " + inputBam.getAbsolutePath());		
-
 			String inputPath = inputBam.getAbsolutePath();
 			int index = inputPath.lastIndexOf(".");
 			String prefix = inputPath;
@@ -191,19 +184,14 @@ public class SplitByChromosome extends IOOperator {
 					" -T PrintReads " +
 					" -o " + outputPath +
 					" -L " + contig;
-
-			System.out.println("Full command is: " + command);
-			Logger.getLogger(Pipeline.primaryLoggerName).info("Full command is : " + command);		
+	
 
 			try {
 				Logger.getLogger(Pipeline.primaryLoggerName).info("Split operator is executing command " + command);		
 
 				executeCommand(command);
-
-				System.out.println("Done executing command: " + command);
 				addOutputFile(new BAMFile(new File(outputPath), contig));
 
-				System.out.println("done adding output file");
 			} catch (OperationFailedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

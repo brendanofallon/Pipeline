@@ -97,8 +97,8 @@ public class CompoundHetFinder extends Operator {
 			Gene g = hit.gene;
 			if (g.getProperty(Gene.GENE_RELEVANCE) != null && g.getProperty(Gene.GENE_RELEVANCE)>0) {
 				System.out.print("\n\nGene : " + g.getName() + " score: " + g.getProperty(Gene.GENE_RELEVANCE) + "\n");
-				System.out.println("\t Variant 1:\t" + hit.kidVar1.getAnnotation(VariantRec.PDOT) + "\t (" + hit.kidVar1.getAnnotation(VariantRec.NM_NUMBER) + ":" + hit.kidVar1.getAnnotation(VariantRec.CDOT) + "   " + hit.kidVar1.getContig() + ":" + hit.kidVar1.getStart() + ")");
-				System.out.println("\t Variant 2:\t" + hit.kidVar2.getAnnotation(VariantRec.PDOT) + "\t (" + hit.kidVar2.getAnnotation(VariantRec.NM_NUMBER) + ":" + hit.kidVar2.getAnnotation(VariantRec.CDOT) + "   " + hit.kidVar2.getContig() + ":" + hit.kidVar2.getStart() + ")");
+				System.out.println("\t Variant 1:\t" + hit.kidVar1.getAnnotation(VariantRec.PDOT) + "\t (" + hit.kidVar1.getAnnotation(VariantRec.NM_NUMBER) + ":" + hit.kidVar1.getAnnotation(VariantRec.CDOT) + "   " + hit.kidVar1.getContig() + ":" + hit.kidVar1.getStart() + "  " + hit.kidVar1.getAnnotation(VariantRec.RSNUM) + ")");
+				System.out.println("\t Variant 2:\t" + hit.kidVar2.getAnnotation(VariantRec.PDOT) + "\t (" + hit.kidVar2.getAnnotation(VariantRec.NM_NUMBER) + ":" + hit.kidVar2.getAnnotation(VariantRec.CDOT) + "   " + hit.kidVar2.getContig() + ":" + hit.kidVar2.getStart() + "  " + hit.kidVar2.getAnnotation(VariantRec.RSNUM) + ")");
 				System.out.println("\t Disease:\t" + g.getAnnotation(Gene.DBNSFP_DISEASEDESC) );
 				System.out.println("\t OMIM #s:\t" + g.getAnnotation(Gene.DBNSFP_MIMDISEASE) );
 				System.out.println("\t    HGMD:\t" + g.getAnnotation(Gene.HGMD_INFO) );

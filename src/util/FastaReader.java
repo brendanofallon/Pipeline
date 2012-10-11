@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class FastaReader {
@@ -11,11 +13,68 @@ public class FastaReader {
 	protected String currentTrack = null;
 	protected int currentPos = -1;
 	protected int lineOffset = 0;
-	
 	BufferedReader reader;
+	final File sourceFile;
+	
+	private Map<String, Integer> contigSizes;
 	
 	public FastaReader(File file) throws IOException {
-		reader = new BufferedReader(new FileReader(file));
+		this.sourceFile = file;
+		buildContigMap(); //Only necessary if you want a listing of all contigs and their sizes
+		initialize();
+	}
+	
+	/**
+	 * Returns a map of all contig names and their sizes
+	 * @return
+	 */
+	public Map<String, Integer> getContigSizes() {
+		return contigSizes;
+	}
+	
+	/**
+	 * Scan entire fasta file and build a map with all contig names and their lengths
+	 * @throws IOException 
+	 */
+	private void buildContigMap() throws IOException {
+		contigSizes = new HashMap<String, Integer>();
+		reader = new BufferedReader(new FileReader(sourceFile));
+		currentLine = reader.readLine();
+		
+		System.err.print("Scanning contigs in fasta file...");
+		System.err.flush();
+		
+		String contig = null;
+		int contSize = 0;
+		while(currentLine != null) {
+			if (currentLine.startsWith(">")) {
+				if (contig != null) {
+					System.out.println("Putting contig : " + contig + " with size : " + contSize);
+					contigSizes.put(contig, contSize);
+				}
+				
+				String chrStr = currentLine.trim().replace(">", "").replace("chr", "");
+				int endPos = chrStr.indexOf(" ");
+				if (endPos > 0) {
+					chrStr = chrStr.substring(0, endPos);
+				}
+				contig = chrStr;
+				contSize = 0;
+			}
+			else {
+				contSize += currentLine.trim().length();
+			}
+			
+			currentLine = reader.readLine();
+		}
+		
+		System.err.println(".done");
+	}
+	
+	
+	
+	private void initialize() throws IOException {
+		reader = new BufferedReader(new FileReader(sourceFile));
 		currentLine = reader.readLine();
 		if (! currentLine.trim().startsWith(">")) {
 			throw new IOException("First line doesn't start with >");

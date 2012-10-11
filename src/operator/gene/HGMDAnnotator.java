@@ -55,7 +55,7 @@ public class HGMDAnnotator extends AbstractGeneAnnotator {
 		if (infoList != null) {
 			String infoStr = "" + infoList.size() + " HGMD hits: ";
 			for(HGMDInfo info : infoList) {
-				infoStr = infoStr + " " + info.condition.replace("$$", " ") + "," + info.hgmdID + "," + info.nm + "," + info.cDot;
+				infoStr = infoStr + " " + info.condition.replace("$$", " ") + "," + info.nm + "," + info.cDot;
 				gene.addAnnotation(Gene.HGMD_INFO, infoStr);
 			}
 		}

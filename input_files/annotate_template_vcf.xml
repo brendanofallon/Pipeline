@@ -26,11 +26,10 @@
  <VariantPool />
 </dbNSFPAnnotate>
 
-
-<OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
+<TKGAnnotate class="operator.annovar.TKGAnnotator">
   <AnnoInput />
   <VariantPool />
-</OMIMAnnotate>
+</TKGAnnotate>
 
 
 <ToFile class="operator.variant.ExcelWriter">

@@ -3,6 +3,7 @@ package operator.gene;
 import gene.Gene;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -25,7 +26,6 @@ public class EmitGeneRank extends Operator {
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
-		// TODO Auto-generated method stub
 		
 		List<Gene> rankers = new ArrayList<Gene>();
 		
@@ -43,16 +43,24 @@ public class EmitGeneRank extends Operator {
 				score += g.getProperty(Gene.DBNSFPGENE_SCORE);
 			}
 			
+			if (g.getProperty(Gene.GO_SCORE) != null) {
+				score += g.getProperty(Gene.GO_SCORE);
+			}
+			
+			if (g.getProperty(Gene.INTERACTION_SCORE) != null) {
+				score += g.getProperty(Gene.INTERACTION_SCORE);
+			}
+			
 			g.addProperty(Gene.GENE_RELEVANCE, score);
 			rankers.add(g);
 			
 		}
 		
-//		Collections.sort(rankers, new RelSorter());
+		Collections.sort(rankers, new RelSorter());
 		
-		for(Gene gene : rankers) {
-			emitGene(gene);
-		}
+//		for(Gene gene : rankers) {
+//			emitGene(gene);
+//		}
 		
 	}
 	
@@ -66,10 +74,7 @@ public class EmitGeneRank extends Operator {
 		
 		if (g.getProperty(Gene.GENE_RELEVANCE) > 0) {
 			System.out.println(g.getName() + " : " + g.getProperty(Gene.GENE_RELEVANCE));
-		}
-		
-
-		
+		}		
 
 	}
 
@@ -99,10 +104,21 @@ public class EmitGeneRank extends Operator {
 			Double s0 = g0.getProperty(Gene.GENE_RELEVANCE);
 			Double s1 = g1.getProperty(Gene.GENE_RELEVANCE);
 			
-			if (s0 != null && s1 != null)
-				return s0 < s1 ? 1 : -1;
+			if (s0== null && s1 == null)
+				return 0;
 			
-			return 0;
+			if (s0 == null && s1 != null)
+				return -1;
+			
+			if (s0 != null && s1 == null)
+				return 1;
+			
+			if (s0.equals(s1)) {
+				return 0;
+			}
+			
+			return s0 < s1 ? 1 : -1;
+			
 		}
 		
 	}
