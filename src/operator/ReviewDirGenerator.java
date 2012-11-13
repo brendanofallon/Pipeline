@@ -16,6 +16,7 @@ import pipeline.PipelineObject;
 import buffer.BAMFile;
 import buffer.FileBuffer;
 import buffer.InstanceLogFile;
+import buffer.MultiFileBuffer;
 import buffer.VCFFile;
 
 /**
@@ -25,22 +26,20 @@ import buffer.VCFFile;
  */
 public class ReviewDirGenerator extends Operator {
 
-	public static final String DEST_DIR = "destiation.dir";
+	public static final String DEST_DIR = "destination.dir";
 	
 	String rootPath = null;
 	VCFFile variantFile = null;
 	BAMFile finalBAM = null;
 	InstanceLogFile logFile = null;
+	MultiFileBuffer fastqs1 = null;
+	MultiFileBuffer fastqs2 = null;
+	
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
-		
-		rootPath = properties.get(DEST_DIR);
 		Logger.getLogger(Pipeline.primaryLoggerName).info("Creating GenomicsReview directory in " + rootPath);
 		
-		if (rootPath == null) {
-			throw new OperationFailedException("No root path specified, not sure where to make files", this);
-		}
 		
 		if (!rootPath.startsWith("/")) {
 			throw new OperationFailedException("Root path MUST be absolute", this);
@@ -52,21 +51,32 @@ public class ReviewDirGenerator extends Operator {
 		createDir(rootPath, "var");
 		createDir(rootPath, "log");
 		createDir(rootPath, "depth");
-		createDir(rootPath, "nuclear");
 		createDir(rootPath, "qc");
 		createDir(rootPath, "report");
-		createDir(rootPath, "mt");
+		createDir(rootPath, "fastq");
 		createDir(rootPath, "array");
 		
 		try {
-			File varDestination = new File(rootPath + "/var/");
+			File varDestination = new File(rootPath + "/var/" + variantFile.getFilename());
 			copyTextFile(variantFile.getFile(), varDestination);
 
-			File logDestination = new File(rootPath + "/log/");
+			File logDestination = new File(rootPath + "/log/" + logFile.getFilename());
 			copyTextFile(logFile.getFile(), logDestination);
 
 			File newBAMLocation = new File(rootPath + "/bam/");
 			moveFile(finalBAM, newBAMLocation);
+			
+			
+			File newFQLocation = new File(rootPath + "/fastq/");
+			if (fastqs1 != null) {
+				moveFiles(fastqs1, newFQLocation);
+			}
+			
+			if (fastqs2 != null) {
+				moveFiles(fastqs2, newFQLocation);
+			}
+			
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -75,6 +85,12 @@ public class ReviewDirGenerator extends Operator {
 		
 	}
 
+	/**
+	 * Copy the given file to the new destination - this will only work with text files
+	 * @param source
+	 * @param dest
+	 * @throws IOException
+	 */
 	private void copyTextFile(File source, File dest) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(source));
 		if (! dest.exists()) {
@@ -83,7 +99,7 @@ public class ReviewDirGenerator extends Operator {
 		BufferedWriter writer = new BufferedWriter(new FileWriter(dest));
 		String line = reader.readLine();
 		while(line != null) {
-			writer.write( line);
+			writer.write( line + "\n");
 			line =reader.readLine();
 		}
 		
@@ -91,8 +107,27 @@ public class ReviewDirGenerator extends Operator {
 		reader.close();
 	}
 	
+	/**
+	 * Move all files in the multi-file-buffer to the new parent dir
+	 * @param sourceFiles
+	 * @param newParentDir
+	 */
+	private void moveFiles(MultiFileBuffer sourceFiles, File newParentDir) {
+		for(int i=0; i<sourceFiles.getFileCount(); i++) {
+			moveFile(sourceFiles.getFile(i), newParentDir);
+		}
+	}
+	
+	/**
+	 * Move the given file to the new destination directory, preserving the short file name
+	 * @param sourceFile
+	 * @param newParentDir
+	 */
 	private void moveFile(FileBuffer sourceFile, File newParentDir) {
 		File destinationFile = new File(newParentDir + "/" + sourceFile.getFilename());
+		Logger.getLogger(Pipeline.primaryLoggerName).info("Renaming " + sourceFile.getFile().getAbsolutePath() + " to " + destinationFile.getAbsolutePath());
+
+		
 		sourceFile.getFile().renameTo(destinationFile);
 		sourceFile.setFile(destinationFile);
 	}
@@ -105,6 +140,12 @@ public class ReviewDirGenerator extends Operator {
 	
 	@Override
 	public void initialize(NodeList children) {
+		
+		rootPath = properties.get(DEST_DIR);
+		if (rootPath == null) {
+			throw new IllegalArgumentException("No root path specified, not sure where to make files");
+		}
+		
 		for(int i=0; i<children.getLength(); i++) {
 			Node iChild = children.item(i);
 			if (iChild.getNodeType() == Node.ELEMENT_NODE) {
@@ -119,6 +160,13 @@ public class ReviewDirGenerator extends Operator {
 				
 				if (obj instanceof InstanceLogFile) {
 					logFile = (InstanceLogFile)obj;
+				}
+				
+				if (obj instanceof MultiFileBuffer) {
+					if (fastqs1 == null)
+						fastqs1 = (MultiFileBuffer)obj;
+					else
+						fastqs2 = (MultiFileBuffer)obj;
 				}
 			}
 		}

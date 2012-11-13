@@ -11,6 +11,8 @@ public class DBSNPAnnotator extends AnnovarAnnotator {
 
 	@Override
 	public void performOperation() throws OperationFailedException {
+		super.performOperation();
+		
 		if (variants == null)
 			throw new OperationFailedException("Variant pool not initialized", this);
 		

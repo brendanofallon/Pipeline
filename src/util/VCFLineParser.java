@@ -99,7 +99,10 @@ public class VCFLineParser implements VariantLineReader {
 					String[] toks = currentLine.split("\t");
 					if (sample == null) {
 						sampleColumn = 9;
-						sample = toks[9];
+						if (toks.length > 9)
+							sample = toks[9];
+						else 
+							sample = "unknown";
 					}
 					else {
 						for(int col = 0; col<toks.length; col++) {
@@ -378,6 +381,9 @@ public class VCFLineParser implements VariantLineReader {
 				createFormatString();
 			}
 			
+			if (formatToks == null)
+				return false;
+			
 			String[] formatValues = lineToks[sampleColumn].split(":");
 			String GTStr = formatValues[gtCol];
 			
@@ -414,6 +420,9 @@ public class VCFLineParser implements VariantLineReader {
 				createFormatString();
 			}
 			
+			if (formatToks == null)
+				return false;
+			
 			String[] formatValues = lineToks[sampleColumn].split(":");
 			String GTStr = formatValues[gtCol];
 			if (GTStr.charAt(1) == '|') {
@@ -432,7 +441,9 @@ public class VCFLineParser implements VariantLineReader {
 			if (formatToks == null) {
 				createFormatString();
 			}
-	
+			if (formatToks == null)
+				return false;
+			
 			String[] formatValues = lineToks[sampleColumn].split("\t");
 			String GTStr = formatValues[gtCol];
 			if (GTStr.charAt(0) == '1') {
@@ -452,6 +463,9 @@ public class VCFLineParser implements VariantLineReader {
 				createFormatString();
 			}
 			
+			if (formatToks == null)
+				return false;
+			
 			String[] formatValues = lineToks[sampleColumn].split(":");
 			String GTStr = formatValues[gtCol];
 			if (GTStr.charAt(2) == '1') {
@@ -470,6 +484,9 @@ public class VCFLineParser implements VariantLineReader {
 			if (formatToks == null) {
 				createFormatString();
 			}
+			
+			if (formatToks == null)
+				return 0.0;
 			
 			String[] formatValues = lineToks[sampleColumn].split(":");
 			String GQStr = formatValues[gqCol];
@@ -548,6 +565,9 @@ public class VCFLineParser implements VariantLineReader {
 				createFormatString();
 			}
 			
+			if (formatToks == null)
+				return 1;
+			
 			if (adCol < 0)
 				return null;
 				
@@ -574,7 +594,13 @@ public class VCFLineParser implements VariantLineReader {
 		 * rest
 		 */
 		private void createFormatString() {
+			if (lineToks.length <= 8) {
+				formatToks = null;
+				return;
+			}
+			
 			String formatStr = lineToks[8];
+			
 			formatToks = formatStr.split(":");
 			for(int i=0; i<formatToks.length; i++) {
 				if (formatToks[i].equals("GT")) {

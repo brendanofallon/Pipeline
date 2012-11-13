@@ -144,7 +144,7 @@ public class DepthOfCoverage extends IOOperator {
 				toks = line.split("\t");
 				String interval = toks[0];
 				Double meanCov = Double.parseDouble( toks[2] );
-				Double percentOK = Double.parseDouble( toks[ toks.length - 1].trim() );
+				Double percentOK = Double.parseDouble( toks[ toks.length - 3].trim() );
 				
 				if (percentOK < 80.0) {
 					FlaggedInterval fInt = new FlaggedInterval();

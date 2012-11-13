@@ -399,6 +399,10 @@ public class VariantRec {
 		return contig + "\t" + start + "\t" + end + "\t" + getRef() + "\t" + getAlt() + "\t" + getQuality() + "\t" + depthStr + "\t" + het + "\t" + gqStr + "\t" + varDepthStr;  
 	}
 	
+	public void setAlt(String newAlt) {
+		this.alt = newAlt;
+	}
+	
 	/**
 	 * Adjusts all indel variants in the following manner: Any indel that begins and ends with the same
 	 * base, the first base is moved to the last position and 1 is subtracted from the start and end position
@@ -532,6 +536,8 @@ public class VariantRec {
 	public static final String HGMD_HIT = "hgmd.hit";
 	public static final String JACKKNIFE_SCORE = "jkscores";
 	public static final String JACKKNIFE_RANKS = "jkrank";
+
+	
 	
 }
 

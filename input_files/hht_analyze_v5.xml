@@ -1,0 +1,128 @@
+
+<Pipeline>
+
+<reference class="buffer.ReferenceFile" filename="/home/brendan/resources/human_g1k_v37.fasta" />
+<capture class="buffer.BEDFile" filename="/home/brendan/resources/SureSelect_50mb_with_annotation_b37.bed" />
+<KnownDBSNP class="buffer.VCFFile" filename="/home/brendan/resources/dbsnp_132.b37.vcf" />
+<HapMap class="buffer.VCFFile" filename="/home/brendan/resources/hapmap_3.3.b37.sites.vcf" />
+<Omni class="buffer.VCFFile" filename="/home/brendan/resources/1000G_omni2.5.b37.sites.vcf" />
+
+
+<genesOfInterest class="buffer.variant.GenePool" filename="/home/brendan/MORE_DATA/HHT/HHT-genes.txt" />
+
+<InputVCF class="buffer.CSVFile" filename="$$INPUTFILE" />
+
+
+<MakeInput class="operator.annovar.ConvertCSVAnnovar">
+ <input>
+	<InputVCF />
+ </input>
+ <output>
+	<AnnoInput class="buffer.AnnovarInputFile" filename="annovar.input" />
+ </output>
+</MakeInput>
+
+<VariantPool class="buffer.variant.VariantPool">
+	<InputVCF />
+</VariantPool>
+
+<GeneAnnotate class="operator.annovar.GeneAnnotator">
+	<AnnoInput />
+	<VariantPool />
+</GeneAnnotate>
+
+<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
+  <VariantPool />
+  <AnnoInput />
+</PopFreqAnnotate>
+
+<CG69Freq class="operator.annovar.CG69Annotator">
+  <VariantPool />
+  <AnnoInput />
+</CG69Freq>
+
+<FPAnnotate class="operator.variant.FPComputer">
+  <VariantPool />
+</FPAnnotate>
+
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+ <VariantPool />
+</dbNSFPAnnotate>
+
+<dbNSFPGene class="operator.variant.DBNSFPGeneAnnotator">
+  <VariantPool />
+</dbNSFPGene>
+
+
+<EffectPred class="operator.annovar.EffectPredictionAnnotator">
+ <VariantPool />
+</EffectPred>
+
+
+
+<VarFilter class="operator.variant.VariantMultiFilter" pop.freq.cutoff="0.01" cg69.freq.cutoff="0.02" inc.dbsnp="true" var.depth.cutoff="2" var.freq.cutoff="0.15" depth.cutoff="2" zygosity="het" strand.bias.cutoff="10.0" qualityCutoff="20.0"> 
+ <input>
+     <VariantPool />
+ </input>
+ <output>
+     <passingVariants class="buffer.variant.VariantPool" />
+ </output>   
+</VarFilter>
+
+<GOAnnotate class="operator.annovar.GOAnnotator" >
+  <passingVariants />
+</GOAnnotate>
+
+<GoRank class="operator.variant.GOTermRanker">
+ <passingVariants />
+ <rankedTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-goterms.txt" />
+</GoRank>
+
+<SummaryRank class="operator.variant.GeneSummaryRanker" no.downloads="true" >
+	<passingVariants />
+	<rankedSummaryTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-summaryterms.txt" />
+</SummaryRank>
+
+<dbNSFPGeneRank class="operator.variant.DBNSFPGeneRanker">
+  <passingVariants />
+   <rankedSummaryTerms />
+</dbNSFPGeneRank>
+
+
+<InteractionRank class="operator.variant.InteractionRanker" source="ENG,ACVRL1">
+  <passingVariants />
+  <InteractionMatrix class="buffer.GeneInteractionGraph">
+	<GeneInteractions class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-proteins500.csv" />
+  </InteractionMatrix>
+</InteractionRank>
+
+
+<PubmedRank class="operator.variant.PubmedRanker">
+  <passingVariants />
+  <pubmedTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-pubmedterms.txt" />
+</PubmedRank>
+
+
+
+<Analysis class="operator.AnalysisFilter" >
+ <input>
+   <passingVariants />
+   <genesOfInterest />
+ </input>
+ <output>
+  <filteredVariants class="buffer.variant.VariantPool" />
+ </output>
+</Analysis>
+
+<EverythingToFile class="operator.variant.ExcelWriter">
+  <VariantPool />
+  <CSVFileAll class="buffer.CSVFile" filename="$$PREFIX.all.v5.csv" />
+</EverythingToFile>
+
+<ToFile class="operator.variant.ExcelWriter">
+	<filteredVariants />
+	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.hht.analysis5.csv" />
+</ToFile>
+
+
+</Pipeline>

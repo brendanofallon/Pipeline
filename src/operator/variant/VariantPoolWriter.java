@@ -3,6 +3,7 @@ package operator.variant;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import buffer.variant.VariantRec;
 public abstract class VariantPoolWriter extends Operator {
 	
 	protected VariantPool variants = null;
+	protected List<VariantPool> additionalVariants = new ArrayList<VariantPool>(); //Optional storage for additional variant lists
 	protected CSVFile outputFile = null;
 	protected GeneList genes = null; //Optional parameter
 	private Comparator<VariantRec> recSorter = null;
@@ -132,7 +134,11 @@ public abstract class VariantPoolWriter extends Operator {
 				Element el = (Element)child;
 				PipelineObject obj = getObjectFromHandler(el.getNodeName());
 				if (obj instanceof VariantPool) {
-					variants = (VariantPool)obj;
+					if (variants == null)
+						variants = (VariantPool)obj;
+					else {
+						additionalVariants.add( (VariantPool)obj);
+					}
 				}
 				if (obj instanceof CSVFile) {
 					outputFile = (CSVFile)obj;
@@ -147,7 +153,7 @@ public abstract class VariantPoolWriter extends Operator {
 //		if (outputFile == null) {
 //			throw new IllegalArgumentException("Output CSV file not specified");
 //		}
-		
+
 		if (variants == null) {
 			throw new IllegalArgumentException("Variant pool not specified");
 		}

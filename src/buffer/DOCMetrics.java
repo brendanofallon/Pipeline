@@ -22,6 +22,8 @@ public class DOCMetrics extends FileBuffer implements JSONString {
 	protected List<FlaggedInterval> flaggedIntervals = null;
 	protected double[] coverageProportions = null; //When non-null should be proportion of reads with coverage greater than index
 	
+	public DOCMetrics() {
+	}
 	
 	@Override
 	public String toJSONString() {
@@ -50,9 +52,7 @@ public class DOCMetrics extends FileBuffer implements JSONString {
 		return coverageProportions;
 	}
 
-	public DOCMetrics() {
-		System.out.println("Creating new DOC metrics!");
-	}
+	
 	
 	public String getSourceFile() {
 		return sourceFile;

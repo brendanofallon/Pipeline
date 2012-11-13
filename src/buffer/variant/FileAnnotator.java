@@ -85,7 +85,7 @@ public class FileAnnotator extends PipelineObject {
 		if (errorVars > 0)
 			Logger.getLogger(Pipeline.primaryLoggerName).info(errorVars + " of " + totalVars + " could not be associated with a variant record");
 		
-		if (errorVars > totalVars*0.01) {
+		if (totalVars > 100 && (errorVars > totalVars*0.04)) {
 			for(String err : lastFewErrors) {
 				System.err.println(err);
 			}

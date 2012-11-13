@@ -109,7 +109,7 @@ public class CSVLineReader implements VariantLineReader {
 		VariantRec rec = null;
 		
 		if (toks.length < 8) {
-			System.err.println("ERROR: could not parse variant from file : " + sourceFile.getName() + " line : \n " + currentLine);
+			System.err.println("ERROR: could not parse variant from file : " + sourceFile.getName() + " line : \n " + currentLine + " (at least 8 columns required)");
 			return null;
 		}
 		

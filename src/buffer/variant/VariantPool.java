@@ -172,6 +172,22 @@ public class VariantPool extends Operator  {
 	}
 	
 	/**
+	 * Returns true if this pool contains any kind of variant at the given contig and position
+	 * @param contig
+	 * @param pos
+	 * @return
+	 */
+	public boolean contains(String contig, int pos) {
+		
+		if (! vars.containsKey(contig)) {
+			return false;
+		}
+		else {
+			return findInsertionPosition(contig, pos) > -1;
+		}
+	}
+	
+	/**
 	 * Computes the "transition / transversion ratio" (not the real thing) for all 
 	 * variants where both the reference and the alt have length 1
 	 * @return

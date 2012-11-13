@@ -3,8 +3,8 @@ package util.flatFilesReader;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 
 import buffer.variant.VariantRec;
@@ -16,7 +16,7 @@ import buffer.variant.VariantRec;
  */
 public class DBNSFPEmitter {
 
-	public static void emitRegion(DBNSFPReader reader, PrintWriter writer, String contig, int startPos, int endPos) throws IOException {
+	public static void emitRegion(DBNSFPReader reader, PrintStream writer, String contig, int startPos, int endPos) throws IOException {
 		reader.advanceTo("" + contig, startPos);
 		int curPos = reader.getCurrentPos();
 		while(curPos < endPos) {
@@ -30,16 +30,28 @@ public class DBNSFPEmitter {
 					continue;
 				}
 
+				String gene = reader.getString(DBNSFPReader.GENE);
+				String tkgStr = reader.getString(DBNSFPReader.TKG);
 				String popStr = reader.getString(DBNSFPReader.TKG_AMR);
 				String mtStr = reader.getString(DBNSFPReader.MT);
-				if (! popStr.equals(".")) {
-					Double freq = Double.parseDouble(popStr);
+				String ppStr = reader.getString(DBNSFPReader.PP);
+				String siftStr = reader.getString(DBNSFPReader.SIFT);
+				String gerpStr = reader.getString(DBNSFPReader.GERP);
+				String phylopStr = reader.getString(DBNSFPReader.PHYLOP);
+				if (! tkgStr.equals(".")) {
+//					Double freq = Double.parseDouble(popStr);
 					VariantRec var = new VariantRec("" + contig, curPos, curPos+1, reader.getRef(), reader.getAlt() );
-					var.addProperty(VariantRec.POP_FREQUENCY, freq);
+//					var.addProperty(VariantRec.POP_FREQUENCY, freq);
 					Double mtVal = Double.NaN;
 					if (mtStr.length()>2)
 						mtVal = Double.parseDouble(mtStr);
-					writer.println(var.toSimpleString() + "\t" + freq + "\t" + mtVal);
+					if (tkgStr.equals(".")) {
+						tkgStr = "0.0";
+					}
+					if (popStr.equals(".")) {
+						popStr = "0.0";
+					}
+					writer.println(var.toSimpleString() + "\t" + gene + "\t" + tkgStr + "\t" + popStr + "\t" + mtVal + "\t" + siftStr + "\t" + ppStr + "\t" + gerpStr + "\t" + phylopStr);
 					
 					i = bases.length; //If we've found one for this position, skip all additional alts at this site
 				}
@@ -68,10 +80,10 @@ public class DBNSFPEmitter {
 	public static void main(String[] args) throws IOException {
 		DBNSFPReader reader = new DBNSFPReader();
 		
-		PrintWriter writer = new PrintWriter(new FileWriter("/home/brendan/top50data.csv"));
-		
-		writer.println(VariantRec.getSimpleHeader() + "\tamr.freq\tmt.score");
-		String infilePath = "/home/brendan/MORE_DATA/HHT/top50.bed";
+		//PrintWriter writer = new PrintWriter(new FileWriter("/home/brendan/tkgdata.csv"));
+		PrintStream out = System.out;
+		out.println(VariantRec.getSimpleHeader() + "gene\tkg.freq\tamr.freq\tmt.score\tsift.score\tpp.score\tgerp.score\tphylop.score");
+		String infilePath = args[0];
 		File inFile = new File(infilePath);
 		BufferedReader fileReader = new BufferedReader(new FileReader(inFile));
 		String line = fileReader.readLine();
@@ -86,11 +98,11 @@ public class DBNSFPEmitter {
 			Integer endPos = Integer.parseInt(toks[2]);
 			//System.out.println("Reading region chr" + contig + ":" + startPos );
 			
-			emitRegion(reader, writer, contig, startPos, endPos);
+			emitRegion(reader, out, contig, startPos, endPos);
 			//emitCloseGene(reader, writer, "" + contig, startPos);
 			line = fileReader.readLine();
 		}
-		writer.flush();
+		out.flush();
 		fileReader.close();
 		
 		

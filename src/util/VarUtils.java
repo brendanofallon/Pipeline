@@ -9,7 +9,9 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import math.Histogram;
 import math.LazyHistogram;
@@ -572,6 +574,18 @@ public class VarUtils {
 			return;
 		}
 		
+		if (firstArg.equals("snpFilter")) {
+			performSNPFilter(args);
+			return;
+		}
+		
+		if (firstArg.equals("sample")) {
+			performSample(args);
+			return;
+		}
+		
+		
+		
 		
 		//Compare 'truemuts'-style csv to a vcf 
 		if (firstArg.equals("scompare")) {
@@ -811,6 +825,11 @@ public class VarUtils {
 			performSummary(args);
 			return;
 		}
+		
+		if (firstArg.equals("buildvcfdb")) {
+			buildVCFDB(args);
+			return;
+		}
 			
 	
 		
@@ -842,6 +861,28 @@ public class VarUtils {
 
 	
 	
+	private static void performSNPFilter(String[] args) {
+		if (args.length < 2) {
+			System.out.println("Enter the name of the file to filter for snps");
+			return;
+		}
+		
+		try {
+			VariantLineReader reader = getReader(args[1]);
+			System.out.println(reader.getHeader());
+			do {
+				VariantRec var = reader.toVariantRec();
+				if (var.isSNP())
+					System.out.println( reader.getCurrentLine() );
+			}while(reader.advanceLine());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+	}
+
 	private static void performAnnoFilter(String[] args) {
 		if (args.length < 4) {
 			System.out.println("Enter the property to filter by and the cutoff value");
@@ -906,6 +947,44 @@ public class VarUtils {
 		}
 	}
 
+	private static void buildVCFDB(String[] args)  {
+
+		VariantPool hugePool = new VariantPool();
+		for(int i=1; i<args.length; i++) {
+			try {
+				VariantLineReader reader = getReader(args[i]);
+				System.out.println("Adding variants from " + args[i] + " current pool size is: " + hugePool.size());
+				do {
+					VariantRec var = reader.toVariantRec();
+					VariantRec tableVar = hugePool.findRecordNoWarn(var.getContig(), var.getStart());
+					if (tableVar == null) {
+						var.addProperty(VariantRec.SAMPLE_COUNT, 1.0);
+						hugePool.addRecord(var);
+					}
+					else {
+						Double count = tableVar.getProperty(VariantRec.SAMPLE_COUNT);
+						tableVar.addProperty(VariantRec.SAMPLE_COUNT, count+1);
+						if (! var.getAlt().equals(tableVar.getAlt())) {
+							tableVar.setAlt(tableVar.getAlt() + "," + var.getAlt());
+						}
+					}
+
+
+				} while(reader.advanceLine());
+			}
+			catch(IOException ex) {
+				System.err.println("Warning, could not import variants from file " + args[i] + ":" + ex.getMessage());
+			}
+		}
+		
+		//Emit pool to system.out
+		for(String contig : hugePool.getContigs()) {
+			for(VariantRec var : hugePool.getVariantsForContig(contig)) {
+				System.out.println(contig + "\t" + var.getStart() + "\t" + var.getRef() + "\t" + var.getAlt() + "\t" + var.getProperty(VariantRec.SAMPLE_COUNT));
+			}
+		}
+	}
+	
 	private static void performGeneFilter(String[] args) {
 		if (args.length < 3) {
 			System.out.println("Enter the name of the file containing gene names, then one or more variant files");
@@ -1014,16 +1093,43 @@ public class VarUtils {
 		try {
 			String key = args[2];
 			GenePool genes = new GenePool(new File(args[1]));
+			int hitsInTarget = 0;
+			int hitsNonTarget = 0;
+			double cutoff = 0.5;
 			for(int i=3; i<args.length; i++) {
+//				VariantLineReader reader = getReader(args[i]);
+//				do {
+//					VariantRec var = reader.toVariantRec();
+//					Double prop = var.getProperty(key);
+//					String gene = var.getAnnotation(VariantRec.GENE_NAME);
+//					if (gene != null && prop != null) {
+//						if (genes.containsGene(gene)) {
+//							if (prop > cutoff)
+//								hitsInTarget++;
+//						}
+//						else {
+//							if (prop > cutoff)
+//								hitsNonTarget++;
+//						}
+//						
+//					}
+//						
+//				} while(reader.advanceLine());
 				VariantPool vars = getPool(new File(args[i]));
 				VariantPool geneVars = filterByGene(vars, genes, reverse);
-				
 				for(String contig : geneVars.getContigs()) {
 					for(VariantRec var : geneVars.getVariantsForContig(contig)) {
-						System.out.println(var.getPropertyOrAnnotation(key));
+						if (var.isHetero())
+							System.out.println("1\t" + var.getPropertyOrAnnotation(key));
+						else 
+							System.out.println("2\t" + var.getPropertyOrAnnotation(key));
 					}
 				}
+				
 			}
+//			System.out.println("Hits in target: " + hitsInTarget);
+//			System.out.println("Hits non target: " + hitsNonTarget);
+//			System.out.println(" Fraction      : " + ((double)hitsInTarget / (double)hitsNonTarget));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -1214,7 +1320,7 @@ public class VarUtils {
 			System.out.println("Enter the names of two (or more) variant (vcf or csv) files to intersect");
 			return;
 		}
-
+		
 		int tried = 0;
 		int found = 0;
 		
@@ -1222,16 +1328,29 @@ public class VarUtils {
 			VariantLineReader vars = getReader(args[1]);
 			
 			System.out.println(vars.getHeader().trim());
+
 			
-			VariantPool bigPool = getPool(new File(args[2]));
-			do {
-				VariantRec var  = vars.toVariantRec();
-				tried++;
-				if (bigPool.findRecordNoWarn(var.getContig(), var.getStart()) != null) {
-					System.out.println(vars.getCurrentLine());
-					found++;
-				}
-			} while(vars.advanceLine());
+			VariantPool[] pools = new VariantPool[args.length-2];
+			for(int i=2; i<args.length; i++) {
+				pools[i-2] = getPool(new File(args[i]));
+			}
+			
+				do {
+					VariantRec var  = vars.toVariantRec();
+					tried++;
+					boolean missing = false;
+					for(int i=0; i<pools.length; i++) {
+						//VariantPool pool = getPool(new File(args[i]));
+						if (pools[i].findRecordNoWarn(var.getContig(), var.getStart()) == null) {
+							missing = true;
+							break;
+						}
+					}
+					if (!missing) {
+						System.out.println(vars.getCurrentLine());
+						found++;
+					}
+				} while(vars.advanceLine());
 			
 
 			System.err.println("Found " + found + " intersecting variants in pool of size " + tried);
@@ -1465,7 +1584,10 @@ public class VarUtils {
 				for(String contig : pool.getContigs()) {
 					for(VariantRec var : pool.getVariantsForContig(contig)) {
 						String val = var.getPropertyOrAnnotation(prop);
-						System.out.println(val);
+						if (var.isHetero())
+							System.out.println("1\t" + val);
+						else 
+							System.out.println("2\t" + val);
 					}
 				}
 			} catch (IOException e) {
@@ -1857,82 +1979,157 @@ public class VarUtils {
 		double val = Double.parseDouble(args[2]);
 		try {
 			for(int i=3; i<args.length; i++) {
-				VariantPool pool = getPool(new File(args[i]));
-				VariantPool filteredVars = new VariantPool();
-				for(String contig : pool.getContigs()) {
-					for(VariantRec var : pool.getVariantsForContig(contig)) {
-						Double varVal;
-						if (prop.startsWith("quality"))
-							varVal = var.getQuality();
-						else
-							varVal = var.getProperty(prop);
+				PrintStream outStream = System.out;
+				VariantLineReader reader = getReader(args[i]);
+				
+				if (args.length>4) {
+					String outputFileName = args[i].replace(".vcf", ".flt.vcf").replace(".csv", ".flt.csv");
+					outStream = new PrintStream(new FileOutputStream(outputFileName));
+				}
+				
+				
+				outStream.print( reader.getHeader() );
+				int count = 0;
+				do {
+					VariantRec var = reader.toVariantRec();
+					Double varVal;
+					if (prop.startsWith("quality"))
+						varVal = var.getQuality();
+					else
+						varVal = var.getProperty(prop);
 
-						if (prop.startsWith("var.freq")) {
-							Double totDepth = var.getProperty(VariantRec.DEPTH);
-							Double varDepth = var.getProperty(VariantRec.VAR_DEPTH);
-							if (totDepth != null && varDepth != null) {
-								varVal = varDepth / totDepth;
-							}
-						}
-
-						if ((!greater) && varVal == null) {
-							filteredVars.addRecord(var);
-						}
-						else {
-							if ( (!greater) && varVal < val) {
-								filteredVars.addRecord(var);
-							}
-							if (greater && (varVal != null) && varVal > val) {
-								filteredVars.addRecord(var);
-							}
+					if (prop.startsWith("var.freq")) {
+						Double totDepth = var.getProperty(VariantRec.DEPTH);
+						Double varDepth = var.getProperty(VariantRec.VAR_DEPTH);
+						if (totDepth != null && varDepth != null) {
+							varVal = varDepth / totDepth;
 						}
 					}
-				}
 
-				List<String> annoKeys = new ArrayList<String>();
-				annoKeys.add(VariantRec.RSNUM);
-				annoKeys.add(VariantRec.POP_FREQUENCY);
-				annoKeys.add(VariantRec.GENE_NAME);
-				annoKeys.add(VariantRec.VARIANT_TYPE);
-				annoKeys.add(VariantRec.EXON_FUNCTION);
-				annoKeys.add(VariantRec.CDOT);
-				annoKeys.add(VariantRec.PDOT);
-				annoKeys.add(VariantRec.VQSR);
-				annoKeys.add(VariantRec.DEPTH);
-				annoKeys.add(VariantRec.EFFECT_PREDICTION2);
-				//annoKeys.add(VariantRec.PUBMED_SCORE);
-				annoKeys.add(VariantRec.FALSEPOS_PROB);
-				annoKeys.add(VariantRec.TAUFP_SCORE);
-				annoKeys.add(VariantRec.FS_SCORE);
-				annoKeys.add(VariantRec.MT_SCORE);
-				annoKeys.add(VariantRec.POLYPHEN_SCORE);
-				annoKeys.add(VariantRec.SIFT_SCORE);
-				annoKeys.add(VariantRec.GERP_SCORE);
-				annoKeys.add(VariantRec.PHYLOP_SCORE);
-				
-				annoKeys.add(prop);
+					if ((!greater) && varVal == null) {
+						outStream.println( reader.getCurrentLine() );
+						count++;
+					}
+					else {
+						if ( (!greater) && varVal < val) {
+							outStream.println( reader.getCurrentLine() );
+							count++;
+						}
+						if (greater && (varVal != null) && varVal > val) {
+							outStream.println( reader.getCurrentLine() );
+							count++;
+						}
+					}
+
+					
+				} while(reader.advanceLine());
+			
 				if (greater)
-					System.err.println("Found " + filteredVars.size() + " vars with " + prop + " above " + val);
+					System.err.println("Found " + count + " vars with " + prop + " above " + val);
 				else 
-					System.err.println("Found " + filteredVars.size() + " vars with " + prop + " below " + val);
+					System.err.println("Found " + count + " vars with " + prop + " below " + val);
+
+				outStream.close();
+			}
+		}
+		catch (IOException ex) {
+			ex.printStackTrace();
+		}
 				
-				if (args.length==4)
-					filteredVars.listAll(System.out, annoKeys);
-				else {
-					//Write results to a file
-					String outfilename = args[i].replace(".vcf", "").replace(".csv", "") + ".flt.csv";
-					PrintStream out = new PrintStream(new FileOutputStream(new File(outfilename)));
-					System.err.println("Emitting vars from file " + args[i] + " to : " + outfilename);
-					filteredVars.listAll(out, annoKeys);
-					out.close();
+//				VariantPool filteredVars = new VariantPool();
+//				for(String contig : pool.getContigs()) {
+//					for(VariantRec var : pool.getVariantsForContig(contig)) {
+//											}
+//				}
+//
+//				List<String> annoKeys = new ArrayList<String>();
+//				annoKeys.add(VariantRec.RSNUM);
+//				annoKeys.add(VariantRec.POP_FREQUENCY);
+//				annoKeys.add(VariantRec.GENE_NAME);
+//				annoKeys.add(VariantRec.VARIANT_TYPE);
+//				annoKeys.add(VariantRec.EXON_FUNCTION);
+//				annoKeys.add(VariantRec.CDOT);
+//				annoKeys.add(VariantRec.PDOT);
+//				annoKeys.add(VariantRec.VQSR);
+//				annoKeys.add(VariantRec.DEPTH);
+//				annoKeys.add(VariantRec.EFFECT_PREDICTION2);
+//				//annoKeys.add(VariantRec.PUBMED_SCORE);
+//				annoKeys.add(VariantRec.FALSEPOS_PROB);
+//				annoKeys.add(VariantRec.TAUFP_SCORE);
+//				annoKeys.add(VariantRec.FS_SCORE);
+//				annoKeys.add(VariantRec.MT_SCORE);
+//				annoKeys.add(VariantRec.POLYPHEN_SCORE);
+//				annoKeys.add(VariantRec.SIFT_SCORE);
+//				annoKeys.add(VariantRec.GERP_SCORE);
+//				annoKeys.add(VariantRec.PHYLOP_SCORE);
+//				
+//				annoKeys.add(prop);
+//				if (greater)
+//					System.err.println("Found " + filteredVars.size() + " vars with " + prop + " above " + val);
+//				else 
+//					System.err.println("Found " + filteredVars.size() + " vars with " + prop + " below " + val);
+				
+//				if (args.length==4)
+//					filteredVars.listAll(System.out, annoKeys);
+//				else {
+//					//Write results to a file
+//					String outfilename = args[i].replace(".vcf", "").replace(".csv", "") + ".flt.csv";
+//					PrintStream out = new PrintStream(new FileOutputStream(new File(outfilename)));
+//					System.err.println("Emitting vars from file " + args[i] + " to : " + outfilename);
+//					filteredVars.listAll(out, annoKeys);
+//					out.close();
+//				}
+//			}
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+	}
+	
+	
+	private static void performSample(String[] args) {
+		if (args.length < 2) {
+			System.out.println("Enter the number of samples to obtain from the variant file");
+			return;
+		}
+		
+		int samples = Integer.parseInt( args[1] );
+		
+		List<String> lines = new ArrayList<String>();
+		VariantLineReader reader;
+		try {
+			reader = getReader( args[2] );
+			
+			
+			do {
+				VariantRec var = reader.toVariantRec();
+				if (var != null)
+					lines.add(reader.getCurrentLine());
+			} while(reader.advanceLine());
+
+			if (samples > lines.size()) {
+				System.err.println("Error : requested number of samples is greater than number of variants in file");
+				return;
+			}
+			
+			
+			System.out.print(reader.getHeader());
+			Set<Integer> linesSampled = new HashSet<Integer>();
+			int count = 0;
+			while(count < samples) {
+				int lineNum = (int)(lines.size() * Math.random());
+				if (! linesSampled.contains(lineNum)) {
+					System.out.println(lines.get(lineNum));
+					linesSampled.add(lineNum);
+					count++;
 				}
 			}
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	
 	
 	private static void performEmit(String[] args) {
 		if (args.length < 4) {

@@ -123,10 +123,6 @@ public class CachedGeneSummaryDB {
 				//System.out.println("Fetching summary from NCBI for gene : " + symbol);
 				GeneRecord rec = fetcher.fetchInfoForGene(id);
 				String summaryString = rec.getSummary();
-				//Sanity check
-				if (! rec.getSymbol().equals(symbol)) {
-					throw new IllegalArgumentException("Obtained symbol does not match requested symbol!");
-				}
 
 				summary= new GeneSummary();
 				summary.symbol = symbol;
@@ -156,8 +152,10 @@ public class CachedGeneSummaryDB {
 			try {
 				cache.createNewFile();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+
+				Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
+			    logger.warning("Could not create gene summary cache file at path : " + cache.getAbsolutePath() + " reason: " + e.getMessage());
+				//e.printStackTrace();
 				return;
 			}
 		}
@@ -174,7 +172,7 @@ public class CachedGeneSummaryDB {
 	
 	public void buildMapFromFile() throws IOException {
 		map = new HashMap<String, GeneSummary>();
-		System.out.println("Initializing cached gene summary db");
+		System.out.println("Initializing cached gene summary db from path: " + cacheFilePath);
 		File cache = new File(cacheFilePath);
 		if (!cache.exists()) {
 			try {

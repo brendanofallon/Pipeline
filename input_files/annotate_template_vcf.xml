@@ -31,6 +31,19 @@
   <VariantPool />
 </TKGAnnotate>
 
+<dbSNP class="operator.annovar.DBSNPAnnotator">
+ <AnnoInput />
+ <VariantPool />
+</dbSNP>
+
+<ESPAnnotate class="operator.annovar.Exomes5400Annotator">
+ <AnnoInput /> 
+ <VariantPool />
+</ESPAnnotate>
+
+<!-- HGMDVar class="operator.variant.HGMDVarAnnotator">
+  <VariantPool />
+</HGMDVar -->
 
 <ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />

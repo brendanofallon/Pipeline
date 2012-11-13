@@ -21,7 +21,7 @@ public class CacheUpdater {
 		
 		GeneInfoDB geneInfo= new GeneInfoDB(new File(GeneInfoDB.defaultDBPath));
 		
-		CachedGeneSummaryDB.setExpirationLength(7);
+		CachedGeneSummaryDB.setExpirationLength(30);
 		CachedGeneSummaryDB geneSummaries = new CachedGeneSummaryDB();
 		
 		Collection<String> geneIDs = geneInfo.getAllGenes();
@@ -89,7 +89,7 @@ public class CacheUpdater {
 
 	public static void main(String[] args) throws IOException {
 		
-		//updateGeneSummaryCache();
+		updateGeneSummaryCache();
 		updatePubmedCache();
 		
 	}

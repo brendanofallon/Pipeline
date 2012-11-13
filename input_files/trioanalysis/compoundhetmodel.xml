@@ -1,0 +1,91 @@
+
+<Pipeline>
+
+<reference class="buffer.ReferenceFile" filename="/home/brendan/resources/human_g1k_v37.fasta" />
+<capture class="buffer.BEDFile" filename="/home/brendan/resources/SureSelect_50mb_with_annotation_b37.bed" />
+<KnownDBSNP class="buffer.VCFFile" filename="/home/brendan/resources/dbsnp_132.b37.vcf" />
+<HapMap class="buffer.VCFFile" filename="/home/brendan/resources/hapmap_3.3.b37.sites.vcf" />
+<Omni class="buffer.VCFFile" filename="/home/brendan/resources/1000G_omni2.5.b37.sites.vcf" />
+
+
+<searchTerms class="buffer.TextBuffer" filename="searchterms.txt" />
+
+
+<Genes class="buffer.GeneList">
+  <InputGenes class="buffer.TextBuffer" filename="allgenes.txt" />
+</Genes>
+
+<DBNSFPGene class="operator.gene.DBNSFPGeneAnnotator">
+ <Genes />
+</DBNSFPGene> 
+
+<HGMD class="operator.gene.HGMDAnnotator">
+ <Genes />
+</HGMD>
+
+<dbNSFPGeneRank class="operator.gene.DBNSFPGeneRanker">
+  <Genes />
+  <searchTerms />
+</dbNSFPGeneRank>
+
+
+<GeneSummaryAnnotate class="operator.gene.NCBISummaryAnnotator">
+  <Genes />
+</GeneSummaryAnnotate>
+
+<SummaryRank class="operator.gene.GeneSummaryRanker" no.downloads="true" >
+        <Genes />
+        <searchTerms />
+</SummaryRank>
+
+<PubmedRank class="operator.gene.PubmedRanker" no.downloads="true" >
+  <Genes />
+  <searchTerms />
+</PubmedRank>
+
+
+<KidVars class="buffer.variant.VariantPool">
+  <KidFile class="buffer.CSVFile" filename="Sample3834.allflt.annotated.csv" />
+</KidVars>
+
+<Par1Vars class="buffer.variant.VariantPool">
+  <Par1File class="buffer.CSVFile" filename="Sample8779.allflt.annotated.csv" />
+</Par1Vars>
+
+<Par2Vars class="buffer.variant.VariantPool">
+  <Par2File class="buffer.CSVFile" filename="Sample8724.allflt.annotated.csv" />
+</Par2Vars>
+
+<TKGAnnotator class="operator.annovar.TKGAnnotator">
+ <KidVars />
+</TKGAnnotator>
+
+<dbSNPAnnotator class="operator.annovar.DBSNPAnnotator">
+ <KidVars />
+</dbSNPAnnotator>
+
+
+<KidVarFilter class="operator.variant.VariantMultiFilter" pop.freq.cutoff="0.10" >
+  <input>
+     <KidVars />
+  </input>
+  <output>
+    <FilteredKidVars class="buffer.variant.VariantPool" />
+  </output>
+</KidVarFilter>
+
+
+
+<EmitGeneRank class="operator.gene.EmitGeneRank">
+ <Genes />
+</EmitGeneRank>
+
+<FindCHets class="operator.variant.CompoundHetFinder">
+  <FilteredKidVars />
+  <Par1Vars />
+  <Par2Vars />
+  <Genes />
+</FindCHets>
+
+
+</Pipeline>

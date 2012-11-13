@@ -1,0 +1,113 @@
+
+<Pipeline>
+
+<reference class="buffer.ReferenceFile" filename="/home/brendan/resources/human_g1k_v37.fasta" />
+<capture class="buffer.BEDFile" filename="/home/brendan/resources/SureSelect_50mb_with_annotation_b37.bed" />
+<KnownDBSNP class="buffer.VCFFile" filename="/home/brendan/resources/dbsnp_132.b37.vcf" />
+<HapMap class="buffer.VCFFile" filename="/home/brendan/resources/hapmap_3.3.b37.sites.vcf" />
+<Omni class="buffer.VCFFile" filename="/home/brendan/resources/1000G_omni2.5.b37.sites.vcf" />
+
+
+<genesOfInterest class="buffer.variant.GenePool" filename="/home/brendan/MORE_DATA/HHT/HHT-genes.txt" />
+
+<InteractionMatrix class="buffer.GeneInteractionGraph" key.genes="ENG,ACVRL1,SMAD4,RASA1" graph.size="100" />
+
+<InputVCF class="buffer.VCFFile" filename="medtest_all_variants.vcf" />
+
+
+<MakeInput class="operator.annovar.ConvertVCFAnnovar">
+ <input>
+	<InputVCF />
+ </input>
+ <output>
+	<AnnoInput class="buffer.AnnovarInputFile" filename="annovar.input" />
+ </output>
+</MakeInput>
+
+<VariantPool class="buffer.variant.VariantPool">
+	<InputVCF />
+</VariantPool>
+
+<GeneAnnotate class="operator.annovar.GeneAnnotator">
+        <AnnoInput />
+        <VariantPool />
+</GeneAnnotate>
+
+
+<VarsToGenes class="operator.gene.GeneListFromVariants">
+ 	<VariantPool />
+	<Genes class="buffer.GeneList" />
+</VarsToGenes>
+
+<NewDBNSFPGene class="operator.gene.DBNSFPGeneAnnotator">
+ <Genes />
+</NewDBNSFPGene> 
+
+<dbNSFPGeneRank class="operator.gene.DBNSFPGeneRanker">
+  <Genes />
+  <VariantPool />
+  <rankedSummaryTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-summaryterms.txt" />
+</dbNSFPGeneRank>
+
+
+<GeneSummaryAnnotate class="operator.gene.NCBISummaryAnnotator">
+  <Genes />
+</GeneSummaryAnnotate>
+
+<SummaryRank class="operator.gene.GeneSummaryRanker" no.downloads="true" >
+        <Genes />
+        <rankedSummaryTerms />
+</SummaryRank>
+
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+ <VariantPool />
+</dbNSFPAnnotate>
+
+<EffectPred class="operator.annovar.EffectPredictionAnnotator">
+ <VariantPool />
+</EffectPred>
+
+
+
+
+<GOAnnotate class="operator.gene.GoTermAnnotator" >
+  <Genes />
+</GOAnnotate>
+
+<GoRank class="operator.gene.GOTermRanker">
+ <Genes />
+ <rankedTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-goterms.txt" />
+</GoRank>
+
+<PubmedRank class="operator.gene.PubmedRanker" no.downloads="true" >
+  <Genes />
+  <pubmedTerms class="buffer.TextBuffer" filename="/home/brendan/MORE_DATA/HHT/HHT-pubmedterms.txt" />
+</PubmedRank>
+
+
+<InteractionRank class="operator.gene.InteractionRanker" source="ENG,ACVRL1,SMAD4,RASA1">
+  <Genes />
+  <InteractionMatrix />
+</InteractionRank>
+
+
+
+<FinalRanker class="operator.GeneEffectRanker">
+  <Genes />
+  <VariantPool />
+ <PubmedRank />
+ <GoRank />
+  <SummaryRank />
+  <dbNSFPGeneRank />
+</FinalRanker>
+
+
+<EverythingToFile class="rankingService.ResultsWriter">
+  <Genes />
+  <VariantPool />
+  <CSVFileAll class="buffer.CSVFile" filename="medtest.ranking.all.csv" />
+</EverythingToFile>
+
+
+
+</Pipeline>

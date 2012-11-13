@@ -259,39 +259,14 @@ public class Optimizer implements MultivariateFunction {
 			//func.loadDataA(new File("/home/brendan/hgmd_test/hgmd.analysis.csv"));
 			//func.loadDataB(new File("/home/brendan/hgmd_test/highfreqs.0.1.analysis.csv"));
 	
-			func.loadDataA(new File("/home/brendan/oldhome/hgmd_test/hgmd.dmonly.nonans.csv"));
+			func.loadDataA(new File("/home/brendan/oldhome/hgmd_test/hgmd.dmonly.nonans.csv")); //Original training set
 			func.loadDataB(new File("/home/brendan/oldhome/hgmd_test/tgk.nonans.csv"));
 			
-			//func.emit(new double[]{0, 0, 0, 0, 1, 0}); 
-			//func.emit(new double[]{-8, -0.1, 23, -7.8, 0.6, 3.9}); //This one is good for no interaction term
-			
-			//func.emit(new double[]{-20, 5, 15, -9, -2.5, 4.74, 6.29}); //sift / gerp interaction, sum = 2.05e-4
-			
-			//Current best, using as mt interactions
-			//func.emit(new double[]{-11, 0.6, 10, -11, -0.5, 7, 12, 1.6, 3, -2.39, -5.5, 2.0}); //sift / gerp interaction, sum = 2.05e-4
-		
-			//All two-way interactions 
-			//func.emit(new double[]{-35.26,-6.27,-15.49,-10.94,0.68,8.63,17.2,34.63,-7.04,1.06,-5.86,24.78,-7.02,0.37,1.91,34.29,-0.52,-2.98,-0.64,-4.37,0.53});
-			
-			//All two-way interactions, new weighting
-			
-			//func.emit(new double[]{2.74,0.84,-5.3,2.23,-0.32,-1.36,-3.53,-5.02,0.99,0.12,0.42,-4.8,0.4,-0.28,0.6,-1.47,0.51,-0.2,-0.04,0.26,-0.09});
 			
 			
-			//Linear only, new function ... this one is almost exactly equivalent to the all-interactions version,
-			//and is slightly better than linear-only histogram-overlap function 
-			//func.emit(new double[]{-0.05,1.46,6.29,-1.48,-0.03,0.87});	
-			//func.emit(new double[]{-0.5,1.46,6.29,-1.48,-0.3,0.87});
-			//System.exit(0);
-			
-			//New version, score based on means + stdevs with penalty
-			//func.emit(new double[]{-2.33, 1.74,	1.74, 7.75,	0.055,	-0.271,	0.176});
-			//System.exit(0);
-			
-			
-			//func.emit(new double[]{-2.22,4.98,1.52,11.29,-0.485,-0.22,2.68}); //best so far, basically
-			func.emit(new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}); 
-			//func.emit(new double[]{-1859.67,4183.4,463.13,26201.1,-410.62,-184.6,2250.07}); //no penalty test
+			func.emit(new double[]{-2.22,4.98,1.52,11.29,-0.485,-0.22,2.68}); //best so far, basically
+			//func.emit(new double[]{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}); 
+
 			System.exit(0);
 			
 			for(int i=0; i<1000; i++) {

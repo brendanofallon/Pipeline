@@ -37,9 +37,9 @@
  <VariantPool />
 </ExomesAnnotate>
 
-<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+<!-- dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
-</dbNSFPAnnotate>
+</dbNSFPAnnotate -->
 
 
 <!-- OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
