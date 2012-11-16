@@ -950,20 +950,41 @@ public class VarUtils {
 	private static void buildVCFDB(String[] args)  {
 
 		VariantPool hugePool = new VariantPool();
+		Set<String> analysisTypes = new HashSet<String>();
+		
 		for(int i=1; i<args.length; i++) {
+			VariantPool tmpPool = new VariantPool(); //Temp storage for variants we will add to huge pool
+			
+			//Trim analysis string from filename
+			int endPos = args[i].indexOf("_");
+			if (endPos == -1) {
+				endPos = args[i].indexOf(".");
+			}
+			String analysisTypeStr = args[i].substring(0, endPos);
+			analysisTypes.add(analysisTypeStr);
 			try {
 				VariantLineReader reader = getReader(args[i]);
-				System.out.println("Adding variants from " + args[i] + " current pool size is: " + hugePool.size());
+				System.err.println("Adding variants from " + args[i] + " current pool size is: " + hugePool.size());
 				do {
 					VariantRec var = reader.toVariantRec();
 					VariantRec tableVar = hugePool.findRecordNoWarn(var.getContig(), var.getStart());
 					if (tableVar == null) {
 						var.addProperty(VariantRec.SAMPLE_COUNT, 1.0);
-						hugePool.addRecord(var);
+						var.addProperty(analysisTypeStr, 1.0);
+						tmpPool.addRecordNoSort(var);
 					}
 					else {
 						Double count = tableVar.getProperty(VariantRec.SAMPLE_COUNT);
 						tableVar.addProperty(VariantRec.SAMPLE_COUNT, count+1);
+						
+						Double analTypeCount = tableVar.getProperty(analysisTypeStr);
+						if (analTypeCount == null) {
+							tableVar.addProperty(analysisTypeStr, 1.0);
+						}
+						else {
+							tableVar.addProperty(analysisTypeStr, analTypeCount+1);
+						}
+						
 						if (! var.getAlt().equals(tableVar.getAlt())) {
 							tableVar.setAlt(tableVar.getAlt() + "," + var.getAlt());
 						}
@@ -971,6 +992,9 @@ public class VarUtils {
 
 
 				} while(reader.advanceLine());
+				
+				tmpPool.sortAllContigs();
+				hugePool.addAll(tmpPool);
 			}
 			catch(IOException ex) {
 				System.err.println("Warning, could not import variants from file " + args[i] + ":" + ex.getMessage());
@@ -978,9 +1002,22 @@ public class VarUtils {
 		}
 		
 		//Emit pool to system.out
+		System.out.print("#contig\tpos\tref\talt\ttot.samples");
+		for(String analysisType : analysisTypes) {
+			System.out.print("\t" + analysisType);
+		}
+		System.out.println();
+		
 		for(String contig : hugePool.getContigs()) {
 			for(VariantRec var : hugePool.getVariantsForContig(contig)) {
-				System.out.println(contig + "\t" + var.getStart() + "\t" + var.getRef() + "\t" + var.getAlt() + "\t" + var.getProperty(VariantRec.SAMPLE_COUNT));
+				System.out.print(contig + "\t" + var.getStart() + "\t" + var.getRef() + "\t" + var.getAlt() + "\t" + var.getProperty(VariantRec.SAMPLE_COUNT));
+				for(String analysisType : analysisTypes) {
+					Double ac = var.getProperty(analysisType);
+					if (ac == null)
+						ac = 0.0;
+					System.out.print("\t" + ac);
+				}
+				System.out.println();
 			}
 		}
 	}
@@ -1239,21 +1276,35 @@ public class VarUtils {
 			System.out.println("Total variants in " + fileA.getName() + " : " + varsA.size() + " mean quality: " + formatter.format(varsA.meanQuality()));
 			System.out.println("Total variants in " + fileB.getName() + " : " + varsB.size() + " mean quality: " + formatter.format(varsB.meanQuality()));
 			
-			System.out.println("Transitions / Transversions in " + fileA.getName() + " : " + varsA.countTransitions() + " / " + varsA.countTransverions());
-			System.out.println("Transitions / Transversions in " + fileB.getName() + " : " + varsB.countTransitions() + " / " + varsB.countTransverions());
-			
-			System.out.println("TT ratio for " + fileA.getName() + " : " + formatter.format(varsA.computeTTRatio()));
-			System.out.println("TT ratio for " + fileB.getName() + " : " + formatter.format(varsB.computeTTRatio()));
-			
+			int hetsA = varsA.countHeteros();
+			int hetsB = varsB.countHeteros();
+			System.out.println("Heterozyotes in " + fileA.getName() + " : " + hetsA + " ( " + formatter.format(100.0*(double)hetsA/(double)varsA.size()) + " % )");
+			System.out.println("Heterozyotes in " + fileB.getName() + " : " + hetsB +  " ( " + formatter.format(100.0*(double)hetsB/(double)varsB.size()) + " % )");
+		
+			System.out.println("Transitions / Transversions in " + fileA.getName() + " : " + varsA.countTransitions() + " / " + varsA.countTransverions() + "\t ratio: " + formatter.format(varsA.computeTTRatio()));
+			System.out.println("Transitions / Transversions in " + fileB.getName() + " : " + varsB.countTransitions() + " / " + varsB.countTransverions() + "\t ratio: " + formatter.format(varsB.computeTTRatio()));
+						
 			CompareVCF.compareVars(varsA, varsB, System.out);
 			
 			VariantPool intersection = (VariantPool) varsA.intersect(varsB);
 			
 			
 			VariantPool uniqA = new VariantPool(varsA);
-			uniqA.removeVariants(intersection);
 			VariantPool uniqB = new VariantPool(varsB);
-			uniqB.removeVariants(intersection);
+			for(String contig : varsB.getContigs()) {
+				for(VariantRec var : varsB.getVariantsForContig(contig)) {
+					uniqA.removeVariantAllele(var.getContig(), var.getStart(), var.getAlt());
+				}
+			}
+			
+			for(String contig : varsA.getContigs()) {
+				for(VariantRec var : varsA.getVariantsForContig(contig)) {
+					uniqB.removeVariantAllele(var.getContig(), var.getStart(), var.getAlt());
+				}
+			}
+			
+
+			System.out.println("\nTotal intersection size: " + intersection.size());
 			
 			System.out.println("Number of variants unique to " + fileA.getName() + " : " + uniqA.size());
 			System.out.println("Number of variants unique to " + fileB.getName() + " : " + uniqB.size());
@@ -1261,13 +1312,8 @@ public class VarUtils {
 			System.out.println("TT ratio in variants unique to " + fileA.getName() + " : " + uniqA.computeTTRatio());
 			System.out.println("TT ratio in variants unique to " + fileB.getName() + " : " + uniqB.computeTTRatio());
 			
-			int hetsA = varsA.countHeteros();
-			int hetsB = varsB.countHeteros();
-			System.out.println("Heterozyotes in " + fileA.getName() + " : " + hetsA + " ( " + formatter.format(100.0*(double)hetsA/(double)varsA.size()) + " % )");
-			System.out.println("Heterozyotes in " + fileB.getName() + " : " + hetsB +  " ( " + formatter.format(100.0*(double)hetsB/(double)varsB.size()) + " % )");
-			
+	
 
-			System.out.println("Total intersection size: " + intersection.size());
 			System.out.println("%Intersection in " + fileA.getName() + " : " + formatter.format( (double)intersection.size() / (double)varsA.size()));
 			System.out.println("%Intersection in " + fileB.getName() + " : " + formatter.format( (double)intersection.size() / (double)varsB.size()));
 			
@@ -1382,6 +1428,9 @@ public class VarUtils {
 		try {
 			VariantLineReader baseVars = getReader(args[1]);
 			System.out.println(baseVars.getHeader().trim());
+			if (args[1].endsWith(".vcf"))
+				baseVars.advanceLine(); //Skips header
+			
 			do {
 				VariantRec var = baseVars.toVariantRec();
 				

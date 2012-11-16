@@ -37,6 +37,11 @@
  <VariantPool />
 </ExomesAnnotate>
 
+<ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
+ <VariantPool />
+</ARUPFreqAnno>
+
+
 <!-- dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
 </dbNSFPAnnotate -->

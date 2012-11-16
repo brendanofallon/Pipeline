@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -23,7 +22,6 @@ import pipeline.Pipeline;
 import pipeline.PipelineObject;
 import buffer.CSVFile;
 import buffer.GeneList;
-import buffer.variant.VarFilterUtils;
 import buffer.variant.VariantFilter;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
@@ -34,6 +32,7 @@ public class DeNovoFinder extends Operator {
 	private VariantPool parent1Pool = null;
 	private VariantPool parent2Pool = null;
 	private CSVFile outputFile = null;
+	private VariantPoolWriter outputFormatter = new MedDirWriter();
 	
 	GeneList genes = null;
 	DecimalFormat formatter = new DecimalFormat("0.0###");
@@ -58,123 +57,30 @@ public class DeNovoFinder extends Operator {
 		
 		List<VariantRec> hits = findDenovos(kidPool, parent1Pool, parent2Pool, genes);
 		
-		int count = 0;
+		outputFormatter.setGenes(genes);
+		outputFormatter.writeHeader(outputStream);
+		
+		
+			
 		for(VariantRec hit : hits) {
-			Gene g = hit.getGene();
-			Double score = g.getProperty(Gene.GENE_RELEVANCE);
-			if (score != null && score > 0) {
-				count++;
-				
-			}
-		}
-		
-		if (count == 0) {
-			outputStream.println("No scores found in any de novo gene");
-		}
-		
-		outputStream.println("Gene\t cdot\t pDot \t variant.type \t coverage\t quality \t zygosity \t 1000G.frequency \t rs# \t gene.in.hgmd \t SIFT \t PolyPhen-2 \t MutationTaster \t GERP");
-		
-		for(VariantRec hit : hits) {
-			Gene g = hit.getGene();
-
-			String hetStr = "het";
-			if (! hit.isHetero()) {
-				hetStr = "hom";
-			}
-			String varType = hit.getAnnotation(VariantRec.VARIANT_TYPE);
-			if (varType != null && varType.contains("exonic")) {
-				varType = hit.getAnnotation(VariantRec.EXON_FUNCTION);
-			}
-			if (varType == null)
-				varType = "?";
-
-			String cDot = hit.getAnnotation(VariantRec.CDOT);
-			String pDot = hit.getAnnotation(VariantRec.PDOT);
-
-			Double freq = hit.getProperty(VariantRec.POP_FREQUENCY);
-			if (freq == null)
-				freq = 0.0;
-
-			Double rel = g.getProperty(Gene.GENE_RELEVANCE);
-			if (rel == null)
-				rel = 0.0;
-
-			String inHGMD = "no";
-			if (g.getAnnotation(Gene.HGMD_INFO) != null) {
-				inHGMD = "yes";
-			}
-
-			String rsNum = hit.getAnnotation(VariantRec.RSNUM);
-
-			Double depth = hit.getProperty(VariantRec.DEPTH);
-			Double qual = hit.getQuality();
-
-			Double sift = hit.getProperty(VariantRec.SIFT_SCORE);
-			Double polyphen = hit.getProperty(VariantRec.POLYPHEN_SCORE);
-			Double mt = hit.getProperty(VariantRec.MT_SCORE);
-			Double gerp = hit.getProperty(VariantRec.GERP_SCORE);
-
-
-			outputStream.println(g.getName() + "\t" + cDot + "\t" + pDot + "\t" + varType + "\t" + depth + "\t" + formatter.format(qual) + "\t" + hetStr + "\t" + formatter.format(freq) + "\t" + rsNum + "\t" + inHGMD + "\t" + rel + "\t" + toUserStr(sift) + "\t" + toUserStr(polyphen) + "\t" + toUserStr(mt) + "\t" + toUserStr(gerp));
+			outputFormatter.writeVariant(hit, outputStream);
 		}		
 	}
-
-	private static String toUserStr(Double val) {
-		if (val == null || Double.isNaN(val)) {
-			return "?";
-		}
-		return "" + val;
-	}
+	
 
 	private static List<VariantRec> findDenovos(VariantPool kidVars,
 			VariantPool p1Vars, VariantPool p2Vars, GeneList genes) {
 
 		GeneInfoDB geneDB = GeneInfoDB.getDB();
 
-		List<VariantRec> hits = new ArrayList<VariantRec>();
-
-		
 		VariantPool kidVarsFiltered = new VariantPool( kidVars.filterPool( nonSynFilter ) );
 		
 		kidVarsFiltered.removeVariants( p1Vars);
 		kidVarsFiltered.removeVariants( p2Vars );
 		
-		kidVarsFiltered = new VariantPool( kidVarsFiltered.filterPool( VarFilterUtils.getHomoFilter() ) );
-
+		List<VariantRec> hits = kidVarsFiltered.toList();
 		
-		//Filter out intergenic, etc. mutations...
-		
-		
-		for(String contig : kidVarsFiltered.getContigs()) {
-			for(VariantRec var : kidVarsFiltered.getVariantsForContig(contig)) {
-				Gene g = var.getGene();
-				String geneName = var.getAnnotation(VariantRec.GENE_NAME);
-				if (g == null && (geneName != null)) {
-					g = genes.getGeneByName( geneName );
-					if ( g == null) {
-						System.err.println("Hmm, could not find gene for name : " + geneName);
-						String synonym = geneDB.symbolForSynonym(geneName);
-						if (synonym != null) {
-							System.out.println("Found synonym for gene :" + geneName + " -> " + synonym);
-							g = genes.getGeneByName(synonym);
-						}
-						else {
-							System.out.println("No synonym for gene :" + geneName + " :(");
-						}
-					}
-					
-				}
-				
-//				if (g != null) {
-//					var.setGene(g);
-//					if (g.getProperty(Gene.GENE_RELEVANCE) != null && g.getProperty(Gene.GENE_RELEVANCE)>0) {
-//						hits.add(var);
-//					}
-//				}
-			}
-		}
-		
-		Collections.sort(hits, new GeneRelComparator());
+		Collections.sort(hits, new EffectPredComparator());
 		
 		return hits;
 	}
@@ -223,6 +129,25 @@ public class DeNovoFinder extends Operator {
 
 	}
 	
+	static class EffectPredComparator implements Comparator<VariantRec> {
+
+		@Override
+		public int compare(VariantRec arg0, VariantRec arg1) {
+			Double ef1 = arg0.getProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT);
+			Double ef2 = arg1.getProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT);
+			
+			if (ef1 == null)
+				ef1 = 0.0;
+			if (ef2 == null)
+				ef2 = 0.0;
+			
+			if (ef1 == ef2)
+				return 0;
+			else
+				return ef1 < ef2 ? -1 : 1;
+						
+		}	
+	}
 	
 	static class GeneRelComparator implements Comparator<VariantRec> {
 

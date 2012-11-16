@@ -100,6 +100,14 @@ public class BamMetrics extends IOOperator {
 				dupCount++;
 			
 			byte[] baseQuals = samRecord.getBaseQualities();
+			if (samRecord.getSecondOfPairFlag()) {
+				for(int i=0; i<baseQuals.length/2; i++) {
+					byte tmp = baseQuals[i];
+					int secondPos = baseQuals.length-i-1;
+					baseQuals[i] = baseQuals[secondPos];
+					baseQuals[secondPos] = tmp;
+				}
+			}
 //			int[] baseQuals = new int[rawBaseQuals.length];
 //			for(int i=0; i<baseQuals.length; i++) {
 //				baseQuals[i] = (int)rawBaseQuals[i];

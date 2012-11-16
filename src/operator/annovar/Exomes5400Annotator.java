@@ -34,6 +34,6 @@ public class Exomes5400Annotator extends AnnovarAnnotator {
 		} catch (IOException e) {
 			throw new OperationFailedException("Error occurred during 1000G annotation: " + e.getMessage(), this);
 		}
-		
+		resultsFile.deleteOnExit();
 	}
 }

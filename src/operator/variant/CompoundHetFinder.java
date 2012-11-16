@@ -2,6 +2,9 @@ package operator.variant;
 
 import gene.Gene;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,6 +20,7 @@ import org.w3c.dom.NodeList;
 
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
+import buffer.CSVFile;
 import buffer.GeneList;
 import buffer.variant.GenePool;
 import buffer.variant.VariantFilter;
@@ -28,6 +32,8 @@ public class CompoundHetFinder extends Operator {
 	private VariantPool kidPool = null;
 	private VariantPool parent1Pool = null;
 	private VariantPool parent2Pool = null;
+	private CSVFile outputFile = null;
+	private VariantPoolWriter outputFormatter = new MedDirWriter();
 	
 	GeneList genes = null;
 	
@@ -78,35 +84,40 @@ public class CompoundHetFinder extends Operator {
 		List<CompoundHetHit> hits = computeCompoundHets(kidPool, parent1Pool, parent2Pool, genes);
 			
 		Collections.sort(hits, new HitRankComparator());
-		
-		int count = 0;
-		for(CompoundHetHit hit : hits) {
-			Gene g = hit.gene;
-			Double score = g.getProperty(Gene.GENE_RELEVANCE);
-			if (score != null && score > 0) {
-				count++;
 				
+		PrintStream outputStream = System.out;
+		if (outputFile != null) {
+			try {
+				outputStream = new PrintStream(new FileOutputStream(outputFile.getFile()));
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				throw new OperationFailedException("Could not open file " + outputFile.getAbsolutePath() + " for writing", this);
 			}
 		}
 		
-		if (count == 0) {
-			System.out.println("No scores found in any compound het gene");
-		}
+		writeHeader(outputStream);
+		
+		Collections.sort(hits, new HitRankComparator());
 		
 		for(CompoundHetHit hit : hits) {
-			Gene g = hit.gene;
-			if (g.getProperty(Gene.GENE_RELEVANCE) != null && g.getProperty(Gene.GENE_RELEVANCE)>0) {
-				System.out.print("\n\nGene : " + g.getName() + " score: " + g.getProperty(Gene.GENE_RELEVANCE) + "\n");
-				System.out.println("\t Variant 1:\t" + hit.kidVar1.getAnnotation(VariantRec.PDOT) + "\t (" + hit.kidVar1.getAnnotation(VariantRec.NM_NUMBER) + ":" + hit.kidVar1.getAnnotation(VariantRec.CDOT) + "   " + hit.kidVar1.getContig() + ":" + hit.kidVar1.getStart() + "  " + hit.kidVar1.getAnnotation(VariantRec.RSNUM) + ")");
-				System.out.println("\t Variant 2:\t" + hit.kidVar2.getAnnotation(VariantRec.PDOT) + "\t (" + hit.kidVar2.getAnnotation(VariantRec.NM_NUMBER) + ":" + hit.kidVar2.getAnnotation(VariantRec.CDOT) + "   " + hit.kidVar2.getContig() + ":" + hit.kidVar2.getStart() + "  " + hit.kidVar2.getAnnotation(VariantRec.RSNUM) + ")");
-				System.out.println("\t Disease:\t" + g.getAnnotation(Gene.DBNSFP_DISEASEDESC) );
-				System.out.println("\t OMIM #s:\t" + g.getAnnotation(Gene.DBNSFP_MIMDISEASE) );
-				System.out.println("\t    HGMD:\t" + g.getAnnotation(Gene.HGMD_INFO) );
-				System.out.println("\t Summary:\t" + g.getAnnotation(Gene.SUMMARY) );
-				System.out.println("\t  Pubmed:\t" + g.getAnnotation(Gene.PUBMED_HIT) );
-			}
-			
+			writeHit(outputStream, hit);
 		}		
+		
+		outputStream.flush();
+	}
+
+	private void writeHeader(PrintStream out) {
+		out.println("gene\t var1.pdot \t var1.cdot \t var1.quality \t var1.depth \t var2.pdot \t var2.cdot \t var2.quality \t var2.depth \t dpnsfp.disease \t dbnsfp.mimdisease \thgmd.info" );
+	}
+	
+	private void writeHit(PrintStream out, CompoundHetHit hit) {
+		out.print(hit.gene.getName() + "\t" );
+		out.print(hit.kidVar1.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar1.getQuality() + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t");
+		out.print(hit.kidVar2.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar2.getQuality() + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t");
+		out.print(hit.gene.getAnnotation(Gene.DBNSFP_DISEASEDESC) + "\t");
+		out.print(hit.gene.getAnnotation(Gene.DBNSFP_MIMDISEASE) + "\t");
+		out.print(hit.gene.getAnnotation(Gene.HGMD_INFO) + "\n");
 	}
 
 	/**
@@ -263,6 +274,10 @@ public class CompoundHetFinder extends Operator {
 					genes = (GeneList)obj;
 				}
 				
+				if (obj instanceof CSVFile) {
+					outputFile = (CSVFile)obj;
+				}
+				
 				if (obj instanceof VariantPool) {
 					if (kidPool == null) {
 						kidPool = (VariantPool) obj;
@@ -275,7 +290,7 @@ public class CompoundHetFinder extends Operator {
 							if (parent2Pool == null) {
 								parent2Pool = (VariantPool) obj;
 							}
-							}
+						}
 					}
 				}
 

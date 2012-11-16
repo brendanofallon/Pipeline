@@ -536,8 +536,7 @@ public class VariantRec {
 	public static final String HGMD_HIT = "hgmd.hit";
 	public static final String JACKKNIFE_SCORE = "jkscores";
 	public static final String JACKKNIFE_RANKS = "jkrank";
-
-	
+	public static final String ARUP_FREQ = "ARUP.freq";
 	
 }
 

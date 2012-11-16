@@ -265,12 +265,16 @@ public class VCFLineParser implements VariantLineReader {
 		 */
 		public boolean advanceLine() throws IOException {
 			currentLine = reader.readLine();
+			while(currentLine != null && currentLine.startsWith("#")) {
+				currentLine = reader.readLine();
+				currentLineNumber++;
+			}
+			
 			if (currentLine == null)
 				lineToks = null;
 			else
 				lineToks = currentLine.split("\\t");
 
-			currentLineNumber++;
 			return currentLine != null;
 		}
 

@@ -2,11 +2,10 @@ package operator.samtools;
 
 import java.io.File;
 
+import operator.MultiOperator;
+import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.FileBuffer;
-import operator.MultiOperator;
-import pipeline.Pipeline;
-import pipeline.PipelineXMLConstants;
 
 public class MultiRemoveDuplicates extends MultiOperator {
 

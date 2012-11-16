@@ -1,6 +1,7 @@
 package operator.annovar;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,6 +38,11 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			throw new OperationFailedException("Error reading variant function files", this);
 		}
 		
+		//Cleanup old annovar files
+		File variantFunc = new File(variantFuncFile);
+		variantFunc.deleteOnExit();
+		File exonVariantFunc = new File(exonFuncFile);
+		exonVariantFunc.deleteOnExit();
 	}
 	
 	

@@ -41,6 +41,10 @@
  <VariantPool />
 </ESPAnnotate>
 
+<ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
+ <VariantPool />
+</ARUPFreqAnno>
+
 <!-- HGMDVar class="operator.variant.HGMDVarAnnotator">
   <VariantPool />
 </HGMDVar -->

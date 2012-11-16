@@ -30,11 +30,14 @@ public class MedDirWriter extends VariantPoolWriter {
 		 VariantRec.POP_FREQUENCY,
 		 VariantRec.AMR_FREQUENCY,
 		 VariantRec.EXOMES_FREQ,
-		 VariantRec.RSNUM, 
+		 VariantRec.RSNUM,
+		 VariantRec.ARUP_FREQ,
 		 VariantRec.EFFECT_RELEVANCE_PRODUCT,
 		 Gene.GENE_RELEVANCE,
 		 VariantRec.OMIM_ID,
 		 VariantRec.HGMD_HIT,
+		 Gene.DBNSFP_DISEASEDESC,
+		 Gene.SUMMARY,
 		 Gene.HGMD_INFO,
 		 Gene.PUBMED_HIT,
 		 VariantRec.SIFT_SCORE, 
@@ -46,6 +49,7 @@ public class MedDirWriter extends VariantPoolWriter {
 		 VariantRec.SIPHY_SCORE};
 	
 	public MedDirWriter() {
+		System.setProperty("java.util.Arrays.useLegacyMergeSort", "true");
 		this.setComparator(new EffectProdSorter());
 	}
 	
@@ -127,6 +131,16 @@ public class MedDirWriter extends VariantPoolWriter {
 			if (keys[i].equals(Gene.HGMD_INFO)) {
 				if (g!=null)
 					val = g.getAnnotation(Gene.HGMD_INFO);
+			}
+			
+			if (keys[i].equals(Gene.DBNSFP_DISEASEDESC)) {
+				if (g!=null)
+					val = g.getAnnotation(Gene.DBNSFP_DISEASEDESC);
+			}
+			
+			if (keys[i].equals(Gene.SUMMARY)) {
+				if (g!=null)
+					val = g.getAnnotation(Gene.SUMMARY);
 			}
 			
 			if (keys[i].equals(VariantRec.GENE_NAME)) {

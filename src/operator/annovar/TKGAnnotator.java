@@ -2,8 +2,6 @@ package operator.annovar;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import operator.OperationFailedException;
 import buffer.variant.FileAnnotator;
@@ -30,6 +28,6 @@ public class TKGAnnotator extends AnnovarAnnotator {
 		} catch (IOException e) {
 			throw new OperationFailedException("Error occurred during 1000G annotation: " + e.getMessage(), this);
 		}
-		
+		resultsFile.deleteOnExit();
 	}
 }

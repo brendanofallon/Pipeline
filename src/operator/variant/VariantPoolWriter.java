@@ -55,6 +55,14 @@ public abstract class VariantPoolWriter extends Operator {
 	}
 	
 	/**
+	 * Set the gene list associated with this writer
+	 * @return
+	 */
+	public void setGenes(GeneList genes) {
+		this.genes = genes;
+	}
+	
+	/**
 	 * Write the given variant record to the given output stream
 	 * @param rec
 	 * @param outputStream

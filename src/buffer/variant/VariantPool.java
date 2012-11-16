@@ -10,8 +10,10 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.logging.Logger;
 
 import ncbi.GeneInfoDB;
@@ -50,7 +52,7 @@ public class VariantPool extends Operator  {
 		for(VariantRec v : varList) {
 			List<VariantRec> contig = vars.get(v.getContig());
 			if (contig == null) {
-				contig = new ArrayList<VariantRec>(512);
+				contig = new ArrayList<VariantRec>(2048);
 				vars.put(v.getContig(), contig);
 			}
 			contig.add(v);
@@ -97,12 +99,16 @@ public class VariantPool extends Operator  {
 		importFromVariantReader(new VCFLineParser(file));
 	}
 	
+	public String toString() {
+		return "Pool with " + this.size() + " variants in " + vars.size() + " contigs "; 
+	}
+	
 	private void importFromVariantReader(VariantLineReader reader) throws IOException {
 		int lineNumber = 0;
 		do {
 			VariantRec rec = reader.toVariantRec();
 			if (rec == null) {
-				System.err.println("Warning, could not import variant from line: " + lineNumber );
+				System.err.println("Warning, could not import variant from line: " + reader.getCurrentLine() );
 			}
 			else {
 				this.addRecordNoSort(rec);
@@ -156,15 +162,6 @@ public class VariantPool extends Operator  {
 		
 		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
 		if (index < 0) {
-//			System.out.println("Could not find variant at contig: " + contig + " pos:" + pos + " index is : " + index);
-//			index *= -1;
-//			index = Math.max(0, index-5);
-//			for(int i=0; i<10; i++) {
-//				if ((index+i)==varList.size())
-//					break;
-//				System.out.println(varList.get(index+i));
-//			}
-			
 			return null;
 		}
 		
@@ -269,7 +266,7 @@ public class VariantPool extends Operator  {
 	public VariantRec findRecordNoWarn(String contig, int pos) {
 		List<VariantRec> varList = vars.get(contig);
 		if (varList == null) {
-			System.err.println("Contig " + contig + " not found");
+			//System.err.println("Contig " + contig + " not found");
 			return null;
 		}
 		
@@ -310,11 +307,75 @@ public class VariantPool extends Operator  {
 	 */
 	public void addAll(VariantPool source) {
 		for(String contig : source.getContigs()) {
-			for(VariantRec rec : source.getVariantsForContig(contig)) {
-				this.addRecord(rec);
+			List<VariantRec> curVars = this.getVariantsForContig(contig);
+			List<VariantRec> sourceVars = source.getVariantsForContig(contig);
+			
+			if (curVars == null || curVars.size() == 0) {
+				List<VariantRec> newContigVars = new ArrayList<VariantRec>();
+				newContigVars.addAll(sourceVars);
+				vars.put(contig, newContigVars);
+			}
+			else {
+				List<VariantRec> mergedVars = new ArrayList<VariantRec>( curVars.size() + sourceVars.size() );
+				
+				//awkward but hopefully fast merge-sorted-lists algo
+				Iterator<VariantRec> cIt = curVars.iterator();
+				Iterator<VariantRec> sIt = sourceVars.iterator();
+				
+				VariantRec cVar = cIt.next();
+				VariantRec sVar = sIt.next();
+				
+				while(cVar != null && sVar != null) {
+					if (cVar.getStart() < sVar.getStart()) {
+						mergedVars.add(cVar);
+						try {
+							cVar = cIt.next();
+						}
+						catch(NoSuchElementException ex) {
+							cVar = null;
+						}
+					}
+					else {
+						mergedVars.add(sVar);
+						try {
+							sVar = sIt.next();
+						}
+						catch(NoSuchElementException ex) {
+							sVar = null;
+						}
+					}
+				}
+				
+				//Dump remaining vars
+				while(sVar != null) {
+					mergedVars.add(sVar);
+					try {
+						sVar = sIt.next();
+					}
+					catch(NoSuchElementException ex) {
+						sVar = null;
+					}
+				}
+				
+				while(cVar != null) {
+					mergedVars.add(cVar);
+					try {
+						cVar = cIt.next();
+					}
+					catch(NoSuchElementException ex) {
+						cVar = null;
+					}
+				}
+				
+				vars.put(contig, mergedVars);
+//				for(VariantRec rec : source.getVariantsForContig(contig)) {
+//					//this.addRecord(rec);
+//				}
 			}
 		}
 	}
+	
+	
 	
 	/**
 	 * Count lines in a file, used for progress estimation when reading big vcfs 
@@ -508,7 +569,7 @@ public class VariantPool extends Operator  {
 	 * @param allele
 	 * @return
 	 */
-	private boolean removeVariantAllele(String contig, int pos, String allele) {
+	public boolean removeVariantAllele(String contig, int pos, String allele) {
 		List<VariantRec> varList = vars.get(contig);
 		if (varList == null) {
 			return false;

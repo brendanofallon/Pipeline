@@ -1,10 +1,8 @@
-package operator.annovar;
+package operator.gene;
 
-import java.util.List;
-
+import operator.annovar.Annotator;
 import buffer.variant.OMIMVariants;
 import buffer.variant.VariantRec;
-import operator.OperationFailedException;
 
 /**
  * This class searches through all variants given and adds OMIM id numbers to all matching vars

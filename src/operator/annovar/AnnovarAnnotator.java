@@ -53,7 +53,7 @@ public abstract class AnnovarAnnotator extends Annotator {
 			annovarInputFile = new AnnovarInputFile(new File(getProjectHome() + "/." + getObjectLabel() + ".annovar.input"));
 			try {
 				annovarInputFile.getFile().createNewFile();
-				createAnnovarInput(variants, annovarInputFile);	
+				createAnnovarInput(variants, annovarInputFile);
 			} catch (IOException e) {
 				Logger.getLogger(Pipeline.primaryLoggerName).severe("Could not create annovar input file for for annotator : " + getObjectLabel());
 				e.printStackTrace();
@@ -61,6 +61,7 @@ public abstract class AnnovarAnnotator extends Annotator {
 			
 		}
 		
+		annovarInputFile.getFile().deleteOnExit();
 		super.performOperation();
 	}
 	
