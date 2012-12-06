@@ -36,6 +36,7 @@ public class VariantMultiFilter extends IOOperator {
 	public static final String ZYGOSITY = "zygosity";
 	public static final String STRAND_BIAS_CUTOFF = "strand.bias.cutoff";
 	public static final String QUALITY_CUTOFF = "quality.cutoff";
+	public static final String ARUP_CUTOFF = "arup.freq.cutoff";
 	
 	
 	VariantPool inVariants = null;
@@ -60,6 +61,7 @@ public class VariantMultiFilter extends IOOperator {
 		final Double strandBiasCutoff = readDoubleAttribute(STRAND_BIAS_CUTOFF);
 		final Double qualityCutoff = readDoubleAttribute(QUALITY_CUTOFF);
 		final Double cg69Cutoff = readDoubleAttribute(CG69_FREQ);
+		final Double arupCutoff = readDoubleAttribute(ARUP_CUTOFF);
 		
 		Zygosity zygFilter = Zygosity.ALL;
 		String zygStr = this.getAttribute(ZYGOSITY);
@@ -88,6 +90,7 @@ public class VariantMultiFilter extends IOOperator {
 		message = message + " Var freq cutoff : " + varFreqCutoff+ "\n";
 		message = message + " Strand bias cutoff : " + strandBiasCutoff + "\n";
 		message = message + " Quality cutoff : " + qualityCutoff + "\n";
+		message = message + " ARUP freq. cutoff : " + arupCutoff + "\n";
 		message = message + " Zygosities included cutoff : " + zygFilter + "\n";
 		//message = message + " * Removing Intronic, Intergenic, and Synonymous variants \n";
 		logger.info(message);
@@ -189,6 +192,32 @@ public class VariantMultiFilter extends IOOperator {
 					if (varDepth == null || varDepth >= varDepthCutoff)
 						return true;
 					return false;
+				}
+			});
+		}
+		
+		if (arupCutoff != null) {
+			filters.add(new VariantFilter() {
+				public boolean passes(VariantRec rec) {
+					String arupStr = rec.getAnnotation(VariantRec.ARUP_FREQ);
+					if (arupStr == null || arupStr.length() < 3) {
+						return true;
+					}
+					
+					try {
+						Integer count = Integer.parseInt( arupStr.split(" ")[0] );
+						if (count > arupCutoff) {
+							return false;
+						}
+						else {
+							return true;
+						}
+						
+					}
+					catch (NumberFormatException nfe) {
+						System.err.println("Error parsing ARUP freq from string : " + arupStr);
+					}
+					return true;
 				}
 			});
 		}

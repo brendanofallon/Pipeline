@@ -30,7 +30,9 @@ public class VCFLineParser implements VariantLineReader {
 		private String[] formatToks = null; //Tokenized format string, produced as needed
 		private int gtCol = -1; //Format column which contains genotype info
 		private int gqCol = -1; //Format column which contains genotype quality info 
-		private int adCol = -1; //Format column which contains genotype quality info 
+		private int adCol = -1; //Format column which contains allele depth info 
+		private int dpCol = -1; //Format column which contains depth info
+		private int hsCol = -1; //Format column which "hotspot id" info
 				
 		private String sample = null; //Emit information for only this sample if specified (when not given, defaults to first sample)
 		private int sampleColumn = -1; //Column that stores information for the given sample
@@ -317,7 +319,9 @@ public class VCFLineParser implements VariantLineReader {
 			String target = "DP";
 			int index = info.indexOf(target);
 			if (index < 0) {
-				return null;
+				//Attempt to get DP from INFO tokens...
+				Integer dp = getDepthFromInfo();
+				return dp;
 			}
 			
 			//System.out.println( info.substring(index, index+10) + " ...... " + info.substring(index+target.length()+1, info.indexOf(';', index)));
@@ -489,7 +493,7 @@ public class VCFLineParser implements VariantLineReader {
 				createFormatString();
 			}
 			
-			if (formatToks == null)
+			if (formatToks == null || gqCol < 0)
 				return 0.0;
 			
 			String[] formatValues = lineToks[sampleColumn].split(":");
@@ -559,6 +563,26 @@ public class VCFLineParser implements VariantLineReader {
 
 		}
 
+		/**
+		 * Depth may appear in format OR INFO fields, this searches the latter for depth
+		 * @return
+		 */
+		public Integer getDepthFromInfo() {
+			if (formatToks == null) {
+				createFormatString();
+			}
+			
+			if (formatToks == null)
+				return 1;
+			
+			if (dpCol < 0)
+				return null;
+			
+			String[] formatValues = lineToks[sampleColumn].split(":");
+			String dpStr = formatValues[dpCol];
+			return Integer.parseInt(dpStr);
+		}
+		
 		
 		/**
 		 * Returns the depth of the variant allele, as parsed from the INFO string for this sample
@@ -617,6 +641,12 @@ public class VCFLineParser implements VariantLineReader {
 				
 				if (formatToks[i].equals("AD")) {
 					adCol = i;
+				}
+				if (formatToks[i].equals("DP")) {
+					dpCol = i;
+				}
+				if (formatToks[i].equals("HS")) {
+					hsCol = i;
 				}
 			}
 

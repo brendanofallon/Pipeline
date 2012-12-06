@@ -37,7 +37,7 @@ public class VarFilterUtils {
 		
 		@Override
 		public boolean passes(VariantRec rec) {
-			return rec.getQuality() > qual;
+			return rec.getQuality() >= qual;
 		}
 		
 	}

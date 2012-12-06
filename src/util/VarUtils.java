@@ -9,11 +9,13 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import math.Histogram;
+import math.Integration;
 import math.LazyHistogram;
 import operator.qc.BamMetrics;
 import operator.variant.CompareVCF;
@@ -584,6 +586,16 @@ public class VarUtils {
 			return;
 		}
 		
+		if (firstArg.equals("qualityTT")) {
+			try {
+				performEmitQualityTiTv(args);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return;
+		}
+		
 		
 		
 		
@@ -736,6 +748,12 @@ public class VarUtils {
 			return;
 		}
 
+		if (firstArg.equals("buildroc")) {
+			performBuildROC(args);
+			return;
+		}
+		
+		
 		if (firstArg.equals("geneExtract")) {
 			performGenePropExtract(args, false);
 			return;
@@ -1383,6 +1401,8 @@ public class VarUtils {
 			
 				do {
 					VariantRec var  = vars.toVariantRec();
+					if (var == null)
+						continue;
 					tried++;
 					boolean missing = false;
 					for(int i=0; i<pools.length; i++) {
@@ -1433,6 +1453,8 @@ public class VarUtils {
 			
 			do {
 				VariantRec var = baseVars.toVariantRec();
+				if (var == null)
+					continue;
 				
 				boolean subtract = false;
 				for(VariantPool pool : pools) {
@@ -1485,6 +1507,130 @@ public class VarUtils {
 		return;
 	}
 
+	
+	private static void performEmitQualityTiTv(String[] args) throws IOException {
+		
+		
+		VariantPool pool = getPool(new File(args[1]));
+		double maxQuality = 0;
+		for(String contig : pool.getContigs()) {
+			for (VariantRec var : pool.getVariantsForContig(contig)) {
+				if (var.getQuality() > maxQuality) 
+					maxQuality = var.getQuality();
+			}
+		}
+//		List<VariantRec> vars = pool.toList();
+//		
+//		Collections.sort(vars, new Comparator<VariantRec>() {
+//			@Override
+//			public int compare(VariantRec o1, VariantRec o2) {
+//				if (o1.getQuality() == o2.getQuality())
+//					return 0;
+//				
+//				return o1.getQuality() < o2.getQuality() ? -1 : 1;
+//			}
+//		});
+		
+		
+		double[] quals = new double[]{0.1, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 8.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0};
+		
+		
+		for(int i=0; i<quals.length; i++) {
+			double q = quals[i];
+			VariantPool qPool = new VariantPool( pool.filterPool(VarFilterUtils.getQualityFilter(q)));
+			double hetFrac = (double)qPool.countHeteros() / (double)qPool.size();
+			System.out.println(q + "\t" + qPool.size() + "\t" + qPool.computeTTRatio() + "\t" + hetFrac);
+			
+		}
+	}
+	
+	private static void performBuildROC(String[] args) {
+		if (args.length != 4) {
+			System.out.println("Enter the name of the BED file, then the TRUE variant then query variant file");
+			return;
+		}
+		
+		DecimalFormat formatter = new DecimalFormat("0.0000#####");
+		
+		try {
+			BEDFile bedFile = new BEDFile(new File(args[1]));
+			bedFile.buildIntervalsMap();
+			VariantPool trueVars = getPool(new File(args[2]));
+			VariantPool qVars = getPool(new File(args[3]));
+						
+			double maxQuality = 0.0;
+//			//find maximum quality
+			for(String contig : qVars.getContigs()) {
+				for(VariantRec var : qVars.getVariantsForContig(contig)) {
+					if (var.getQuality() > maxQuality)
+						maxQuality = var.getQuality();
+				}
+			}
+			System.out.println("Max quality: " + maxQuality);
+			
+			double qualityStep = maxQuality / 100.0;
+			
+			List<Double> xVals = new ArrayList<Double>();
+			List<Double> yVals = new ArrayList<Double>();
+			
+			
+			for(double qCutoff = 0; qCutoff < maxQuality; qCutoff += qualityStep) {
+				
+				int falsePositives = 0;
+				int truePositives = 0;
+				int falseNegatives = 0;
+				int trueNegatives = 0;
+
+				//Compute true positives and false negatives
+				for(String contig : trueVars.getContigs()) {
+					for(VariantRec tVar : trueVars.getVariantsForContig(contig)) {
+						if (bedFile.contains(contig, tVar.getStart())) {
+							VariantRec qVar = qVars.findRecordNoWarn(contig, tVar.getStart());
+							if (qVar != null && qVar.getQuality() >= qCutoff)
+								truePositives++;
+							else 
+								falseNegatives++;
+						}
+					}
+				}
+
+				//Compute false positives, true negs don't exist!
+				for(String contig : qVars.getContigs()) {
+					for(VariantRec qVar : qVars.getVariantsForContig(contig)) {
+						if (qVar.getQuality() >= qCutoff) {
+							if (bedFile.contains(contig, qVar.getStart())) {
+								if (! trueVars.contains(contig, qVar.getStart()))
+									falsePositives++;
+							}
+						}
+					}
+				}
+
+
+				trueNegatives = bedFile.getExtent() - truePositives; //Approximate 
+				double sensitivity = (double)truePositives / (double)(truePositives + falseNegatives);
+				double specificity = (double)trueNegatives / (double)(trueNegatives + falsePositives);
+
+				System.out.println(formatter.format(1.0-specificity) +"\t" + sensitivity);
+				xVals.add(1.0-specificity);
+				yVals.add(sensitivity);
+			}
+			
+			Collections.reverse(xVals);
+			Collections.reverse(yVals);
+			double area = Integration.trapezoidQuad(xVals.toArray(new Double[]{}), yVals.toArray(new Double[]{}), 6.0e-05);
+			System.out.println("Approximate AUC : " + area);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
+		
+		
+		
+	}
 	private static void performBedFilter(String[] args) {
 		if (args.length < 2) {
 			System.out.println("Enter the names of a variant (vcf or csv) file and a bed file to filter by");
@@ -1505,6 +1651,9 @@ public class VarUtils {
 			do {
 				
 				VariantRec var = reader.toVariantRec();
+				if (var == null)
+					continue;
+				
 //				if (count%5000==0)
 //					System.err.println("Processed " + count + " variants (including " + retained + " so far)");
 				if (bedFile.contains(var.getContig(), var.getStart(), false))	{

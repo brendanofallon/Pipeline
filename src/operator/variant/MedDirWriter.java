@@ -23,6 +23,7 @@ public class MedDirWriter extends VariantPoolWriter {
 		 VariantRec.DEPTH,
 		 "quality",
 		 "zygosity",
+//		 "mom-zygosity",
 		 VariantRec.EXON_NUMBER,
 		 VariantRec.VARIANT_TYPE, 
 		 VariantRec.EXON_FUNCTION,
@@ -98,6 +99,20 @@ public class MedDirWriter extends VariantPoolWriter {
 			
 			if (keys[i].equals("zygosity")) {
 				val = rec.isHetero() ? "het" : "hom";
+			}
+			
+			if (keys[i].equals("mom-zygosity")) {
+				VariantRec var = additionalVariants.get(0).findRecordNoWarn(rec.getContig(), rec.getStart());
+				if (var == null)
+					val = "ref";
+				else {
+					if (var.isHetero()) {
+						val = "het";
+					}
+					else {
+						val = "hom";
+					}
+				}
 			}
 			
 			if (keys[i].equals("chromosome")) {

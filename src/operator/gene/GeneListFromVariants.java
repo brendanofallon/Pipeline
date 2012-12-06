@@ -16,7 +16,7 @@ import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
 /**
- * Create a gene list for every gene found in the variant pool
+ * Create a gene list for every gene found in the variant pool. This also 
  * @author brendan
  *
  */
@@ -35,8 +35,9 @@ public  class GeneListFromVariants extends Operator {
 				if (geneName != null) {
 					if (! genes.containsGene(geneName)) {
 						genes.addGene(geneName);
+						
 					}
-					
+					var.setGene( genes.getGeneByName(geneName));
 				}
 			}
 		}

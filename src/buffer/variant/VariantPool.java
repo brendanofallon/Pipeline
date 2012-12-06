@@ -43,7 +43,9 @@ public class VariantPool extends Operator  {
 	public static final String ALL_GENES = "all.genes"; //If specified as attribute, include all genes one variant per gene
 
 	protected Map<String, List<VariantRec>>  vars = new HashMap<String, List<VariantRec>>();
-	private VariantRec qRec = new VariantRec("?", 0, 0, "x", "x", 0.0, false); 
+	private VariantRec qRec = new VariantRec("?", 0, 0, "x", "x", 0.0, false);
+	private boolean operationPerformed = false; //Set to true when performOperation called, avoids loading variants multiple times
+	
 	/**
 	 * Build a new variant pool from the given list of variants
 	 * @param varList
@@ -152,6 +154,7 @@ public class VariantPool extends Operator  {
 	 * @return
 	 */
 	public VariantRec findRecord(String contig, int pos) {
+		contig = contig.replace("chr", "");
 		List<VariantRec> varList = vars.get(contig);
 		if (varList == null) {
 			Logger.getLogger(Pipeline.primaryLoggerName).warning("AnnovarResults could not find contig: " + contig);
@@ -264,6 +267,7 @@ public class VariantPool extends Operator  {
 	 * @return
 	 */
 	public VariantRec findRecordNoWarn(String contig, int pos) {
+		contig = contig.replace("chr", "");
 		List<VariantRec> varList = vars.get(contig);
 		if (varList == null) {
 			//System.err.println("Contig " + contig + " not found");
@@ -995,6 +999,10 @@ public class VariantPool extends Operator  {
 
 	@Override
 	public void performOperation() throws OperationFailedException {
+		if (operationPerformed) {
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("PerformOperation is being called again for variant pool " + getObjectLabel() + ", refusing to re-load variants");
+		}
+		operationPerformed = true;
 		
 		String allGenes = this.getAttribute(ALL_GENES);
 		if (allGenes != null & Boolean.parseBoolean(allGenes)) {
@@ -1046,7 +1054,15 @@ public class VariantPool extends Operator  {
 		logger.info("Created variant pool with " + getContigs().size() + " contigs and " + this.size() + " total variants");
 	}
 	
-	
+	/**
+	 * Returns true if .performOperation has been called at least once
+	 * @return
+	 */
+	public boolean isOperationPerformed() {
+		return operationPerformed;
+	}
+
+
 	private FileBuffer inputVariants = null;
 	
 

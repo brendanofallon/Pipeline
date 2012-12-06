@@ -35,7 +35,8 @@ public class GeneSummaryRanker extends AbstractGeneAnnotator {
 	protected TextBuffer termsFile = null;
 	protected CachedGeneSummaryDB summaryDB = null;
 	protected Map<String, Integer> rankingMap;
-
+	protected int examined = 0;
+	protected int scored = 0;
 	
 	public void performOperation() throws OperationFailedException {
 		super.performOperation();
@@ -49,6 +50,8 @@ public class GeneSummaryRanker extends AbstractGeneAnnotator {
 				e.printStackTrace();
 			}
 		}
+		
+		Logger.getLogger(Pipeline.primaryLoggerName).info(this.getObjectLabel() + " found " + scored + " hits in " + examined + " total genes");
 	}
 	
 	/**
@@ -65,13 +68,15 @@ public class GeneSummaryRanker extends AbstractGeneAnnotator {
 			initializeDB();
 		}
 		
-		
+		examined++;
 		//this.getPipelineOwner().fireMessage("Examining summary for gene : " + g.getName());
     	String summary = summaryDB.getSummaryForGene( g.getName() );
     	if (summary == null)
     		return;
     	
     	double score = scoreSummary(summary.toLowerCase());
+    	if (score > 0)
+    		scored++;
     	g.addProperty(Gene.SUMMARY_SCORE, score);
 	}
 	
@@ -113,7 +118,7 @@ public class GeneSummaryRanker extends AbstractGeneAnnotator {
 			rankingMap.put(key, score);
 			line = reader.readLine();
 		}
-		
+		Logger.getLogger(Pipeline.primaryLoggerName).info("Read " + rankingMap.size() + " terms in from search terms in file: " + termsFile.getAbsolutePath());
 		reader.close();
 	}
 	

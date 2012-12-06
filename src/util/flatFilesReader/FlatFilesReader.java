@@ -132,7 +132,7 @@ public class FlatFilesReader {
 		currentPos = getPositionFromLine(currentLine);
 		
 		if (currentPos > pos) {
-			System.out.println("Current pos : " + currentPos + " is greater than requested pos : " + pos + " so resetting...");
+			//System.out.println("Current pos : " + currentPos + " is greater than requested pos : " + pos + " so resetting...");
 			resetToContig(currentContig);
 		}
 		

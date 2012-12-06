@@ -42,11 +42,14 @@ public class DBNSFPGeneRanker extends GeneSummaryRanker {
 			}
 		}
 		
+		examined++;
 		GeneInfo info = geneDB.getInfoForGene(g.getName());
 		if (info == null)
 			return;
 		
     	double score = computeScore(info);
+    	if (score > 0)
+    		scored++;
     	g.addProperty(Gene.DBNSFPGENE_SCORE, score);
 	}
 

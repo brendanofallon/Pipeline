@@ -49,7 +49,8 @@ public class PubmedRanker extends AbstractGeneAnnotator {
 	TextBuffer termsFile = null; //Stores key terms we use to score pub med records (abstracts)
 	Map<String, Integer> rankingMap = null;
 	private boolean disableCacheWrites = false; //Disable writing of new variants to cache, useful if we have multiple instances running
-	
+	private int examined = 0;
+	private int scored = 0;
 	
 	
 	/**
@@ -102,6 +103,9 @@ public class PubmedRanker extends AbstractGeneAnnotator {
 				e.printStackTrace();
 			}
 		}
+		
+		Logger.getLogger(Pipeline.primaryLoggerName).info(this.getObjectLabel() + " found " + scored + " hits in " + examined + " total genes");
+
 	}
 	
 	@Override
@@ -211,7 +215,7 @@ public class PubmedRanker extends AbstractGeneAnnotator {
 			}
 		}
 		 
-		
+		examined++;
 		Double finalScore = 0.0;
 		if (scoredRecs.size() > 0) {
 			for(int i=0; i<scoredRecs.size(); i++) {
@@ -222,6 +226,8 @@ public class PubmedRanker extends AbstractGeneAnnotator {
 			}
 		}
 		
+		if (finalScore > 0)
+			scored++;
 		gene.addProperty(Gene.PUBMED_SCORE, finalScore);
 		if (scoredRecs.size() > 0) {
 			PubMedRecord rec = scoredRecs.get(0).rec;

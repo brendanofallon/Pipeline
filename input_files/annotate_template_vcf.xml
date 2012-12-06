@@ -41,13 +41,13 @@
  <VariantPool />
 </ESPAnnotate>
 
-<ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
+<!-- ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
  <VariantPool />
-</ARUPFreqAnno>
+</ARUPFreqAnno -->
 
-<!-- HGMDVar class="operator.variant.HGMDVarAnnotator">
+<HGMDVar class="operator.variant.HGMDVarAnnotator">
   <VariantPool />
-</HGMDVar -->
+</HGMDVar>
 
 <ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />

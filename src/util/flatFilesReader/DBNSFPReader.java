@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public class DBNSFPReader {
 
-	public static final String defaultPath = System.getProperty("user.home") + "/resources/dbNSFP2.0";
+	public static final String defaultPath = System.getProperty("user.home") + "/resources/dbNSFP2.0b4";
 	private FlatFilesReader reader;
 	private String[] curToks = null;
 
@@ -146,6 +146,9 @@ public class DBNSFPReader {
 		return curToks[col];
 	}
 	
+	
+	/************************ Current values from dbNSFP2.0b4 *********************************/
+	
 	 public static final int CHR = 0;
 	 public static final int POS = 1;
 	 public static final int REF = 2;
@@ -154,21 +157,120 @@ public class DBNSFPReader {
 	 public static final int AAALT = 5;
 	 //public static final int HG18POS = 6;
 	 public static final int GENE = 7;
+	 public static final int STRAND = 12;
 	 public static final int UNIPROT_ACC = 8;
+	 public static final int SLR_TEST = 14;
+	 public static final int CODON_POS = 15;
 	 public static final int AAPOS = 20;
 	 public static final int SIFT = 21;
-	 public static final int GERP = 31; 
+	 public static final int GERP_NR = 32; //GERP 'neutral rate'
+	 public static final int GERP = 33; 
 	 public static final int LRT = 26;
 	 public static final int PP = 22;
+	 public static final int PP_HVAR = 24;
 	 public static final int MT = 28;
-	 public static final int PHYLOP = 32;
-	 public static final int SIPHY = 34;
-	 public static final int TKG = 38;
-	 public static final int TKG_AF = 40;
-	 public static final int TKG_EUR = 42;
-	 public static final int TKG_AMR = 44;
-	 public static final int TKG_ASN = 46;
-	 public static final int ESP5400 = 48;
+	 public static final int MA = 30; // Mutation assessor score!
+ 	 
+	 public static final int PHYLOP = 34;
+	 public static final int SIPHY = 36;
+	 public static final int TKG = 40;
+	 public static final int TKG_AF = 42;
+	 public static final int TKG_EUR = 44;
+	 public static final int TKG_AMR = 46;
+	 public static final int TKG_ASN = 48;
+	 public static final int ESP5400 = 50;
+	/*
+0	#chr
+1	pos(1-coor)
+2	ref
+3	alt
+4	aaref
+5	aaalt
+6	hg18_pos(1-coor)
+7	genename
+8	Uniprot_acc
+9	Uniprot_id
+10	Uniprot_aapos
+11	Interpro_domain
+12	cds_strand
+13	refcodon
+14	SLR_test_statistic 
+15	codonpos
+16	fold-degenerate
+17	Ancestral_allele
+18	Ensembl_geneid
+19	Ensembl_transcriptid
+20	aapos
+21	SIFT_score
+22	Polyphen2_HDIV_score
+23	Polyphen2_HDIV_pred
+24	Polyphen2_HVAR_score
+25	Polyphen2_HVAR_pred
+26	LRT_score
+27	LRT_pred
+28	MutationTaster_score
+29	MutationTaster_pred
+30	MutationAssessor_score
+31	MutationAssessor_pred
+32	GERP++_NR
+33	GERP++_RS
+34	phyloP
+35	29way_pi
+36	29way_logOdds
+37	LRT_Omega
+38	UniSNP_ids
+39	1000Gp1_AC
+40	1000Gp1_AF
+41	1000Gp1_AFR_AC
+42	1000Gp1_AFR_AF
+43	1000Gp1_EUR_AC
+44	1000Gp1_EUR_AF
+45	1000Gp1_AMR_AC
+46	1000Gp1_AMR_AF
+47	1000Gp1_ASN_AC
+48	1000Gp1_ASN_AF
+49	ESP6500_AA_AF
+50	ESP6500_EA_AF
+	 */
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/************************* Old value from dbNSFP2.0b2  *****************************************/
+//	 public static final int CHR = 0;
+//	 public static final int POS = 1;
+//	 public static final int REF = 2;
+//	 public static final int ALT = 3;
+//	 public static final int AAREF = 4;
+//	 public static final int AAALT = 5;
+//	 //public static final int HG18POS = 6;
+//	 public static final int GENE = 7;
+//	 public static final int STRAND = 12;
+//	 public static final int UNIPROT_ACC = 8;
+//	 public static final int SLR_TEST = 14;
+//	 public static final int CODON_POS = 15;
+//	 public static final int AAPOS = 20;
+//	 public static final int SIFT = 21;
+//	 public static final int GERP = 31; 
+//	 public static final int LRT = 26;
+//	 public static final int PP = 22;
+//	 public static final int MT = 28;
+//	 public static final int PHYLOP = 32;
+//	 public static final int SIPHY = 34;
+//	 public static final int TKG = 38;
+//	 public static final int TKG_AF = 40;
+//	 public static final int TKG_EUR = 42;
+//	 public static final int TKG_AMR = 44;
+//	 public static final int TKG_ASN = 46;
+//	 public static final int ESP5400 = 48;
 	 
 	 /**
 	      Uniprot_id	9 

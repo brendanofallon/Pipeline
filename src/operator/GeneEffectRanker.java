@@ -67,8 +67,21 @@ public class GeneEffectRanker extends Operator {
 		}
 		
 		int skipped = 0;
+		int geneHits = 0;
 		for(String contig : vars.getContigs()) {
 			for(VariantRec var : vars.getVariantsForContig(contig)) {
+				
+				Double damageScore = var.getProperty(VariantRec.EFFECT_PREDICTION2);
+				if (damageScore != null && damageScore > 0.0) {
+					if (var.getGene() == null) {
+						System.err.println("Variant " + var + " has functional damage but no gene set, cannot compute effect productc!"); 
+					}
+				}
+				if (var.getGene() != null) {
+					Double rel = var.getGene().getProperty(Gene.GENE_RELEVANCE);
+					if (rel != null && rel > 0)
+						geneHits++;
+				}
 				
 				double effectProd = computeScore(var);
 				var.addProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT, effectProd);
@@ -78,28 +91,18 @@ public class GeneEffectRanker extends Operator {
 					topHits.add(var);
 					Collections.sort(topHits, new ScoreComparator());
 				}
-				while(topHits.size() > jackknifeVarCount) {
-					topHits.remove( topHits.size()-1);
-				}
+//				while(topHits.size() > jackknifeVarCount) {
+//					topHits.remove( topHits.size()-1);
+//				}
 				
 				
 
 			}
 		}
-		
-//		for(VariantRec hit : topHits) {
-//			System.out.println("Gene : " + hit.getAnnotation(VariantRec.GENE_NAME) + " var: "+ hit.getAnnotation(VariantRec.PDOT) + " score : " + hit.getProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT) +
-//					" pubmed:" + hit.getGene().getProperty(Gene.PUBMED_SCORE)
-//					+ " dbNSFP:" + hit.getGene().getProperty(Gene.DBNSFPGENE_SCORE) + 
-//					" summary:" + hit.getGene().getProperty(Gene.SUMMARY_SCORE) + 
-//					" goterms:" + hit.getGene().getProperty(Gene.GO_SCORE));
-//		}
-		
+
+		System.out.println("Found gene hits for " + geneHits + " of " + genes.size() + " total genes");
 		System.out.println("Skipped " + skipped + " of " + vars.size() + " total variants");
-		
-//		if (jackknifeReps > 0) {
-//			performJackknife(topHits);
-//		}
+
 		
 		
 		

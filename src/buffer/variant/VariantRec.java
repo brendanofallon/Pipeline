@@ -537,6 +537,8 @@ public class VariantRec {
 	public static final String JACKKNIFE_SCORE = "jkscores";
 	public static final String JACKKNIFE_RANKS = "jkrank";
 	public static final String ARUP_FREQ = "ARUP.freq";
+	public static final String ARUP_TOT = "ARUP.tot";
+	public static final String COSMIC_ID = "cosmid.id";
 	
 }
 

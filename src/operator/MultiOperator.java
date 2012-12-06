@@ -52,7 +52,7 @@ public abstract class MultiOperator extends IOOperator {
 		outputFiles.addFile(outputFile);
 	}
 	
-	protected abstract String[] getCommand(FileBuffer inputBuffer);
+	protected abstract String[] getCommand(FileBuffer inputBuffer) throws OperationFailedException;
 	
 	/**
 	 * Return number of threads to use in pool. This is Pipeline.getThreadCount()

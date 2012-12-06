@@ -25,11 +25,12 @@ public class MedDirTrioWriter extends VariantPoolWriter {
 	public static final String PARENT_VARS = "ParentalVars";
 	private GeneInfoDB geneInfo = null;
 	
-	public final static String[] keys = new String[]{
+	public final static String[] defaultKeys = new String[]{
 		VariantRec.GENE_NAME,
 		 VariantRec.NM_NUMBER,
 		 VariantRec.CDOT,
 		 VariantRec.PDOT,
+		 "zygosity",
 		 "chrom",
 		 "pos",
 		 VariantRec.DEPTH,
@@ -67,6 +68,7 @@ public class MedDirTrioWriter extends VariantPoolWriter {
 	@Override
 	public void writeHeader(PrintStream outputStream) {
 		StringBuilder builder = new StringBuilder();
+		String[] keys = getKeys();
 		builder.append(keys[0]);
 		for(int i=1; i<keys.length; i++) {
 			String val = keys[i];
@@ -86,9 +88,9 @@ public class MedDirTrioWriter extends VariantPoolWriter {
 		outputStream.println(builder.toString());
 		
 		try {
-			if (parent1Vars != null)
+			if (parent1Vars != null && (!parent1Vars.isOperationPerformed()))
 				parent1Vars.performOperation();
-			if (parent2Vars != null) {
+			if (parent2Vars != null && (!parent2Vars.isOperationPerformed())) {
 				parent2Vars.performOperation();
 			}
 		}
@@ -97,11 +99,21 @@ public class MedDirTrioWriter extends VariantPoolWriter {
 		}
 	}
 
+	/**
+	 * Obtain a list of keys to write, i.e. VariantRec.GENE, VariantRec.EXON_NUM, etc etc
+	 * @return
+	 */
+	public String[] getKeys() {
+		return defaultKeys;
+	}
+	
+	
 	
 	@Override
 	public void writeVariant(VariantRec rec, PrintStream outputStream) {
 		StringBuilder builder = new StringBuilder();
 		
+		String[] keys = getKeys();
 		
 		builder.append( createGeneHyperlink(rec.getAnnotation(keys[0])) );
 		
@@ -116,6 +128,14 @@ public class MedDirTrioWriter extends VariantPoolWriter {
 			String val = "?";
 			
 			val = rec.getPropertyOrAnnotation(keys[i]).trim();
+
+			if (keys[i].equals("zygosity")) {
+				if (rec.isHetero())
+					val = "het";
+				else 
+					val = "hom";
+			}
+			
 			
 			if (keys[i].equals("parent.1.zygosity")) {
 				if (parent1Vars != null) {
@@ -193,7 +213,7 @@ public class MedDirTrioWriter extends VariantPoolWriter {
 		outputStream.println(builder.toString());
 	}
 	
-	private String createGeneHyperlink(String val) {
+	protected String createGeneHyperlink(String val) {
 		if (val == null)
 			return null;
 		
@@ -214,7 +234,7 @@ public class MedDirTrioWriter extends VariantPoolWriter {
 	}
 
 
-	private String createRSNumHyperlink(String rsnum) {
+	protected String createRSNumHyperlink(String rsnum) {
 		if (rsnum == null || rsnum.length() < 3) {
 			return rsnum;
 		}
@@ -223,31 +243,31 @@ public class MedDirTrioWriter extends VariantPoolWriter {
 		}
 	}
 	
-	public void writeVariantOld(VariantRec rec, PrintStream outputStream) {
-		StringBuilder builder = new StringBuilder();
-		builder.append( rec.getPropertyOrAnnotation(keys[0]).trim() );
-		for(int i=1; i<keys.length; i++) {
-			String val = rec.getPropertyOrAnnotation(keys[i]).trim();
-			builder.append("\t" + val);
-		}
-
-		Gene g = rec.getGene();
-		if (g == null && genes != null) {
-			String geneName = rec.getAnnotation(VariantRec.GENE_NAME);
-			if (geneName != null)
-				g = genes.getGeneByName(geneName);
-		}
-		
-		if (g == null) {
-			builder.append("\n\t (no gene information found)");
-		}
-		else {
-			builder.append("\n\t Disease associations:\t" + g.getAnnotation(Gene.DBNSFP_DISEASEDESC));
-			builder.append("\n\t OMIM #s:\t" + g.getAnnotation(Gene.DBNSFP_MIMDISEASE));
-			builder.append("\n\t Summary:\t" + g.getAnnotation(Gene.SUMMARY));
-		}
-		outputStream.println(builder.toString());
-	}
+//	public void writeVariantOld(VariantRec rec, PrintStream outputStream) {
+//		StringBuilder builder = new StringBuilder();
+//		builder.append( rec.getPropertyOrAnnotation(keys[0]).trim() );
+//		for(int i=1; i<keys.length; i++) {
+//			String val = rec.getPropertyOrAnnotation(keys[i]).trim();
+//			builder.append("\t" + val);
+//		}
+//
+//		Gene g = rec.getGene();
+//		if (g == null && genes != null) {
+//			String geneName = rec.getAnnotation(VariantRec.GENE_NAME);
+//			if (geneName != null)
+//				g = genes.getGeneByName(geneName);
+//		}
+//		
+//		if (g == null) {
+//			builder.append("\n\t (no gene information found)");
+//		}
+//		else {
+//			builder.append("\n\t Disease associations:\t" + g.getAnnotation(Gene.DBNSFP_DISEASEDESC));
+//			builder.append("\n\t OMIM #s:\t" + g.getAnnotation(Gene.DBNSFP_MIMDISEASE));
+//			builder.append("\n\t Summary:\t" + g.getAnnotation(Gene.SUMMARY));
+//		}
+//		outputStream.println(builder.toString());
+//	}
 	
 	/**
 	 * Returns a String describing whether or not this variant is in the given variant pool
@@ -255,7 +275,7 @@ public class MedDirTrioWriter extends VariantPoolWriter {
 	 * @param parVars
 	 * @return
 	 */
-	private String getParentZygStr(VariantRec rec, VariantPool parVars) {
+	protected String getParentZygStr(VariantRec rec, VariantPool parVars) {
 		VariantRec par1Var = parVars.findRecordNoWarn(rec.getContig(), rec.getStart());
 		if (par1Var == null)
 			return "ref";
