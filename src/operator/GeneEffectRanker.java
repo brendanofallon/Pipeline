@@ -72,20 +72,24 @@ public class GeneEffectRanker extends Operator {
 			for(VariantRec var : vars.getVariantsForContig(contig)) {
 				
 				Double damageScore = var.getProperty(VariantRec.EFFECT_PREDICTION2);
+				if (damageScore == null)
+					damageScore = var.getProperty(VariantRec.SVM_EFFECT);
+				
 				if (damageScore != null && damageScore > 0.0) {
 					if (var.getGene() == null) {
 						System.err.println("Variant " + var + " has functional damage but no gene set, cannot compute effect productc!"); 
 					}
 				}
+				
+				
+				double effectProd = computeScore(var);
+				var.addProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT, effectProd);
+				
 				if (var.getGene() != null) {
 					Double rel = var.getGene().getProperty(Gene.GENE_RELEVANCE);
 					if (rel != null && rel > 0)
 						geneHits++;
 				}
-				
-				double effectProd = computeScore(var);
-				var.addProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT, effectProd);
-				
 				
 				if (effectProd > 0) {
 					topHits.add(var);
@@ -103,62 +107,7 @@ public class GeneEffectRanker extends Operator {
 		System.out.println("Found gene hits for " + geneHits + " of " + genes.size() + " total genes");
 		System.out.println("Skipped " + skipped + " of " + vars.size() + " total variants");
 
-		
-		
-		
 	}
-
-	
-//	private void performJackknife(List<VariantRec> topHits) {
-//		
-//		//Some initialization...
-//		searchTerms = summaryRanker.getRankingMap();
-//		SearchTermJackknife searchTermJK = new SearchTermJackknife();
-//		
-//		//GOterm jackknife
-//		//gene jackknife
-//		
-//		for(int i=0; i<jackknifeReps; i++) {
-//			System.out.println("Computing JK rep #" + i);
-//			jackknifeAndCompute(searchTermJK, topHits);
-//		}
-//		
-//		
-//		//Summarize jk scores...
-//		System.out.println("Jackknife ranking results");
-//		for(VariantRec var : topHits) {
-//			System.out.println(var.toBasicString() + "\n" + var.getAnnotation(VariantRec.JACKKNIFE_RANKS));
-//		}
-//		
-//	}
-
-
-//	protected void jackknifeAndCompute(Jackknifeable jk, List<VariantRec> vars) {
-//		
-//		int itemToRemove = (int)Math.floor(Math.random() * jk.getRemoveableElementCount());
-//		jk.removeElement(itemToRemove);
-//		
-//		//Now compute scores for all variants
-//		for(VariantRec var : vars) {
-//			
-//			// Tell all rankers to re-rank....
-//			//var.addProperty(VariantRec.JACKKNIFE_SCORE, score);				
-//		}
-//		
-//		//Sort by newly computed jk score
-//		Collections.sort(vars, new JKScoreComparator());
-//		for(int i=0; i<vars.size(); i++) {
-//			String jkRanks = vars.get(i).getAnnotation(VariantRec.JACKKNIFE_RANKS);
-//			if (jkRanks == null)
-//				jkRanks = "" + i;
-//			else 
-//				jkRanks = jkRanks + "," + i;
-//			vars.get(i).addAnnotation(VariantRec.JACKKNIFE_RANKS, jkRanks);
-//		}
-//		
-//		
-//		jk.restore();
-//	}
 	
 	/**
 	 * Compute the combined ranking score for the given variant. 
@@ -167,9 +116,12 @@ public class GeneEffectRanker extends Operator {
 	 */
 	protected double computeScore(VariantRec var) {
 		Double varScore = var.getProperty(VariantRec.EFFECT_PREDICTION2);
-		if (varScore == null || varScore == 0) {
-			return 0;
+		if (varScore == null) {
+			varScore = var.getProperty(VariantRec.SVM_EFFECT);
 		}
+		
+		if (varScore==null) //Protect against future null pointer exceptions
+			varScore = 0.0;
 		
 		Gene g = var.getGene();
 	
@@ -181,6 +133,7 @@ public class GeneEffectRanker extends Operator {
 		Double goScore = g.getProperty(Gene.GO_SCORE);
 		Double dbNSFPScore = g.getProperty(Gene.DBNSFPGENE_SCORE);
 		Double interactionScore = g.getProperty(Gene.INTERACTION_SCORE);
+		Double expressionScore = g.getProperty(Gene.EXPRESSION_SCORE);
 		
 
 		if (summaryScore == null)
@@ -193,8 +146,10 @@ public class GeneEffectRanker extends Operator {
 			dbNSFPScore = 0.0;
 		if (interactionScore == null)
 			interactionScore = 0.0;
+		if (expressionScore == null)
+			expressionScore = 0.0;
 		
-		Double relevanceScore = (goScore + summaryScore + abstractsScore/2.0 + dbNSFPScore + 10*interactionScore);
+		Double relevanceScore = (goScore + summaryScore + abstractsScore/2.0 + dbNSFPScore + 10*interactionScore + expressionScore);
 		g.addProperty(Gene.GENE_RELEVANCE, relevanceScore);
 		
 		Double effectProd = varScore * relevanceScore;
@@ -304,22 +259,5 @@ public class GeneEffectRanker extends Operator {
 		
 	}
 	
-	class JKScoreComparator implements Comparator<VariantRec> {
-
-		@Override
-		public int compare(VariantRec var0, VariantRec var1) {
-			Double score0 = var0.getProperty(VariantRec.JACKKNIFE_SCORE);
-			Double score1 = var1.getProperty(VariantRec.JACKKNIFE_SCORE);
-			
-			if (score0 != null && score1 != null) {
-				if (score0 == score1)
-					return 0;
-				return score0 < score1 ? 1 : -1;
-			}
-			
-			return 0;
-		}
-		
-	}
 
 }

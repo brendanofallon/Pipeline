@@ -2,8 +2,8 @@ package util.flatFilesReader;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -34,21 +34,24 @@ public class DBNSFPEmitter {
 				String popStr = reader.getString(DBNSFPReader.TKG_AMR);
 				String mtStr = reader.getString(DBNSFPReader.MT);
 				String ppStr = reader.getString(DBNSFPReader.PP);
+				String ppHvar = reader.getString(DBNSFPReader.PP_HVAR);
 				String siftStr = reader.getString(DBNSFPReader.SIFT);
 				String gerpStr = reader.getString(DBNSFPReader.GERP);
+				String gerpNRStr = reader.getString(DBNSFPReader.GERP_NR);
 				String phylopStr = reader.getString(DBNSFPReader.PHYLOP);
 				String siphyStr = reader.getString(DBNSFPReader.SIPHY);
 				String lrtStr = reader.getString(DBNSFPReader.LRT);
 				String slrStr = reader.getString(DBNSFPReader.SLR_TEST);
+				String maStr = reader.getString(DBNSFPReader.MA);
 				String codonPosStr = reader.getString(DBNSFPReader.CODON_POS);
 				
 				if (! tkgStr.equals(".")) {
 					try {
 						Double tkgFreq = Double.parseDouble(tkgStr);
-						if (tkgFreq > 0.05) {
+						if (tkgFreq > 0.025) {
 							writer.println("-1" + "\t 1:" + Double.parseDouble(siftStr) + "\t2:" + Double.parseDouble(ppStr) + "\t3:" + Double.parseDouble(mtStr) + "\t4:" + Double.parseDouble(gerpStr)
 									+ "\t5:" + Double.parseDouble(phylopStr) + "\t6:" + Double.parseDouble(siphyStr) + "\t7:" + Double.parseDouble(lrtStr)
-									+ "\t8:" + Double.parseDouble(slrStr));
+									+ "\t8:" + Double.parseDouble(slrStr) + "\t9:" + Double.parseDouble(gerpNRStr) + "\t10:" + Double.parseDouble(ppHvar) + "\t11:" + Double.parseDouble(maStr) );
 						}
 					}
 					catch (NumberFormatException nfe) {
@@ -141,12 +144,16 @@ public class DBNSFPEmitter {
 			String popStr = reader.getString(DBNSFPReader.TKG_AMR);
 			String mtStr = reader.getString(DBNSFPReader.MT);
 			String ppStr = reader.getString(DBNSFPReader.PP);
+			String ppHvar = reader.getString(DBNSFPReader.PP_HVAR);
 			String siftStr = reader.getString(DBNSFPReader.SIFT);
 			String gerpStr = reader.getString(DBNSFPReader.GERP);
+			String gerpNRStr = reader.getString(DBNSFPReader.GERP_NR);
 			String phylopStr = reader.getString(DBNSFPReader.PHYLOP);
 			String siphyStr = reader.getString(DBNSFPReader.SIPHY);
 			String lrtStr = reader.getString(DBNSFPReader.LRT);
 			String slrStr = reader.getString(DBNSFPReader.SLR_TEST);
+			String maStr = reader.getString(DBNSFPReader.MA);
+			String codonPosStr = reader.getString(DBNSFPReader.CODON_POS);
 			
 			if (reader.getCurrentPos() != pos) {
 			//	System.out.println("Yikes, passed original location! aborting ");
@@ -155,9 +162,10 @@ public class DBNSFPEmitter {
 				continue;
 			}
 			try {
-				writer.println("1" + "\t 1:" + Double.parseDouble(siftStr) + "\t2:" + Double.parseDouble(ppStr) + "\t3:" + Double.parseDouble(mtStr) + "\t4:" + Double.parseDouble(gerpStr)
+				writer.println("-1" + "\t 1:" + Double.parseDouble(siftStr) + "\t2:" + Double.parseDouble(ppStr) + "\t3:" + Double.parseDouble(mtStr) + "\t4:" + Double.parseDouble(gerpStr)
 						+ "\t5:" + Double.parseDouble(phylopStr) + "\t6:" + Double.parseDouble(siphyStr) + "\t7:" + Double.parseDouble(lrtStr)
-						+ "\t8:" + Double.parseDouble(slrStr));
+						+ "\t8:" + Double.parseDouble(slrStr) + "\t9:" + Double.parseDouble(gerpNRStr) + "\t10:" + Double.parseDouble(ppHvar) + "\t11:" + Double.parseDouble(maStr) );
+
 			}
 			catch(NumberFormatException nfe) {
 				//ignore for now
@@ -184,14 +192,15 @@ public class DBNSFPEmitter {
 	public static void main(String[] args) throws IOException {
 		DBNSFPReader reader = new DBNSFPReader();
 		
-//		PrintStream out = new PrintStream(new FileOutputStream(new File("hgmd_vals.csv")));
+//		PrintStream out = new PrintStream(new FileOutputStream(new File("hgmd_vals.b4.csv")));
 //		emitHGMD(reader, out, new File(args[0]));
 //		return;
-		
-		PrintWriter writer = new PrintWriter(new FileWriter("/home/brendan/tkgdata.csv"));
-		PrintStream out = System.out;
+				
+		PrintStream writer = new PrintStream(new FileOutputStream("/home/brendan/tkgdata.csv"));
+		PrintStream out = writer; //System.out;
 		//out.println(VariantRec.getSimpleHeader() + "gene\tkg.freq\tamr.freq\tmt.score\tsift.score\tpp.score\tgerp.score\tphylop.score");
-		String infilePath = args[0];
+		//String infilePath = args[0];
+		String infilePath = "/home/brendan/resources/SureSelect_XT_v4.sorted.bed";
 		File inFile = new File(infilePath);
 		BufferedReader fileReader = new BufferedReader(new FileReader(inFile));
 		String line = fileReader.readLine();

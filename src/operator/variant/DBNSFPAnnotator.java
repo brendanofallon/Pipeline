@@ -53,11 +53,24 @@ public class DBNSFPAnnotator extends Annotator {
 			if (ok) {
 				Double gerp = reader.getValue(DBNSFPReader.GERP);
 				var.addProperty(VariantRec.GERP_SCORE, gerp);
+				
 				Double sift = reader.getValue(DBNSFPReader.SIFT);
 				var.addProperty(VariantRec.SIFT_SCORE, sift);
 				
 				Double siphy = reader.getValue(DBNSFPReader.SIPHY);
 				var.addProperty(VariantRec.SIPHY_SCORE, siphy);
+				
+				Double ma = reader.getValue(DBNSFPReader.MA);
+				var.addProperty(VariantRec.MA_SCORE, ma);
+				
+				Double slr = reader.getValue(DBNSFPReader.SLR_TEST);
+				var.addProperty(VariantRec.SLR_TEST, slr);
+				
+				Double ppHvar = reader.getValue(DBNSFPReader.PP_HVAR);
+				var.addProperty(VariantRec.POLYPHEN_HVAR_SCORE, ppHvar);
+
+				Double gerpNR = reader.getValue(DBNSFPReader.GERP_NR);
+				var.addProperty(VariantRec.GERP_NR_SCORE, gerpNR);
 				
 				Double lrt = reader.getValue(DBNSFPReader.LRT);
 				var.addProperty(VariantRec.LRT_SCORE, lrt);

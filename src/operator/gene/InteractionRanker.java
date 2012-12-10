@@ -52,7 +52,6 @@ public class InteractionRanker extends AbstractGeneAnnotator {
 			
 			
 			for(String geneLabel : sourceGenes) {
-				System.out.println("Computing paths for gene : " + geneLabel);
 				GraphUtils.computeShortestPaths(g, geneLabel);	
 			}
 			
@@ -74,6 +73,8 @@ public class InteractionRanker extends AbstractGeneAnnotator {
 
 		if (shortestPath < Double.POSITIVE_INFINITY)
 			gene.addProperty(Gene.INTERACTION_SCORE, 1.0/(shortestPath+0.001));
+		else 
+			gene.addProperty(Gene.INTERACTION_SCORE, 0.0); //Avoids null values in output
 					
 
 	}

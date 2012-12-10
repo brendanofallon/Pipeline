@@ -503,11 +503,16 @@ public class VariantRec {
 	public static final String CG69_FREQUENCY = "cg69.freq";
 	public static final String SIFT_SCORE = "sift.score";
 	public static final String POLYPHEN_SCORE = "pp.score";
+	public static final String POLYPHEN_HVAR_SCORE = "pp.hvar.score";
+	public static final String MA_SCORE = "mut.assessor.score";
 	public static final String MT_SCORE = "mt.score";
+	public static final String GERP_NR_SCORE = "gerp.nr.score";
 	public static final String GERP_SCORE = "gerp.score";
+	public static final String SLR_TEST = "slr.score";
 	public static final String PHYLOP_SCORE = "phylop.score";
 	public static final String LRT_SCORE = "lrt.score";
 	public static final String SIPHY_SCORE = "siphy.score";
+	public static final String SVM_EFFECT = "svm.effect.prediction";
 	public static final String VARIANT_TYPE = "variant.type";
 	public static final String EXON_FUNCTION = "exon.function";
 	public static final String EXON_NUMBER = "exon.number";
@@ -534,11 +539,9 @@ public class VariantRec {
 	public static final String SAMPLE_COUNT = "sample.count";	
 	public static final String EFFECT_RELEVANCE_PRODUCT = "effect.rel.product";
 	public static final String HGMD_HIT = "hgmd.hit";
-	public static final String JACKKNIFE_SCORE = "jkscores";
-	public static final String JACKKNIFE_RANKS = "jkrank";
 	public static final String ARUP_FREQ = "ARUP.freq";
 	public static final String ARUP_TOT = "ARUP.tot";
-	public static final String COSMIC_ID = "cosmid.id";
+	
 	
 }
 

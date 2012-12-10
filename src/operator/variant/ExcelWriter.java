@@ -37,12 +37,17 @@ public class ExcelWriter extends VariantPoolWriter {
 //								 VariantRec.FALSEPOS_PROB,
 //								 VariantRec.FS_SCORE,
 								 VariantRec.SIFT_SCORE, 
-								 VariantRec.POLYPHEN_SCORE, 
+								 VariantRec.POLYPHEN_SCORE,
+								 VariantRec.POLYPHEN_HVAR_SCORE,
 								 VariantRec.PHYLOP_SCORE, 
 								 VariantRec.MT_SCORE,
 								 VariantRec.GERP_SCORE,
+								 VariantRec.GERP_NR_SCORE,
 								 VariantRec.LRT_SCORE,
-								 VariantRec.SIPHY_SCORE};
+								 VariantRec.SIPHY_SCORE,
+								 VariantRec.MA_SCORE,
+								 VariantRec.SVM_EFFECT
+								 };
 	
 	public static String[] geneKeys = {
 		Gene.HGMD_INFO,

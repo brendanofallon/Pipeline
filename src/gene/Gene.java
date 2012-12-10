@@ -74,6 +74,9 @@ public class Gene {
 	public static final String DBNSFP_DISEASEDESC = "dbnsfp.disease.desc";
 	public static final String DBNSFP_MIMDISEASE = "dbnsfp.mim.disease";
 	public static final String DBNSFPGENE_SCORE = "dbnsfp.score";
+	public static final String EXPRESSION = "expression";
+	public static final String EXPRESSION_HITS = "expression.hits";
+	public static final String EXPRESSION_SCORE = "expression.score";
 	
 	public static final String GO_FUNCTION = "go.function";
 	public static final String GO_PROCESS = "go.process";

@@ -12,6 +12,12 @@ import operator.variant.DBNSFPGene;
 import operator.variant.DBNSFPGene.GeneInfo;
 import pipeline.Pipeline;
 
+/**
+ * Provides a handful of  gene annotations obtained from the dbNSFP database, including
+ * disease description, OMIM numbers, functional description, and tissue expression info
+ * @author brendan
+ *
+ */
 public class DBNSFPGeneAnnotator extends AbstractGeneAnnotator {
 
 	
@@ -25,7 +31,7 @@ public class DBNSFPGeneAnnotator extends AbstractGeneAnnotator {
 			String pathToDBNSFP = this.getPipelineProperty(DBNSFPAnnotator.DBNSFP_PATH);
 			Logger.getLogger(Pipeline.primaryLoggerName).info("dbNSFP-gene reader using directory : " + pathToDBNSFP);
 			try {
-				db = DBNSFPGene.getDB(new File(pathToDBNSFP + "/dbNSFP2.0b2_gene"));
+				db = DBNSFPGene.getDB(new File(pathToDBNSFP + "/dbNSFP2.0b4_gene"));
 			} catch (IOException e) {
 				throw new OperationFailedException("Could not initialize dbNSFP gene file", this);
 			}
@@ -38,6 +44,7 @@ public class DBNSFPGeneAnnotator extends AbstractGeneAnnotator {
 		g.addAnnotation(Gene.DBNSFP_DISEASEDESC, info.diseaseDesc);
 		g.addAnnotation(Gene.DBNSFP_FUNCTIONDESC, info.functionDesc);
 		g.addAnnotation(Gene.DBNSFP_MIMDISEASE, info.mimDisease);
+		g.addAnnotation(Gene.EXPRESSION, info.expression);
 	}
 
 }

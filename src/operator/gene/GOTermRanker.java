@@ -38,7 +38,6 @@ public class GOTermRanker extends AbstractGeneAnnotator {
 
 		double goScore = computeScore(g);
 		g.addProperty(Gene.GO_SCORE, goScore);
-
 	}
 	
 	private double computeScore(Gene g) {
@@ -73,9 +72,10 @@ public class GOTermRanker extends AbstractGeneAnnotator {
 				hitStr.append(term + "(" + score + "), ");
 			}
 		}
-		
-		if (score > 0)
-			g.addAnnotation(Gene.GO_HITS, hitStr.toString());
+		String hits = hitStr.toString();
+		if (hits.length()>2)
+			hits = hits.substring(0, hits.length()-2);
+		g.addAnnotation(Gene.GO_HITS, hits);
 		return score;
 	}
 

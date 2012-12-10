@@ -22,19 +22,26 @@ public class MedDirWriter extends VariantPoolWriter {
 		 "position",
 		 VariantRec.DEPTH,
 		 "quality",
-		 "zygosity",
-//		 "mom-zygosity",
+		 "mom-zygosity",
 		 VariantRec.EXON_NUMBER,
 		 VariantRec.VARIANT_TYPE, 
 		 VariantRec.EXON_FUNCTION,
-		 VariantRec.EFFECT_PREDICTION2,
 		 VariantRec.POP_FREQUENCY,
 		 VariantRec.AMR_FREQUENCY,
 		 VariantRec.EXOMES_FREQ,
 		 VariantRec.RSNUM,
 		 VariantRec.ARUP_FREQ,
 		 VariantRec.EFFECT_RELEVANCE_PRODUCT,
+		 VariantRec.SVM_EFFECT,
 		 Gene.GENE_RELEVANCE,
+		 Gene.SUMMARY_SCORE,
+		 Gene.PUBMED_SCORE,
+		 Gene.GO_SCORE,
+		 Gene.DBNSFPGENE_SCORE,
+		 Gene.INTERACTION_SCORE,
+		 Gene.EXPRESSION_SCORE,
+		 Gene.EXPRESSION_HITS,
+		 Gene.GO_HITS,
 		 VariantRec.OMIM_ID,
 		 VariantRec.HGMD_HIT,
 		 Gene.DBNSFP_DISEASEDESC,
@@ -128,6 +135,48 @@ public class MedDirWriter extends VariantPoolWriter {
 			if (keys[i].equals(Gene.GENE_RELEVANCE)) {
 				if (g!=null)
 					val = "" + g.getProperty(Gene.GENE_RELEVANCE);
+			}
+			
+			if (keys[i].equals(Gene.SUMMARY_SCORE)) {
+				if (g!=null)
+					val = "" + g.getProperty(Gene.SUMMARY_SCORE);
+			}
+			
+			if (keys[i].equals(Gene.DBNSFPGENE_SCORE)) {
+				if (g!=null)
+					val = "" + g.getProperty(Gene.DBNSFPGENE_SCORE);
+			}
+			
+			if (keys[i].equals(Gene.PUBMED_SCORE)) {
+				if (g!=null)
+					val = "" + g.getProperty(Gene.PUBMED_SCORE);
+			}
+			
+			if (keys[i].equals(Gene.INTERACTION_SCORE)) {
+				if (g!=null)
+					val = "" + g.getProperty(Gene.INTERACTION_SCORE);
+			}
+			
+			if (keys[i].equals(Gene.EXPRESSION_SCORE)) {
+				if (g!=null)
+					val = "" + g.getProperty(Gene.EXPRESSION_SCORE);
+			}
+			
+			if (keys[i].equals(Gene.GO_SCORE)) {
+				if (g!=null)
+					val = "" + g.getProperty(Gene.GO_SCORE);
+			}
+			
+			if (keys[i].equals(Gene.GO_HITS)) {
+				if (g!=null && g.getAnnotation(Gene.GO_HITS) != null)
+					val = "" + g.getAnnotation(Gene.GO_HITS);
+			}
+			
+			if (keys[i].equals(Gene.EXPRESSION_HITS)) {
+				if (g!=null) {
+					if (g.getAnnotation(Gene.EXPRESSION_HITS) != null)
+						val = "" + g.getAnnotation(Gene.EXPRESSION_HITS);
+				}
 			}
 			
 			if (keys[i].equals("chrom")) {

@@ -57,7 +57,7 @@ public class DBNSFPGene {
 			info.mimDisease = toks[16];
 			info.diseaseDesc = toks[15];
 			info.functionDesc = toks[14];
-			
+			info.expression = toks[19] + ";" + toks[20];
 			map.put(info.geneName, info);
 			line = reader.readLine();
 		}
@@ -72,6 +72,7 @@ public class DBNSFPGene {
 		public String mimDisease =  null; //Column 16
 		public String diseaseDesc = null; //Column 15
 		public String functionDesc = null; //Column 14
+		public String expression = null; //Columns 19 and 20
 	}
 	
 }

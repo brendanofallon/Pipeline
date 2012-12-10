@@ -13,12 +13,11 @@ import operator.variant.DBNSFPGene.GeneInfo;
 import pipeline.Pipeline;
 
 /**
- * Computes a ranking score for a gene by examining the information
- * from the DBNSFP_gene database
+ * Computes ranking values based on expression data from dbNSFP
  * @author brendan
  *
  */
-public class DBNSFPGeneRanker extends GeneSummaryRanker {
+public class ExpressionRanker extends GeneSummaryRanker {
 
 	private DBNSFPGene geneDB = null;
 	
@@ -46,25 +45,39 @@ public class DBNSFPGeneRanker extends GeneSummaryRanker {
 		GeneInfo info = geneDB.getInfoForGene(g.getName());
 		double score = 0.0;
 		if (info != null) {
-			score = computeScore(info);
-			if (score > 0)
+			ScoreResult result = computeScore(info);
+			if (result.score > 0) {
 				scored++;
+				g.addAnnotation(Gene.EXPRESSION_HITS, result.hits);
+				System.out.println("Found score " + result.score + " with hits: " + result.hits + " for gene : " + g.getName());
+			}
+			score = result.score;
 		}
-		g.addProperty(Gene.DBNSFPGENE_SCORE, score);
+		g.addProperty(Gene.EXPRESSION_SCORE, score);
 	}
-
 	
-	public double computeScore(GeneInfo info) {
+	public ScoreResult computeScore(GeneInfo info) {
 		double score = 0;
-		
+		String hits = "";
 		for(String term : rankingMap.keySet()) {
-			if (info.diseaseDesc != null && info.diseaseDesc.toLowerCase().contains(term)) {
-				score += 2.0*rankingMap.get(term);
+			if (info.expression != null && info.expression.contains(term.toLowerCase())) {
+				score += rankingMap.get(term);
+				if (hits.length()==0)
+					hits = term;
+				else 
+					hits = hits + ", " + term;
 			}
-			if (info.functionDesc != null && info.functionDesc.toLowerCase().contains(term)) {
-				score += 2.0*rankingMap.get(term);
-			}
+			
 		}
-		return score;
+		ScoreResult result = new ScoreResult();
+		result.score = score;
+		result.hits = hits;
+		return result;
+	}
+	
+	
+	class ScoreResult {
+		double score = 0.0;
+		String hits = null;
 	}
 }

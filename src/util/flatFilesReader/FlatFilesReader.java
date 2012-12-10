@@ -20,7 +20,7 @@ public class FlatFilesReader {
 	private int currentPos = 0;
 	private String currentLine = null;
 	
-	private String filenameBase = "dbNSFP2.0b2_variant.chr";
+	private String filenameBase = "dbNSFP2.0b4_variant.chr";
 	
 	
 	public FlatFilesReader(File baseDir) {
