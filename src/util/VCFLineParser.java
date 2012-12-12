@@ -32,7 +32,6 @@ public class VCFLineParser implements VariantLineReader {
 		private int gqCol = -1; //Format column which contains genotype quality info 
 		private int adCol = -1; //Format column which contains allele depth info 
 		private int dpCol = -1; //Format column which contains depth info
-		private int hsCol = -1; //Format column which "hotspot id" info
 				
 		private String sample = null; //Emit information for only this sample if specified (when not given, defaults to first sample)
 		private int sampleColumn = -1; //Column that stores information for the given sample
@@ -225,6 +224,13 @@ public class VCFLineParser implements VariantLineReader {
 						rec.addProperty(VariantRec.VAR_DEPTH, new Double(altDepth));
 					}
 
+					if (rec.isMultiAllelic()) {
+						Integer altDepth2 = getVariantDepth(1);
+						if (altDepth2 != null) {
+							rec.addProperty(VariantRec.VAR2_DEPTH, new Double(altDepth2));
+						}
+					}
+					
 					Double genotypeQuality = getGenotypeQuality();
 					if (genotypeQuality != null) 
 						rec.addProperty(VariantRec.GENOTYPE_QUALITY, genotypeQuality);
@@ -585,10 +591,18 @@ public class VCFLineParser implements VariantLineReader {
 		
 		
 		/**
-		 * Returns the depth of the variant allele, as parsed from the INFO string for this sample
+		 * Returns the depth of the first variant allele, as parsed from the INFO string for this sample
 		 * @return
 		 */
 		public Integer getVariantDepth() {
+			return getVariantDepth(0);
+		}
+		
+		/**
+		 * Returns the depth of the whichth variant allele, as parsed from the INFO string for this sample
+		 * @return
+		 */
+		public Integer getVariantDepth(int which) {
 			if (formatToks == null) {
 				createFormatString();
 			}
@@ -606,7 +620,7 @@ public class VCFLineParser implements VariantLineReader {
 				String[] depths = adStr.split(",");
 				if (depths.length==1)
 					return 0;
-				Integer altReadDepth = Integer.parseInt(depths[1]);
+				Integer altReadDepth = Integer.parseInt(depths[which+1]);
 				return altReadDepth;
 			}
 			catch (NumberFormatException ex) {
@@ -645,9 +659,7 @@ public class VCFLineParser implements VariantLineReader {
 				if (formatToks[i].equals("DP")) {
 					dpCol = i;
 				}
-				if (formatToks[i].equals("HS")) {
-					hsCol = i;
-				}
+
 			}
 
 		}

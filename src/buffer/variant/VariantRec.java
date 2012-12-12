@@ -91,6 +91,22 @@ public class VariantRec {
 	}
 	
 	/**
+	 * Returns true if there is more than one alt allele at this site 
+	 * @return
+	 */
+	public boolean isMultiAllelic() {
+		return alt.contains(",");
+	}
+	
+	/**
+	 * Returns all alt alleles at this site in array form 
+	 * @return
+	 */
+	public String[] getAllAlts() {
+		return alt.split(",");
+	}
+	
+	/**
 	 * Set the start and end positions for this variant
 	 * @param start
 	 * @param end
@@ -531,6 +547,7 @@ public class VariantRec {
 	public static final String GENOTYPE_QUALITY = "genotype.quality";
 	public static final String SOURCE = "source.file";
 	public static final String VAR_DEPTH = "var.depth";
+	public static final String VAR2_DEPTH = "var2.depth";
 	public static final String FALSEPOS_PROB = "fp.prob";
 	public static final String TAUFP_SCORE = "taufp.score";
 	public static final String VQSR = "vqsr.score";
