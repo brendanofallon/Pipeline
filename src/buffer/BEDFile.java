@@ -74,7 +74,7 @@ public class BEDFile extends IntervalsFile {
 		reader.close();
 		sortAllContigs();
 		
-		logger.info("Done building intervals map for " + getFilename() + " Interval count: " + this.getIntervalCount() + " extent: " + this.getExtent());
+//		logger.info("Done building intervals map for " + getFilename() + " Interval count: " + this.getIntervalCount() + " extent: " + this.getExtent());
 //		for(String contig : intervals.keySet()) {
 //			List<Interval> list = intervals.get(contig);
 //			int tot = countSize(list);

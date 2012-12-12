@@ -706,6 +706,11 @@ public class VarUtils {
 
 			return;
 		}
+
+		if (firstArg.equals("mergeBed") || firstArg.equals("mergeBED")) {
+			performMergeBED(args);
+			return;
+		}
 		
 		if (firstArg.equals("hapCompare")) {
 			performHapCompare(args);
@@ -1674,6 +1679,24 @@ public class VarUtils {
 		return;
 	}
 
+	private static void performMergeBED(String[] args) {
+		if (args.length < 2) {
+			System.out.println("Enter the names of two bed files to combine");
+			return;
+		}
+		
+		BEDFile bedA = new BEDFile(new File(args[1]));
+		BEDFile bedB = new BEDFile(new File(args[2]));
+		
+		System.err.println(args[1] + " : " + bedA.getIntervalCount() + " intervals, " + bedA.getExtent() + " bases");
+		System.err.println(args[2] + " : " + bedB.getIntervalCount() + " intervals, " + bedB.getExtent() + " bases");
+		
+		bedA.mergeIntervalsFrom(bedB);
+		System.err.println("Union : " + bedA.getIntervalCount() + " intervals, " + bedA.getExtent() + " bases");
+		
+		bedA.toBED(System.out);
+	}
+	
 	private static void performHetFilter(String[] args) {
 		if (args.length < 2) {
 			System.out.println("Enter the names of a variant (vcf or csv) file to filter");

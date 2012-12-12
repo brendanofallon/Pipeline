@@ -9,6 +9,12 @@ import ncbi.GeneInfoDB;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
+/**
+ * A variant writer that writes variants in a form pleasing to medical directors (gene first, then cdot and pdot, etc.)
+ *  
+ * @author brendan
+ *
+ */
 public class MedDirWriter extends VariantPoolWriter {
 
 	private GeneInfoDB geneInfo = null;
@@ -32,7 +38,7 @@ public class MedDirWriter extends VariantPoolWriter {
 		 VariantRec.RSNUM,
 		 VariantRec.ARUP_FREQ,
 		 VariantRec.EFFECT_RELEVANCE_PRODUCT,
-		 VariantRec.SVM_EFFECT,
+		 VariantRec.EFFECT_PREDICTION2,
 		 Gene.GENE_RELEVANCE,
 		 Gene.SUMMARY_SCORE,
 		 Gene.PUBMED_SCORE,
@@ -109,15 +115,20 @@ public class MedDirWriter extends VariantPoolWriter {
 			}
 			
 			if (keys[i].equals("mom-zygosity")) {
-				VariantRec var = additionalVariants.get(0).findRecordNoWarn(rec.getContig(), rec.getStart());
-				if (var == null)
-					val = "ref";
+				if (additionalVariants.size()==0) {
+					val = "-";
+				}
 				else {
-					if (var.isHetero()) {
-						val = "het";
-					}
+					VariantRec var = additionalVariants.get(0).findRecordNoWarn(rec.getContig(), rec.getStart());
+					if (var == null)
+						val = "ref";
 					else {
-						val = "hom";
+						if (var.isHetero()) {
+							val = "het";
+						}
+						else {
+							val = "hom";
+						}
 					}
 				}
 			}
@@ -248,7 +259,7 @@ public class MedDirWriter extends VariantPoolWriter {
 		outputStream.println(builder.toString());
 	}
 	
-	private String createGeneHyperlink(String val) {
+	protected String createGeneHyperlink(String val) {
 		if (val == null)
 			return null;
 		

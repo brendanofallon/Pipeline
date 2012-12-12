@@ -2,10 +2,12 @@ package buffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +35,91 @@ public abstract class IntervalsFile extends FileBuffer {
 	 */
 	public Collection<String> getContigs() {
 		return intervals.keySet();
+	}
+	
+	/**
+	 * Merge in all intervals in the given file
+	 * @param aFile
+	 */
+	public void mergeIntervalsFrom(IntervalsFile aFile) {
+		for(String contig : aFile.getContigs()) {
+			List<Interval> ints = aFile.getIntervalsForContig(contig);
+			addIntervals(contig, ints);
+		}
+	}
+	
+	/**
+	 * Write all the intervals in BED form to the given stream
+	 * @param stream
+	 */
+	public void toBED(PrintStream stream) {
+		if (intervals == null)
+			return;
+		
+		List<String> contigs = new ArrayList<String>();
+		contigs.addAll( getContigs() );
+		Collections.sort(contigs);
+		
+		for(String contig : contigs) {
+			for(Interval inter : getIntervalsForContig(contig)) {
+				stream.println(contig + "\t" + inter.begin + "\t" + inter.end);
+			}
+		}
+		
+		stream.flush();
+	}
+	
+	/**
+	 * Add a new list of intervals to the given contig. If contig doesn't exist it is created
+	 * If contig does exist and contains intervals, given intervals are merged with old intervals
+	 * @param contig
+	 * @param newIntervals
+	 */
+	public void addIntervals(String contig, List<Interval> newIntervals) {
+		if (intervals == null) {
+			intervals = new HashMap<String, List<Interval>>();
+		}
+		
+		if (! intervals.containsKey(contig)) {
+			List<Interval> ints = new ArrayList<Interval>();
+			ints.addAll(newIntervals);
+			intervals.put(contig, ints);
+		}
+		else {
+			List<Interval> oldInts = intervals.get(contig);
+			oldInts.addAll(newIntervals);
+			Collections.sort(oldInts);
+			mergeIntervals(oldInts);
+		}
+	}
+	
+	/**
+	 * Merges all mergeable intervals in the given list
+	 * @param inters
+	 */
+	private void mergeIntervals(List<Interval> inters) {
+		List<Interval> merged = new ArrayList<Interval>();
+		if (inters.size() == 0)
+			return;
+		
+		merged.add( inters.get(0));
+		inters.remove(0);
+		
+		for(Interval inter : inters) {
+			Interval last = merged.get( merged.size()-1);
+			if (inter.overlaps(last)) {
+				Interval newLast = inter.merge(last);
+				merged.remove(last);
+				merged.add(newLast);
+			}
+			else {
+				merged.add(inter);
+			}
+			
+		}
+		
+		inters.clear();
+		inters.addAll(merged);
 	}
 	
 	/**
@@ -180,7 +267,7 @@ public abstract class IntervalsFile extends FileBuffer {
 		return size;
 	}
 	
-	public class Interval implements Comparable {
+	public class Interval implements Comparable<Interval> {
 		
 		public final int begin;
 		public final int end;
@@ -197,13 +284,35 @@ public abstract class IntervalsFile extends FileBuffer {
 			this.end = end;
 		}
 
-		@Override
-		public int compareTo(Object o) {
-			if (o instanceof Interval) {
-				Interval inter = (Interval)o;
-				return this.begin - inter.begin;
+		/**
+		 * Returns true if any site falls into both this and the other interval
+		 * @param other
+		 * @return
+		 */
+		public boolean overlaps(Interval other) {
+			if (other.end <= begin ||
+					other.begin >= end)
+				return false;
+			else
+				return true;
+		}
+		
+		/**
+		 * Merge two overlapping intervals into a single interval that includes all sites in both
+		 * @param other
+		 * @return
+		 */
+		public Interval merge(Interval other) {
+			if (! this.overlaps(other)) {
+				throw new IllegalArgumentException("Intervals must overlap to merge");
 			}
-			return 0;
+			
+			return new Interval(Math.min(begin, other.begin), Math.max(end, other.end));
+		}
+		
+		@Override
+		public int compareTo(Interval inter) {
+				return this.begin - inter.begin;
 		}
 		
 		public String toString() {
