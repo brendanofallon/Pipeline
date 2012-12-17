@@ -515,7 +515,10 @@ public class VariantRec {
 	public static final String EFFECT_PREDICTION = "effect.prediction";
 	public static final String EFFECT_PREDICTION2 = "effect.prediction2";
 	public static final String POP_FREQUENCY = "pop.freq";
+	public static final String POP_FREQUENCY2 = "pop.freq2";
 	public static final String AMR_FREQUENCY = "amr.freq";
+	public static final String EUR_FREQUENCY = "eur.freq";
+	public static final String AFR_FREQUENCY = "afr.freq";
 	public static final String CG69_FREQUENCY = "cg69.freq";
 	public static final String SIFT_SCORE = "sift.score";
 	public static final String POLYPHEN_SCORE = "pp.score";

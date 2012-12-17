@@ -189,7 +189,7 @@ public class ClassicRecessiveFinder extends Operator {
 			if (ef1 == ef2)
 				return 0;
 			else
-				return ef1 < ef2 ? -1 : 1;
+				return ef1 > ef2 ? -1 : 1;
 						
 		}	
 	}

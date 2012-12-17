@@ -3,7 +3,10 @@ package operator.variant;
 import gene.Gene;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 import ncbi.GeneInfoDB;
 import buffer.variant.VariantPool;
@@ -19,7 +22,7 @@ public class MedDirWriter extends VariantPoolWriter {
 
 	private GeneInfoDB geneInfo = null;
 	
-	public final static String[] keys = new String[]{
+	public final static List<String> keys = new ArrayList<String>( Arrays.asList(new String[]{
 		VariantRec.GENE_NAME,
 		 VariantRec.NM_NUMBER,
 		 VariantRec.CDOT,
@@ -28,7 +31,7 @@ public class MedDirWriter extends VariantPoolWriter {
 		 "position",
 		 VariantRec.DEPTH,
 		 "quality",
-		 "mom-zygosity",
+		 "zygosity",
 		 VariantRec.EXON_NUMBER,
 		 VariantRec.VARIANT_TYPE, 
 		 VariantRec.EXON_FUNCTION,
@@ -38,7 +41,7 @@ public class MedDirWriter extends VariantPoolWriter {
 		 VariantRec.RSNUM,
 		 VariantRec.ARUP_FREQ,
 		 VariantRec.EFFECT_RELEVANCE_PRODUCT,
-		 VariantRec.EFFECT_PREDICTION2,
+		 VariantRec.SVM_EFFECT,
 		 Gene.GENE_RELEVANCE,
 		 Gene.SUMMARY_SCORE,
 		 Gene.PUBMED_SCORE,
@@ -60,7 +63,7 @@ public class MedDirWriter extends VariantPoolWriter {
 		 VariantRec.MT_SCORE,
 		 VariantRec.GERP_SCORE,
 		 VariantRec.LRT_SCORE,
-		 VariantRec.SIPHY_SCORE};
+		 VariantRec.SIPHY_SCORE}));
 	
 	public MedDirWriter() {
 		System.setProperty("java.util.Arrays.useLegacyMergeSort", "true");
@@ -70,14 +73,15 @@ public class MedDirWriter extends VariantPoolWriter {
 	@Override
 	public void writeHeader(PrintStream outputStream) {
 		StringBuilder builder = new StringBuilder();
-		builder.append(keys[0]);
-		for(int i=1; i<keys.length; i++) {
-			String val = keys[i];
-			if (keys[i].equals(Gene.HGMD_INFO)) {
+		builder.append(keys.get(0));
+		
+		for(String key : keys) {
+			String val = key;
+			if (keys.equals(Gene.HGMD_INFO)) {
 				val = "hgmd.gene.match";
 			}
 			
-			if (keys[i].equals(VariantRec.HGMD_HIT)) {
+			if (keys.equals(VariantRec.HGMD_HIT)) {
 				val = "hgmd.exact.match";
 			}
 			builder.append("\t " + val);
@@ -85,6 +89,14 @@ public class MedDirWriter extends VariantPoolWriter {
 
 		if (genes == null)
 			outputStream.println( "No gene information supplied, some annotations will not be written");
+		
+		if (additionalVariants != null) {
+			for(VariantPool addPool : additionalVariants) {
+				String varLabel = addPool.getObjectLabel() + ".zygosity";
+				keys.add( varLabel );
+				builder.append("\t " + varLabel);
+			}
+		}
 		
 		outputStream.println(builder.toString());
 		
@@ -96,7 +108,7 @@ public class MedDirWriter extends VariantPoolWriter {
 		StringBuilder builder = new StringBuilder();
 		
 		
-		builder.append( createGeneHyperlink(rec.getAnnotation(keys[0])) );
+		builder.append( createGeneHyperlink(rec.getAnnotation(keys.get(0))) );
 		
 		Gene g = rec.getGene();
 		if (g == null && genes != null) {
@@ -105,150 +117,155 @@ public class MedDirWriter extends VariantPoolWriter {
 				g = genes.getGeneByName(geneName);
 		}
 		
-		for(int i=1; i<keys.length; i++) {
+		for(String key : keys) {
 			String val = "?";
 			
-			val = rec.getPropertyOrAnnotation(keys[i]).trim();
+			val = rec.getPropertyOrAnnotation(key).trim();
 			
-			if (keys[i].equals("zygosity")) {
+			if (key.equals("zygosity")) {
 				val = rec.isHetero() ? "het" : "hom";
 			}
 			
-			if (keys[i].equals("mom-zygosity")) {
+			if (key.endsWith(".zygosity")) {
 				if (additionalVariants.size()==0) {
 					val = "-";
 				}
 				else {
-					VariantRec var = additionalVariants.get(0).findRecordNoWarn(rec.getContig(), rec.getStart());
-					if (var == null)
-						val = "ref";
+					VariantPool addVars = poolForObjLabel(key.replace(".zygosity", ""));
+					if (addVars == null) {
+						val = "-";
+					}
 					else {
-						if (var.isHetero()) {
-							val = "het";
-						}
+						VariantRec var = addVars.findRecordNoWarn(rec.getContig(), rec.getStart());
+						if (var == null)
+							val = "ref";
 						else {
-							val = "hom";
+							if (var.isHetero()) {
+								val = "het";
+							}
+							else {
+								val = "hom";
+							}
 						}
 					}
 				}
-			}
+			}			
 			
-			if (keys[i].equals("chromosome")) {
+			if (key.equals("chromosome")) {
 				val = rec.getContig();
 			}
 			
-			if (keys[i].equals("position")) {
+			if (key.equals("position")) {
 				val = "" + rec.getStart();
 			}
 
 			
-			
-			if (keys[i].equals(Gene.GENE_RELEVANCE)) {
+			if (key.equals(Gene.GENE_RELEVANCE)) {
 				if (g!=null)
 					val = "" + g.getProperty(Gene.GENE_RELEVANCE);
 			}
 			
-			if (keys[i].equals(Gene.SUMMARY_SCORE)) {
+			if (key.equals(Gene.SUMMARY_SCORE)) {
 				if (g!=null)
 					val = "" + g.getProperty(Gene.SUMMARY_SCORE);
 			}
 			
-			if (keys[i].equals(Gene.DBNSFPGENE_SCORE)) {
+			if (key.equals(Gene.DBNSFPGENE_SCORE)) {
 				if (g!=null)
 					val = "" + g.getProperty(Gene.DBNSFPGENE_SCORE);
 			}
 			
-			if (keys[i].equals(Gene.PUBMED_SCORE)) {
+			if (key.equals(Gene.PUBMED_SCORE)) {
 				if (g!=null)
 					val = "" + g.getProperty(Gene.PUBMED_SCORE);
 			}
 			
-			if (keys[i].equals(Gene.INTERACTION_SCORE)) {
+			if (key.equals(Gene.INTERACTION_SCORE)) {
 				if (g!=null)
 					val = "" + g.getProperty(Gene.INTERACTION_SCORE);
 			}
 			
-			if (keys[i].equals(Gene.EXPRESSION_SCORE)) {
+			if (key.equals(Gene.EXPRESSION_SCORE)) {
 				if (g!=null)
 					val = "" + g.getProperty(Gene.EXPRESSION_SCORE);
 			}
 			
-			if (keys[i].equals(Gene.GO_SCORE)) {
+			if (key.equals(Gene.GO_SCORE)) {
 				if (g!=null)
 					val = "" + g.getProperty(Gene.GO_SCORE);
 			}
 			
-			if (keys[i].equals(Gene.GO_HITS)) {
+			if (key.equals(Gene.GO_HITS)) {
 				if (g!=null && g.getAnnotation(Gene.GO_HITS) != null)
 					val = "" + g.getAnnotation(Gene.GO_HITS);
 			}
 			
-			if (keys[i].equals(Gene.EXPRESSION_HITS)) {
+			if (key.equals(Gene.EXPRESSION_HITS)) {
 				if (g!=null) {
 					if (g.getAnnotation(Gene.EXPRESSION_HITS) != null)
 						val = "" + g.getAnnotation(Gene.EXPRESSION_HITS);
 				}
 			}
 			
-			if (keys[i].equals("chrom")) {
+			if (key.equals("chrom")) {
 				val = rec.getContig();
 			}
 			
-			if (keys[i].equals("pos")) {
+			if (key.equals("pos")) {
 				val = "" + rec.getStart();
 			}
 			
-			if (keys[i].equals(Gene.PUBMED_HIT)) {
+			if (key.equals(Gene.PUBMED_HIT)) {
 				if (g!=null)
 					val = g.getAnnotation(Gene.PUBMED_HIT);
 			}
 			
-			if (keys[i].equals(Gene.HGMD_INFO)) {
+			if (key.equals(Gene.HGMD_INFO)) {
 				if (g!=null)
 					val = g.getAnnotation(Gene.HGMD_INFO);
 			}
 			
-			if (keys[i].equals(Gene.DBNSFP_DISEASEDESC)) {
+			if (key.equals(Gene.DBNSFP_DISEASEDESC)) {
 				if (g!=null)
 					val = g.getAnnotation(Gene.DBNSFP_DISEASEDESC);
 			}
 			
-			if (keys[i].equals(Gene.SUMMARY)) {
+			if (key.equals(Gene.SUMMARY)) {
 				if (g!=null)
 					val = g.getAnnotation(Gene.SUMMARY);
 			}
 			
-			if (keys[i].equals(VariantRec.GENE_NAME)) {
+			if (key.equals(VariantRec.GENE_NAME)) {
 				if (val.length() > 1) {
 					val = createGeneHyperlink(val);
-				}
-					
+				}		
 			}
 			
-			if (keys[i].equals(VariantRec.NM_NUMBER)) {
+			if (key.equals(VariantRec.NM_NUMBER)) {
 				if (val.length() < 3)
 					val = "-";
 			}
 			
-			if (keys[i].equals(VariantRec.CDOT)) {
+			if (key.equals(VariantRec.CDOT)) {
 				if (val.length() < 3)
 					val = "-";
 			}
 			
-			if (keys[i].equals(VariantRec.PDOT)) {
+			if (key.equals(VariantRec.PDOT)) {
 				if (val.length() < 3)
 					val = "-";
 			}
 			
-			if (keys[i].equals(VariantRec.RSNUM)) {
+			if (key.equals(VariantRec.RSNUM)) {
 				if (val.length() < 3)
 					val = "-";
 				else {
 					val = createRSNumHyperlink(val);
 				}
 			}
+		
 			
-			if (val == null)
+			if (val == null || val.equals("null"))
 				val = "-";
 			builder.append("\t" + val);
 		}
@@ -259,6 +276,15 @@ public class MedDirWriter extends VariantPoolWriter {
 		outputStream.println(builder.toString());
 	}
 	
+	private VariantPool poolForObjLabel(String label) {
+		for(VariantPool pool : additionalVariants) {
+			if (pool.getObjectLabel().equals(label)) {
+				return pool;
+			}
+		}
+		return null;
+	}
+
 	protected String createGeneHyperlink(String val) {
 		if (val == null)
 			return null;
@@ -289,31 +315,31 @@ public class MedDirWriter extends VariantPoolWriter {
 		}
 	}
 	
-	public void writeVariantOld(VariantRec rec, PrintStream outputStream) {
-		StringBuilder builder = new StringBuilder();
-		builder.append( rec.getPropertyOrAnnotation(keys[0]).trim() );
-		for(int i=1; i<keys.length; i++) {
-			String val = rec.getPropertyOrAnnotation(keys[i]).trim();
-			builder.append("\t" + val);
-		}
-
-		Gene g = rec.getGene();
-		if (g == null && genes != null) {
-			String geneName = rec.getAnnotation(VariantRec.GENE_NAME);
-			if (geneName != null)
-				g = genes.getGeneByName(geneName);
-		}
-		
-		if (g == null) {
-			builder.append("\n\t (no gene information found)");
-		}
-		else {
-			builder.append("\n\t Disease associations:\t" + g.getAnnotation(Gene.DBNSFP_DISEASEDESC));
-			builder.append("\n\t OMIM #s:\t" + g.getAnnotation(Gene.DBNSFP_MIMDISEASE));
-			builder.append("\n\t Summary:\t" + g.getAnnotation(Gene.SUMMARY));
-		}
-		outputStream.println(builder.toString());
-	}
+//	public void writeVariantOld(VariantRec rec, PrintStream outputStream) {
+//		StringBuilder builder = new StringBuilder();
+//		builder.append( rec.getPropertyOrAnnotation(keys[0]).trim() );
+//		for(int i=1; i<keys.length; i++) {
+//			String val = rec.getPropertyOrAnnotation(keys[i]).trim();
+//			builder.append("\t" + val);
+//		}
+//
+//		Gene g = rec.getGene();
+//		if (g == null && genes != null) {
+//			String geneName = rec.getAnnotation(VariantRec.GENE_NAME);
+//			if (geneName != null)
+//				g = genes.getGeneByName(geneName);
+//		}
+//		
+//		if (g == null) {
+//			builder.append("\n\t (no gene information found)");
+//		}
+//		else {
+//			builder.append("\n\t Disease associations:\t" + g.getAnnotation(Gene.DBNSFP_DISEASEDESC));
+//			builder.append("\n\t OMIM #s:\t" + g.getAnnotation(Gene.DBNSFP_MIMDISEASE));
+//			builder.append("\n\t Summary:\t" + g.getAnnotation(Gene.SUMMARY));
+//		}
+//		outputStream.println(builder.toString());
+//	}
 	
 	/**
 	 * Returns a String describing whether or not this variant is in the given variant pool
@@ -355,13 +381,13 @@ public class MedDirWriter extends VariantPoolWriter {
 			if (s0 == null && s1 == null)
 				return 0;
 			if (s0 == null && s1 != null) {
-				return 1;
-			}
-			if (s0 != null && s1 == null) {
 				return -1;
 			}
+			if (s0 != null && s1 == null) {
+				return 1;
+			}
 			
-			return s0 < s1 ? 1 : -1;
+			return s0 < s1 ? -1 : 1;
 			
 		}
 		

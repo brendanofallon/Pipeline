@@ -31,23 +31,23 @@
   <VariantPool />
 </TKGAnnotate>
 
-<dbSNP class="operator.annovar.DBSNPAnnotator">
+<!-- dbSNP class="operator.annovar.DBSNPAnnotator">
  <AnnoInput />
  <VariantPool />
-</dbSNP>
+</dbSNP -->
 
 <ESPAnnotate class="operator.annovar.Exomes5400Annotator">
  <AnnoInput /> 
  <VariantPool />
 </ESPAnnotate>
 
-<!-- ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
+<ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
  <VariantPool />
-</ARUPFreqAnno -->
+</ARUPFreqAnno>
 
-<HGMDVar class="operator.variant.HGMDVarAnnotator">
+<!-- HGMDVar class="operator.variant.HGMDVarAnnotator">
   <VariantPool />
-</HGMDVar>
+</HGMDVar -->
 
 <ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />

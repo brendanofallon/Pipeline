@@ -25,6 +25,7 @@ public class ExcelWriter extends VariantPoolWriter {
 								 //VariantRec.GO_EFFECT_PROD,
 								 VariantRec.EFFECT_RELEVANCE_PRODUCT,
 								 VariantRec.POP_FREQUENCY,
+								 VariantRec.POP_FREQUENCY2,
 								 //VariantRec.AMR_FREQUENCY,
 								 VariantRec.EXOMES_FREQ,
 								 VariantRec.ARUP_TOT,

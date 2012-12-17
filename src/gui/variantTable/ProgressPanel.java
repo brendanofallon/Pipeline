@@ -2,8 +2,6 @@ package gui.variantTable;
 
 import gui.ErrorWindow;
 import gui.variantTable.AnalysisRunner.PipelineRunner;
-import gui.widgets.LabelFactory;
-import gui.widgets.PrettyLabel;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -15,12 +13,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 
+import operator.OperationFailedException;
+import operator.Operator;
+import pipeline.PipelineListener;
 import buffer.CSVFile;
 import buffer.variant.VariantPool;
-
-import operator.Operator;
-
-import pipeline.PipelineListener;
 
 public class ProgressPanel extends JPanel implements PipelineListener, DoneListener {
 
@@ -77,11 +74,6 @@ public class ProgressPanel extends JPanel implements PipelineListener, DoneListe
 		
 	}
 
-	@Override
-	public void errorEncountered(Operator op) {
-		setLabelText("Error : operator " + op.getObjectLabel());
-	}
-
 
 	public void done() {
 		setLabelText("Done!");
@@ -116,5 +108,11 @@ public class ProgressPanel extends JPanel implements PipelineListener, DoneListe
 	JLabel messageLabel;
 	JLabel label;
 	JProgressBar progressBar;
+
+	@Override
+	public void errorEncountered(OperationFailedException opEx) {
+		// TODO Auto-generated method stub
+		
+	}
 
 }

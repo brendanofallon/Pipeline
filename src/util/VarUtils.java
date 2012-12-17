@@ -895,7 +895,7 @@ public class VarUtils {
 			System.out.println(reader.getHeader());
 			do {
 				VariantRec var = reader.toVariantRec();
-				if (var.isSNP())
+				if (var != null && var.isSNP())
 					System.out.println( reader.getCurrentLine() );
 			}while(reader.advanceLine());
 		} catch (IOException e) {
