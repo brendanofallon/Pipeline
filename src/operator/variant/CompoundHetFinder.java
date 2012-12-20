@@ -76,13 +76,26 @@ public class CompoundHetFinder extends Operator {
 	@Override
 	public void performOperation() throws OperationFailedException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);
-
 		
-		logger.info("CompoundHetFinder : Assuming " + kidPool.getObjectLabel() + " contains offspring variants \n " + parent1Pool.getObjectLabel() + " contains parent 1 variants \n " + parent2Pool.getObjectLabel() + " contains parent 2 variants");
-
+		List<CompoundHetHit> hits = null;
+		if (parent1Pool == null && parent2Pool == null) {
+			throw new OperationFailedException("Both parent pools are null, cannot compute compound hets", this);
+		}
+		if (parent1Pool != null && parent2Pool != null) {
+			logger.info("CompoundHetFinder : Assuming " + kidPool.getObjectLabel() + " contains offspring variants \n " + parent1Pool.getObjectLabel() + " contains parent 1 variants \n " + parent2Pool.getObjectLabel() + " contains parent 2 variants");
+			hits = computeCompoundHets(kidPool, parent1Pool, parent2Pool, genes);
+		}
+		else {
+			if (parent1Pool != null) {
+				logger.info("CompoundHetFinder : Using one-parent mode, assuming " + kidPool.getObjectLabel() + " contains offspring variants \n " + parent1Pool.getObjectLabel() + " contains parent variants and no additional parent variants provided");
+				hits = computeCompoundHetsOnePar(kidPool, parent1Pool, genes);
+			}
+			if (parent2Pool != null) {
+				logger.info("CompoundHetFinder : Using one-parent mode, assuming " + kidPool.getObjectLabel() + " contains offspring variants \n " + parent2Pool.getObjectLabel() + " contains parent variants and no additional parent variants provided");
+				hits = computeCompoundHetsOnePar(kidPool, parent2Pool, genes);
+			}
+		}
 		
-		List<CompoundHetHit> hits = computeCompoundHets(kidPool, parent1Pool, parent2Pool, genes);
-			
 		Collections.sort(hits, new HitRankComparator());
 				
 		PrintStream outputStream = System.out;
@@ -120,6 +133,60 @@ public class CompoundHetFinder extends Operator {
 		out.print(hit.gene.getAnnotation(Gene.HGMD_INFO) + "\n");
 	}
 
+	
+	/**
+	 * Static method to perform compound het finding in cases where only one parent is known
+	 * @param kidVars
+	 * @param parent1Vars
+	 * @param parent2Vars
+	 * @param outputStream
+	 */
+	public static List<CompoundHetHit> computeCompoundHetsOnePar(VariantPool kidVars,
+			VariantPool parentVars, 
+			GeneList genes) {
+		
+		GeneInfoDB geneDB = GeneInfoDB.getDB();
+		
+		List<CompoundHetHit> hits = new ArrayList<CompoundHetHit>();
+		
+		GenePool kidGenes = new GenePool(kidVars.filterPool( nonSynFilter ));
+		if (kidGenes.size() == 0) {
+			throw new IllegalArgumentException("No genes found in kid gene list, this is probably an error");
+		}
+		GenePool par1Genes = new GenePool(parentVars.filterPool( nonSynFilter ));
+		if (par1Genes.size() == 0) {
+			throw new IllegalArgumentException("No genes found in parent gene list, this is probably an error");
+		}
+		
+		for(String gene : kidGenes.getGenes()) {
+			List<VariantRec> kidList = kidGenes.getVariantsForGene(gene);
+			List<VariantRec> par1List = par1Genes.getVariantsForGene(gene);
+
+			CompoundHetHit hit = hasCompoundHetOnePar(kidList, par1List);
+
+			if (hit != null) {
+				hit.gene = genes.getGeneByName( gene );
+				if ( hit.gene == null) {
+					System.err.println("Hmm, could not find gene for name : " + gene);
+					String synonym = geneDB.symbolForSynonym(gene);
+					if (synonym != null) {
+						System.out.println("Found synonym for gene :" + gene + " -> " + synonym);
+						hit.gene = genes.getGeneByName(synonym);
+					}
+					else {
+						System.out.println("No synonym for gene :" + gene + " :(");
+					}
+				}
+				else {
+					hits.add(hit);
+				}
+				
+			}
+		}
+		
+		return hits;
+	}
+	
 	/**
 	 * Static method to actually perform compound het finding. This method is also used in varUtils.compoundHet
 	 * @param kidVars
@@ -138,9 +205,20 @@ public class CompoundHetFinder extends Operator {
 		List<CompoundHetHit> hits = new ArrayList<CompoundHetHit>();
 		
 		GenePool kidGenes = new GenePool(kidVars.filterPool( nonSynFilter ));
+		if (kidGenes.size() == 0) {
+			throw new IllegalArgumentException("No genes found in kid gene list, this is probably an error");
+		}
+		
 		GenePool par1Genes = new GenePool(parent1Vars.filterPool( nonSynFilter ));
+		if (par1Genes.size() == 0) {
+			throw new IllegalArgumentException("No genes found in parent #1 gene list, this is probably an error");
+		}
+		
 		GenePool par2Genes = new GenePool(parent2Vars.filterPool( nonSynFilter ));
-
+		if (par2Genes.size() == 0) {
+			throw new IllegalArgumentException("No genes found in parent #2 gene list, this is probably an error");
+		}
+		
 		for(String gene : kidGenes.getGenes()) {
 			List<VariantRec> kidList = kidGenes.getVariantsForGene(gene);
 			List<VariantRec> par1List = par1Genes.getVariantsForGene(gene);
@@ -230,6 +308,61 @@ public class CompoundHetFinder extends Operator {
 		
 		return null;
 	}
+	
+	
+	/**
+	 * Returns true if a) no list is empty (or null)
+	 * b) the kid list contains at least one hetero var that is also hetero in par1, but absent from par2
+	 * c) the kid list contains at least one hetero var that is also hetero in par2, but absent from par1
+	 * 
+	 * @param kidList
+	 * @param par1List
+	 * @param par2List
+	 * @return
+	 */
+	private static CompoundHetHit hasCompoundHetOnePar(List<VariantRec> kidList,
+										  List<VariantRec> parList) {
+		
+		if (kidList == null || kidList.size() < 2 || kidList.size()>8) //Need at least two hets in kid list
+			return null;
+		if (parList == null || parList.size()==0)
+			return null;
+		
+		boolean hasPar1Het = false; //True if any kid var is het and also het in par 1 and absent par2
+		boolean hasPar2Het = false; 
+		
+		VariantRec kidHit1 = null;
+		VariantRec kidHit2 = null;
+		
+		for(VariantRec rec : kidList) {
+			if (rec.isHetero()) {
+				boolean parHet = isHetero(rec.getStart(), parList);
+				boolean parContains = contains(rec.getStart(), parList);
+				
+				
+				if ( (!hasPar1Het) && parHet ) {
+					kidHit1 = rec;
+				}
+				
+				if ( (!hasPar2Het) && (!parContains)) {
+					kidHit2 = rec;
+				}
+				
+				hasPar1Het = hasPar1Het || parHet ;
+				hasPar2Het = hasPar2Het || (!parContains); 
+
+				if (hasPar1Het && hasPar2Het) {
+					CompoundHetHit hit = new CompoundHetHit();
+					hit.kidVar1 = kidHit1;
+					hit.kidVar2 = kidHit2;
+					return hit;
+				}
+			}
+			
+		}
+		
+		return null;
+	}
 
 	/**
 	 * Returns true if there is a variant at the given start position
@@ -301,8 +434,6 @@ public class CompoundHetFinder extends Operator {
 			throw new IllegalArgumentException("Kid Variant pool not specified");
 		if (parent1Pool == null)
 			throw new IllegalArgumentException("Parent 1 Variant pool not specified");
-		if (parent2Pool == null)
-			throw new IllegalArgumentException("Parent 2 Variant pool not specified");
 
 
 	}

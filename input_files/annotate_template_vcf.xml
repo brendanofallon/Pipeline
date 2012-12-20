@@ -22,24 +22,30 @@
 	<VariantPool />
 </GeneAnnotate>
 
-<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+<!-- dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
-</dbNSFPAnnotate>
+</dbNSFPAnnotate -->
 
-<TKGAnnotate class="operator.annovar.TKGAnnotator">
+<!-- TKGAnnotate class="operator.annovar.TKGAnnotator">
   <AnnoInput />
   <VariantPool />
+</TKGAnnotate -->
+
+<!-- New 1000Genomes v3 annotator! -->
+<TKGAnnotate class="operator.variant.TGPTabixAnnotator">
+  <VariantPool />
 </TKGAnnotate>
+
 
 <!-- dbSNP class="operator.annovar.DBSNPAnnotator">
  <AnnoInput />
  <VariantPool />
 </dbSNP -->
 
-<ESPAnnotate class="operator.annovar.Exomes5400Annotator">
+<!-- ESPAnnotate class="operator.annovar.Exomes5400Annotator">
  <AnnoInput /> 
  <VariantPool />
-</ESPAnnotate>
+</ESPAnnotate -->
 
 <ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
  <VariantPool />

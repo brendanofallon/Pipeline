@@ -1,8 +1,12 @@
 package gene;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import disease.DiseaseInfo;
 
 /**
  * This is the gene analogue of a VariantRec. It's used to associate
@@ -17,6 +21,9 @@ public class Gene {
 	
 	private Map<String, String> annotations = new HashMap<String, String>();
 	private Map<String, Double> properties = new HashMap<String, Double>();
+	
+	//Attached disease information, will be empty for many genes
+	private List<DiseaseInfo> diseases = new ArrayList<DiseaseInfo>();
 	
 	public Gene(String ncbiName) {
 		this.name = ncbiName;
@@ -67,6 +74,33 @@ public class Gene {
 		return anno;
 	}
 	
+	/********************** Some disease-specific stuff ************************/
+	
+	/**
+	 * Add new disease description to this gene
+	 * @param di
+	 */
+	public void addDisease(DiseaseInfo di) {
+		diseases.add(di);
+	}
+	
+	/**
+	 * Number of diseases associated with this gene
+	 * @return
+	 */
+	public int getDiseaseCount() {
+		return diseases.size();
+	}
+	
+	/**
+	 * Reference to list of diseases
+	 * @return
+	 */
+	public List<DiseaseInfo> getAllDiseases() {
+		return diseases;
+	}
+	
+	
 	public static final String SUMMARY = "summary";
 	public static final String SUMMARY_SCORE = "summary.score";
 	
@@ -92,6 +126,9 @@ public class Gene {
 	
 	public static final String PUBMED_SCORE = "pubmed.score";
 	public static final String PUBMED_HIT = "pubmed.hit";
+	
+	public static final String OMIM_DISEASES = "omim.disease";
+	public static final String OMIM_NUMBERS = "omim.disease.ids";
 
 
 	

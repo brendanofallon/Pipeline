@@ -187,7 +187,14 @@ public class GenePool extends Operator {
 	 * @param rec
 	 */
 	public boolean addRecordNoWarn(VariantRec rec) {		
-		String geneName = rec.getAnnotation(VariantRec.GENE_NAME); 
+		String geneName = rec.getAnnotation(VariantRec.GENE_NAME);
+		
+		//If gene name is null, try looking at the gene object
+		if (geneName == null) {
+			Gene g = rec.getGene();
+			if (g != null)
+				geneName = g.getName();
+		}
 		
 		if (geneName != null) {
 			List<VariantRec> vars = pool.get(geneName);

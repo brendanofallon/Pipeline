@@ -27,10 +27,16 @@
  <VariantPool />
 </dbSNP -->
 
-<PopFreqAnnotate class="operator.annovar.TKGAnnotator">
+<!-- PopFreqAnnotate class="operator.annovar.TKGAnnotator">
  <AnnoInput />
  <VariantPool />
-</PopFreqAnnotate>
+</PopFreqAnnotate -->
+
+<!-- New 1000 Genomes v3 annotator! -->
+<TKGAnnotate class="operator.variant.TGPTabixAnnotator">
+  <VariantPool />
+</TKGAnnotate>
+
 
 <ExomesAnnotate class="operator.annovar.Exomes5400Annotator">
  <AnnoInput />

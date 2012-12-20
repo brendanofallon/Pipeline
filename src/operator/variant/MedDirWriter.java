@@ -9,6 +9,10 @@ import java.util.Comparator;
 import java.util.List;
 
 import ncbi.GeneInfoDB;
+
+import org.apache.log4j.Logger;
+
+import pipeline.Pipeline;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
@@ -20,6 +24,8 @@ import buffer.variant.VariantRec;
  */
 public class MedDirWriter extends VariantPoolWriter {
 
+	public static final String CLINICAL_ONLY = "clinical.only";
+	private boolean clinicalOnly = false; //If true, only write variants with HGMD, OMIM, or dbNSFP hits
 	private GeneInfoDB geneInfo = null;
 	
 	public final static List<String> keys = new ArrayList<String>( Arrays.asList(new String[]{
@@ -51,6 +57,8 @@ public class MedDirWriter extends VariantPoolWriter {
 		 Gene.EXPRESSION_SCORE,
 		 Gene.EXPRESSION_HITS,
 		 Gene.GO_HITS,
+		 Gene.OMIM_DISEASES,
+		 Gene.OMIM_NUMBERS,
 		 VariantRec.OMIM_ID,
 		 VariantRec.HGMD_HIT,
 		 Gene.DBNSFP_DISEASEDESC,
@@ -99,6 +107,16 @@ public class MedDirWriter extends VariantPoolWriter {
 		}
 		
 		outputStream.println(builder.toString());
+	
+		
+		String clinicalAttr = this.getAttribute(CLINICAL_ONLY);
+		if (clinicalAttr != null) {
+			if ( Boolean.parseBoolean(clinicalAttr) ) {
+				clinicalOnly = true;
+				Logger.getLogger(Pipeline.primaryLoggerName).info("Ignoring variants with no HGMD or OMIM info");
+			}
+			
+		}
 		
 	}
 
@@ -111,6 +129,22 @@ public class MedDirWriter extends VariantPoolWriter {
 		builder.append( createGeneHyperlink(rec.getAnnotation(keys.get(0))) );
 		
 		Gene g = rec.getGene();
+		
+		if (clinicalOnly) {
+			// If there's no HGMD info, OMIM info, or DBNSFP disease desc, 
+			// don't report it
+			if (rec.getAnnotation(VariantRec.HGMD_HIT) == null 
+				&& rec.getAnnotation(VariantRec.HGMD_INFO) == null
+				&& ( g == null
+					|| (   g.getAnnotation(Gene.DBNSFP_DISEASEDESC) == null
+						&& g.getAnnotation(Gene.OMIM_DISEASES) == null
+						&& g.getAnnotation(Gene.HGMD_INFO) == null ))) {
+				return;
+			}
+				
+				
+		}
+		
 		if (g == null && genes != null) {
 			String geneName = rec.getAnnotation(VariantRec.GENE_NAME);
 			if (geneName != null)
@@ -159,6 +193,16 @@ public class MedDirWriter extends VariantPoolWriter {
 				val = "" + rec.getStart();
 			}
 
+
+			if (key.equals(Gene.OMIM_DISEASES)) {
+				if (g!=null)
+					val = g.getAnnotation(Gene.OMIM_DISEASES);
+			}
+			
+			if (key.equals(Gene.OMIM_NUMBERS)) {
+				if (g!=null)
+					val = g.getAnnotation(Gene.OMIM_NUMBERS);
+			}
 			
 			if (key.equals(Gene.GENE_RELEVANCE)) {
 				if (g!=null)
@@ -387,7 +431,7 @@ public class MedDirWriter extends VariantPoolWriter {
 				return 1;
 			}
 			
-			return s0 < s1 ? -1 : 1;
+			return s0 > s1 ? -1 : 1;
 			
 		}
 		

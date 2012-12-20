@@ -12,7 +12,7 @@ import pipeline.Pipeline;
 import buffer.variant.VariantRec;
 
 /**
- * Provides several 1000-Genomes based annotations, using new 11/23/2010, version 3 calls
+ * Provides several 1000-Genomes based annotations, using the new 11/23/2010, version 3 calls
  * In contrast to previous 1000 Genomes annotator which parsed Annovar output, this uses 
  * a tabix-indexed "sites" file usually downloaded directly from : 
  * ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/ALL.wgs.phase1_release_v3.20101123.snps_indels_sv.sites.vcf.gz
@@ -43,6 +43,7 @@ public class TGPTabixAnnotator extends Annotator {
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Error opening TGP data at path " + filePath + " error : " + e.getMessage());
 		}
+		initialized = true;
 	}
 	
 	@Override
@@ -60,22 +61,28 @@ public class TGPTabixAnnotator extends Annotator {
 		
 		String queryStr = contig + ":" + pos + "-" + (pos);
 		
-		TabixReader.Iterator iter = reader.query(queryStr);
-		
-		if(iter != null) {
-			try {
-				String val = iter.next();
-				while(val != null) {
-					boolean ok = addAnnotationsFromString(var, val);
-					if (ok)
-						break;
-					val = iter.next();
+		try {
+			TabixReader.Iterator iter = reader.query(queryStr);
+
+			if(iter != null) {
+				try {
+					String val = iter.next();
+					while(val != null) {
+						boolean ok = addAnnotationsFromString(var, val);
+						if (ok)
+							break;
+						val = iter.next();
+					}
+				} catch (IOException e) {
+					throw new OperationFailedException("Error reading TGP data file: " + e.getMessage(), this);
 				}
-			} catch (IOException e) {
-				throw new OperationFailedException("Error reading TGP data file: " + e.getMessage(), this);
 			}
 		}
-		
+		catch (RuntimeException rex) {
+			//Bad contigs will cause an array out-of-bounds exception to be thrown by
+			//the tabix reader. There's not much we can do about this since the methods
+			//are private... right now we just ignore it and skip this variant
+		}
 	}
 
 	/**
@@ -108,7 +115,7 @@ public class TGPTabixAnnotator extends Annotator {
 		String overallFreqStr = valueForKey(formatToks, "AF");
 		if (overallFreqStr != null) {
 			Double freq = Double.parseDouble(overallFreqStr);
-			var.addProperty(VariantRec.POP_FREQUENCY2, freq);
+			var.addProperty(VariantRec.POP_FREQUENCY, freq);
 		}
 		
 		
