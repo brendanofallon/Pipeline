@@ -153,7 +153,7 @@ public class GeneAnnotator extends AnnovarAnnotator {
 		reader.close();
 		
 		Logger.getLogger(Pipeline.primaryLoggerName).info(errorVars + " of " + totalVars + " could not be associated with a variant record");
-		if (errorVars > totalVars*0.01) {
+		if (totalVars > 200 && errorVars > totalVars*0.01) {
 			for(String err : lastFewErrors) {
 				System.err.println(err);
 			}

@@ -277,6 +277,7 @@ public class Pipeline {
 
 		Date beginTime = new Date();
 		primaryLogger.info("Logger initialized at " +  beginTime + "\n Beginning new Pipeline run");
+		
 	}
 	
 	/**

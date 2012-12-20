@@ -128,28 +128,43 @@ public class MedDirWriter extends VariantPoolWriter {
 		
 		builder.append( createGeneHyperlink(rec.getAnnotation(keys.get(0))) );
 		
+		//Find gene associated with variant
 		Gene g = rec.getGene();
-		
-		if (clinicalOnly) {
-			// If there's no HGMD info, OMIM info, or DBNSFP disease desc, 
-			// don't report it
-			if (rec.getAnnotation(VariantRec.HGMD_HIT) == null 
-				&& rec.getAnnotation(VariantRec.HGMD_INFO) == null
-				&& ( g == null
-					|| (   g.getAnnotation(Gene.DBNSFP_DISEASEDESC) == null
-						&& g.getAnnotation(Gene.OMIM_DISEASES) == null
-						&& g.getAnnotation(Gene.HGMD_INFO) == null ))) {
-				return;
-			}
-				
-				
-		}
 		
 		if (g == null && genes != null) {
 			String geneName = rec.getAnnotation(VariantRec.GENE_NAME);
 			if (geneName != null)
 				g = genes.getGeneByName(geneName);
 		}
+		
+		if (g != null && 
+				( g.getName().equals("SMPD4" )
+						|| g.getName().equals("PMP2")
+						|| g.getName().equals("S1PR5")
+						|| g.getName().equals("GZF1"))) {
+			System.out.println();
+		}
+		
+		if (clinicalOnly) {
+			// If there's no HGMD info, OMIM info, or DBNSFP disease desc, 
+			// don't report it
+			if ( (rec.getAnnotation(VariantRec.HGMD_HIT) == null || rec.getAnnotation(VariantRec.HGMD_HIT).length() > 2) 
+				&& (rec.getAnnotation(VariantRec.HGMD_INFO) == null || rec.getAnnotation(VariantRec.HGMD_INFO).length() > 2)
+				&& g == null ) {
+				return;
+			}
+			
+			if ( (rec.getAnnotation(VariantRec.HGMD_HIT) == null || rec.getAnnotation(VariantRec.HGMD_HIT).length() > 2) 
+					&& (rec.getAnnotation(VariantRec.HGMD_INFO) == null || rec.getAnnotation(VariantRec.HGMD_INFO).length() > 2)
+					&& (g.getAnnotation(Gene.DBNSFP_DISEASEDESC) == null || g.getAnnotation(Gene.DBNSFP_DISEASEDESC).length() > 2) 
+					&& (g.getAnnotation(Gene.OMIM_DISEASES) == null || g.getAnnotation(Gene.OMIM_DISEASES).length() > 2)
+					&& (g.getAnnotation(Gene.HGMD_INFO) == null || g.getAnnotation(Gene.HGMD_INFO).length() > 2)) {
+				return;
+			}
+				
+		}
+		
+		
 		
 		for(String key : keys) {
 			String val = "?";
