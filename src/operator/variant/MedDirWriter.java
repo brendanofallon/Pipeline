@@ -148,17 +148,23 @@ public class MedDirWriter extends VariantPoolWriter {
 		if (clinicalOnly) {
 			// If there's no HGMD info, OMIM info, or DBNSFP disease desc, 
 			// don't report it
-			if ( (rec.getAnnotation(VariantRec.HGMD_HIT) == null || rec.getAnnotation(VariantRec.HGMD_HIT).length() > 2) 
-				&& (rec.getAnnotation(VariantRec.HGMD_INFO) == null || rec.getAnnotation(VariantRec.HGMD_INFO).length() > 2)
+			if ( (rec.getAnnotation(VariantRec.HGMD_HIT) == null || rec.getAnnotation(VariantRec.HGMD_HIT).length() < 2) 
+				&& (rec.getAnnotation(VariantRec.HGMD_INFO) == null || rec.getAnnotation(VariantRec.HGMD_INFO).length() < 2)
 				&& g == null ) {
-				return;
+				return;			
 			}
 			
-			if ( (rec.getAnnotation(VariantRec.HGMD_HIT) == null || rec.getAnnotation(VariantRec.HGMD_HIT).length() > 2) 
-					&& (rec.getAnnotation(VariantRec.HGMD_INFO) == null || rec.getAnnotation(VariantRec.HGMD_INFO).length() > 2)
-					&& (g.getAnnotation(Gene.DBNSFP_DISEASEDESC) == null || g.getAnnotation(Gene.DBNSFP_DISEASEDESC).length() > 2) 
-					&& (g.getAnnotation(Gene.OMIM_DISEASES) == null || g.getAnnotation(Gene.OMIM_DISEASES).length() > 2)
-					&& (g.getAnnotation(Gene.HGMD_INFO) == null || g.getAnnotation(Gene.HGMD_INFO).length() > 2)) {
+			String hgmdHit =  rec.getAnnotation(VariantRec.HGMD_HIT);
+			String hgmdInfo = rec.getAnnotation(VariantRec.HGMD_INFO);
+			String geneHGMD = g.getAnnotation(Gene.DBNSFP_DISEASEDESC);
+			String gOMIM = g.getAnnotation(Gene.OMIM_DISEASES);
+			String dbNSFP = g.getAnnotation(Gene.DBNSFP_DISEASEDESC);
+			
+			if ( (rec.getAnnotation(VariantRec.HGMD_HIT) == null || rec.getAnnotation(VariantRec.HGMD_HIT).length() < 2) 
+					&& (rec.getAnnotation(VariantRec.HGMD_INFO) == null || rec.getAnnotation(VariantRec.HGMD_INFO).length() < 2)
+					&& (g.getAnnotation(Gene.DBNSFP_DISEASEDESC) == null || g.getAnnotation(Gene.DBNSFP_DISEASEDESC).length() < 2) 
+					&& (g.getAnnotation(Gene.OMIM_DISEASES) == null || g.getAnnotation(Gene.OMIM_DISEASES).length() < 2)
+					&& (g.getAnnotation(Gene.HGMD_INFO) == null || g.getAnnotation(Gene.HGMD_INFO).length() < 2)) {
 				return;
 			}
 				

@@ -37,6 +37,8 @@ public class VCFLineParser implements VariantLineReader {
 		private int sampleColumn = -1; //Column that stores information for the given sample
 		protected final File sourceFile;
 		
+		private String currentFormatStr = null;
+		
 		public VCFLineParser(File file, String sample) throws IOException {
 			this.reader = new BufferedReader(new FileReader(file));
 			this.sourceFile = file;
@@ -387,13 +389,23 @@ public class VCFLineParser implements VariantLineReader {
 			return currentLineNumber;
 		}
 		
+		private void updateFormatIfNeeded() {
+			if (lineToks.length > 7) {
+				if (formatToks == null) {
+					createFormatString(lineToks);
+				}
+				else {
+					if (! currentFormatStr.equals(lineToks[8]))
+						createFormatString(lineToks);
+				}
+			}
+		}
+		
 		/**
 		 * 
 		 */
 		public boolean isHetero() {
-			if (formatToks == null) {
-				createFormatString();
-			}
+			updateFormatIfNeeded();
 			
 			if (formatToks == null)
 				return false;
@@ -430,9 +442,7 @@ public class VCFLineParser implements VariantLineReader {
 		 * @return
 		 */
 		public boolean isPhased() {
-			if (formatToks == null) {
-				createFormatString();
-			}
+			updateFormatIfNeeded();
 			
 			if (formatToks == null)
 				return false;
@@ -452,9 +462,7 @@ public class VCFLineParser implements VariantLineReader {
 		 * @return
 		 */
 		public boolean firstIsAlt() {
-			if (formatToks == null) {
-				createFormatString();
-			}
+			updateFormatIfNeeded();
 			if (formatToks == null)
 				return false;
 			
@@ -473,9 +481,7 @@ public class VCFLineParser implements VariantLineReader {
 		 * @return
 		 */
 		public boolean secondIsAlt() {
-			if (formatToks == null) {
-				createFormatString();
-			}
+			updateFormatIfNeeded();
 			
 			if (formatToks == null)
 				return false;
@@ -495,9 +501,7 @@ public class VCFLineParser implements VariantLineReader {
 		 * @return
 		 */
 		public Double getGenotypeQuality() {
-			if (formatToks == null) {
-				createFormatString();
-			}
+			updateFormatIfNeeded();
 			
 			if (formatToks == null || gqCol < 0)
 				return 0.0;
@@ -574,9 +578,7 @@ public class VCFLineParser implements VariantLineReader {
 		 * @return
 		 */
 		public Integer getDepthFromInfo() {
-			if (formatToks == null) {
-				createFormatString();
-			}
+			updateFormatIfNeeded();
 			
 			if (formatToks == null)
 				return 1;
@@ -603,9 +605,7 @@ public class VCFLineParser implements VariantLineReader {
 		 * @return
 		 */
 		public Integer getVariantDepth(int which) {
-			if (formatToks == null) {
-				createFormatString();
-			}
+			updateFormatIfNeeded();
 			
 			if (formatToks == null)
 				return 1;
@@ -635,13 +635,13 @@ public class VCFLineParser implements VariantLineReader {
 		 * of the format string is the genotype and genotype quality part, and we ignore the
 		 * rest
 		 */
-		private void createFormatString() {
-			if (lineToks.length <= 8) {
+		private void createFormatString(String[] toks) {
+			if (toks.length <= 8) {
 				formatToks = null;
 				return;
 			}
 			
-			String formatStr = lineToks[8];
+			String formatStr = toks[8];
 			
 			formatToks = formatStr.split(":");
 			for(int i=0; i<formatToks.length; i++) {
@@ -661,7 +661,8 @@ public class VCFLineParser implements VariantLineReader {
 				}
 
 			}
-
+			
+			currentFormatStr = formatStr;
 		}
 		
 //		public static void main(String[] args) {
