@@ -17,7 +17,7 @@ import pipeline.Pipeline;
  * @author brendan
  *
  */
-public class ExpressionRanker extends GeneSummaryRanker {
+public class ExpressionRanker extends AbstractGeneRelevanceRanker {
 
 	private DBNSFPGene geneDB = null;
 	
@@ -79,5 +79,11 @@ public class ExpressionRanker extends GeneSummaryRanker {
 	class ScoreResult {
 		double score = 0.0;
 		String hits = null;
+	}
+
+
+	@Override
+	public String getScoreKey() {
+		return Gene.EXPRESSION_SCORE;
 	}
 }

@@ -41,6 +41,20 @@ public class Gene {
 		annotations.put(key, value);
 	}
 	
+	/**
+	 * Add given annotation to this gene, concatening it with the current annotation, if any.
+	 * @param key
+	 * @param value
+	 */
+	public void appendAnnotation(String key, String value) {
+		if (annotations.containsKey(key)) {
+			addAnnotation(key, annotations.get(key) + "; " + value);
+		}
+		else {
+			addAnnotation(key, value);
+		}
+	}
+	
 	public Double getProperty(String key) {
 		return properties.get(key);
 	}
@@ -129,6 +143,11 @@ public class Gene {
 	
 	public static final String OMIM_DISEASES = "omim.disease";
 	public static final String OMIM_NUMBERS = "omim.disease.ids";
+	public static final String OMIM_INHERITANCE = "omim.inheritance";
+	public static final String OMIM_PHENOTYPES = "omim.phenotypes";
+	public static final String OMIM_PHENOTYPE_SCORE = "omim.phenotype.score";
+	public static final String OMIM_PHENOTYPE_HIT = "omim.phenotype.hit";
+	
 
 
 	

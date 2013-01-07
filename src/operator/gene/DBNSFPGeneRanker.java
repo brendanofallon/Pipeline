@@ -18,7 +18,7 @@ import pipeline.Pipeline;
  * @author brendan
  *
  */
-public class DBNSFPGeneRanker extends GeneSummaryRanker {
+public class DBNSFPGeneRanker extends AbstractGeneRelevanceRanker {
 
 	private DBNSFPGene geneDB = null;
 	
@@ -66,5 +66,11 @@ public class DBNSFPGeneRanker extends GeneSummaryRanker {
 			}
 		}
 		return score;
+	}
+
+
+	@Override
+	public String getScoreKey() {
+		return Gene.DBNSFPGENE_SCORE;
 	}
 }

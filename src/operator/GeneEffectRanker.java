@@ -95,11 +95,6 @@ public class GeneEffectRanker extends Operator {
 					topHits.add(var);
 					Collections.sort(topHits, new ScoreComparator());
 				}
-//				while(topHits.size() > jackknifeVarCount) {
-//					topHits.remove( topHits.size()-1);
-//				}
-				
-				
 
 			}
 		}
@@ -134,6 +129,7 @@ public class GeneEffectRanker extends Operator {
 		Double dbNSFPScore = g.getProperty(Gene.DBNSFPGENE_SCORE);
 		Double interactionScore = g.getProperty(Gene.INTERACTION_SCORE);
 		Double expressionScore = g.getProperty(Gene.EXPRESSION_SCORE);
+		Double omimScore = g.getProperty(Gene.OMIM_PHENOTYPE_SCORE);
 		
 
 		if (summaryScore == null)
@@ -148,8 +144,10 @@ public class GeneEffectRanker extends Operator {
 			interactionScore = 0.0;
 		if (expressionScore == null)
 			expressionScore = 0.0;
+		if (omimScore == null)
+			omimScore = 0.0;
 		
-		Double relevanceScore = (goScore + summaryScore + abstractsScore/2.0 + dbNSFPScore + 10*interactionScore + expressionScore);
+		Double relevanceScore = (goScore + summaryScore + abstractsScore/2.0 + dbNSFPScore + 10*interactionScore + expressionScore + omimScore);
 		g.addProperty(Gene.GENE_RELEVANCE, relevanceScore);
 		
 		Double effectProd = varScore * relevanceScore;

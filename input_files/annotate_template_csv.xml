@@ -53,6 +53,11 @@
 </dbNSFPAnnotate>
 
 
+<EffectPred class="operator.variant.SVMDamage" libsvm.path="/home/brendan/libsvm-3.12" svm.model.path="/home/brendan/hgmd_svm/hgmd.b4.model">
+ <VariantPool />
+</EffectPred>
+
+
 <!-- OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
   <AnnoInput />
   <VariantPool />

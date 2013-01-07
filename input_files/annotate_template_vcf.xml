@@ -26,10 +26,6 @@
  <VariantPool />
 </dbNSFPAnnotate -->
 
-<!-- TKGAnnotate class="operator.annovar.TKGAnnotator">
-  <AnnoInput />
-  <VariantPool />
-</TKGAnnotate -->
 
 <!-- New 1000Genomes v3 annotator! -->
 <TKGAnnotate class="operator.variant.TGPTabixAnnotator">
@@ -40,9 +36,9 @@
 <!-- dbSNP class="operator.annovar.DBSNPAnnotator">
  <AnnoInput />
  <VariantPool />
-</dbSNP -->
+</dbSNP>
 
-<!-- ESPAnnotate class="operator.annovar.Exomes5400Annotator">
+<ESPAnnotate class="operator.annovar.Exomes5400Annotator">
  <AnnoInput /> 
  <VariantPool />
 </ESPAnnotate -->
@@ -51,9 +47,9 @@
  <VariantPool />
 </ARUPFreqAnno>
 
-<!-- HGMDVar class="operator.variant.HGMDVarAnnotator">
+<HGMDVar class="operator.variant.HGMDVarAnnotator">
   <VariantPool />
-</HGMDVar -->
+</HGMDVar>
 
 <ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />

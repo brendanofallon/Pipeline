@@ -7,6 +7,11 @@ import java.io.IOException;
 import java.util.List;
 
 import operator.OperationFailedException;
+
+import org.apache.log4j.Logger;
+
+import pipeline.Pipeline;
+import disease.DiseaseInfo;
 import disease.OMIMDB;
 import disease.OMIMDB.OMIMEntry;
 
@@ -43,14 +48,31 @@ public class OMIMAnnotator extends AbstractGeneAnnotator {
 		if (list != null) {
 			int count = 0;
 			for (OMIMEntry entry : list) {
-				if (count == 0) {
-					g.addAnnotation(Gene.OMIM_DISEASES, entry.diseaseName);
-					g.addAnnotation(Gene.OMIM_NUMBERS, entry.diseaseID);
+				g.appendAnnotation(Gene.OMIM_DISEASES, entry.diseaseName);
+				g.appendAnnotation(Gene.OMIM_NUMBERS, entry.diseaseID);
+	
+				DiseaseInfo disInf = omim.getDiseaseInfoForID(entry.diseaseID);
+				
+				//See if we can get a diseaseInfo object for the omim #			
+				if (disInf != null) {
+					g.addAnnotation(Gene.OMIM_INHERITANCE, disInf.getInheritance());
+					List<String> phenotypes = disInf.getPhenotypes();
+					String phenoStr = "";
+					String sep = "";
+					for(String pheno : phenotypes) {
+						phenoStr = phenoStr + sep + pheno;
+						sep = ", ";
+					}
+					if (phenoStr.length()>0)
+						g.appendAnnotation(Gene.OMIM_PHENOTYPES, phenoStr);
+					else {
+						g.appendAnnotation(Gene.OMIM_PHENOTYPES, "(none)");
+					}
 				}
 				else {
-					g.addAnnotation(Gene.OMIM_DISEASES, g.getAnnotation(Gene.OMIM_DISEASES) + ", " + entry.diseaseName);
-					g.addAnnotation(Gene.OMIM_NUMBERS, g.getAnnotation(Gene.OMIM_NUMBERS) + ", " + entry.diseaseID);
+					Logger.getLogger(Pipeline.primaryLoggerName).warn("No disease info found for in DB for OMIM ID #" + entry.diseaseID);
 				}
+							
 			}
 		}
 	}
@@ -58,3 +80,4 @@ public class OMIMAnnotator extends AbstractGeneAnnotator {
 	
 
 }
+

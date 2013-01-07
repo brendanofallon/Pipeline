@@ -576,6 +576,11 @@ public class VarUtils {
 			return;
 		}
 		
+		if (firstArg.equals("hhtComp")) {
+			performHHTComp(args);
+			return;
+		}
+		
 		if (firstArg.equals("snpFilter")) {
 			performSNPFilter(args);
 			return;
@@ -884,6 +889,65 @@ public class VarUtils {
 
 	
 	
+	private static void performHHTComp(String[] args) {
+		if (args.length < 4) {
+			System.out.println("Enter the name of the file to filter for snps");
+			return;
+		}
+		
+		
+		
+		try {
+			GenePool genePool = new GenePool(new File(args[1]));
+			String anno = args[2];
+			Double threshold = Double.parseDouble(args[3]);
+			
+			for(int i=4; i<args.length; i++) {
+				int totTarget = 0;
+				int totNonTarget = 0;
+				int delTarget = 0;
+				int delNonTarget = 0;
+				int skipped = 0;
+				
+				VariantLineReader reader = getReader(args[i]);
+				do {
+					VariantRec var = reader.toVariantRec();
+					if (var != null && var.isSNP()) {
+						String gene = var.getAnnotation(VariantRec.GENE_NAME);
+						Double val = var.getProperty(anno);
+						if (gene != null && val != null) {
+							if (genePool.containsGene(gene)) {
+								if (val > threshold)
+									delTarget++;
+								totTarget++;
+							}
+							else {
+								if (val > threshold)
+									delNonTarget++;
+								totNonTarget++;
+							}
+						}
+						else {
+							skipped++;
+						}
+					}
+				} while(reader.advanceLine());
+				
+				//System.out.println("File : " + args[i]);
+				//System.out.println("Total target snps:" + totTarget);
+				//System.out.println("Total non-target snps:" + totNonTarget);
+				//System.out.println("Del. target snps:" + delTarget + "\t" + ((double)delTarget/(double)totTarget));
+				//System.out.println("Del. non-target snps:" + delNonTarget + "\t" + ((double)delNonTarget)/(double)totNonTarget);
+				System.out.println(args[i] + "\t" + totTarget + "\t" + delTarget + "\t" + totNonTarget + "\t" + delNonTarget + "\t" + (double)delTarget / (double)delNonTarget);
+			}
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+
 	private static void performSNPFilter(String[] args) {
 		if (args.length < 2) {
 			System.out.println("Enter the name of the file to filter for snps");
@@ -902,8 +966,6 @@ public class VarUtils {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
 	}
 
 	private static void performAnnoFilter(String[] args) {
@@ -1052,40 +1114,15 @@ public class VarUtils {
 		}
 		try {
 			GenePool genes = new GenePool(new File(args[1]));
-			for(int i=2; i<args.length; i++) {
-				VariantPool vars = getPool(new File(args[i]));
-				VariantPool geneVars = filterByGene(vars, genes, false);
-				List<String> annos = new ArrayList<String>();
-				annos.add(VariantRec.GENE_NAME);
-				annos.add(VariantRec.NM_NUMBER);
-				annos.add(VariantRec.EXON_FUNCTION);
-				annos.add(VariantRec.VARIANT_TYPE);
-				annos.add(VariantRec.RSNUM);
-				annos.add(VariantRec.POP_FREQUENCY);
-				annos.add(VariantRec.EXOMES_FREQ);
-				annos.add(VariantRec.EFFECT_PREDICTION2);
-				annos.add(VariantRec.FS_SCORE);
-				annos.add(VariantRec.MT_SCORE);
-				annos.add(VariantRec.PHYLOP_SCORE);
-				annos.add(VariantRec.GERP_SCORE);
-				annos.add(VariantRec.POLYPHEN_SCORE);
-				annos.add(VariantRec.CDOT);
-				annos.add(VariantRec.PDOT);
-				//annos.add(VariantRec.VQSR);
-				
-				if (args.length==3) {
-					geneVars.listAll(System.out, annos);
-				}
-				else {
-					//Write results to a file
-					String suffix = args[1].substring(0, args[1].lastIndexOf("."));
-					String outfilename = args[i].replace(".vcf", "").replace(".csv", "") + "." + suffix + ".csv";
-					PrintStream out = new PrintStream(new FileOutputStream(new File(outfilename)));
-					System.err.println("Emitting vars from file " + args[i] + " to : " + outfilename);
-					geneVars.listAll(out, annos);
-					out.close();
-				}
-			}
+			VariantLineReader reader = getReader(args[2]);
+			System.out.println(reader.getHeader().trim());
+			do {
+				VariantRec var = reader.toVariantRec();
+				String gene = var.getAnnotation(VariantRec.GENE_NAME);
+				if (gene != null && genes.containsGene(gene))
+					System.out.println( reader.getCurrentLine() );
+			}while(reader.advanceLine());
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

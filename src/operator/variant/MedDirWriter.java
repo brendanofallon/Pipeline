@@ -49,6 +49,14 @@ public class MedDirWriter extends VariantPoolWriter {
 		 VariantRec.EFFECT_RELEVANCE_PRODUCT,
 		 VariantRec.SVM_EFFECT,
 		 Gene.GENE_RELEVANCE,
+		 VariantRec.HGMD_HIT,
+		 Gene.OMIM_DISEASES,
+		 Gene.OMIM_NUMBERS,
+		 Gene.OMIM_INHERITANCE,
+		 Gene.OMIM_PHENOTYPES,
+		 Gene.DBNSFP_DISEASEDESC,
+		 Gene.SUMMARY,
+		 Gene.HGMD_INFO,
 		 Gene.SUMMARY_SCORE,
 		 Gene.PUBMED_SCORE,
 		 Gene.GO_SCORE,
@@ -57,14 +65,9 @@ public class MedDirWriter extends VariantPoolWriter {
 		 Gene.EXPRESSION_SCORE,
 		 Gene.EXPRESSION_HITS,
 		 Gene.GO_HITS,
-		 Gene.OMIM_DISEASES,
-		 Gene.OMIM_NUMBERS,
-		 VariantRec.OMIM_ID,
-		 VariantRec.HGMD_HIT,
-		 Gene.DBNSFP_DISEASEDESC,
-		 Gene.SUMMARY,
-		 Gene.HGMD_INFO,
 		 Gene.PUBMED_HIT,
+		 Gene.OMIM_PHENOTYPE_SCORE,
+		 Gene.OMIM_PHENOTYPE_HIT,
 		 VariantRec.SIFT_SCORE, 
 		 VariantRec.POLYPHEN_SCORE, 
 		 VariantRec.PHYLOP_SCORE, 
@@ -92,6 +95,11 @@ public class MedDirWriter extends VariantPoolWriter {
 			if (keys.equals(VariantRec.HGMD_HIT)) {
 				val = "hgmd.exact.match";
 			}
+			
+			if (keys.equals(VariantRec.EFFECT_RELEVANCE_PRODUCT)) {
+				val = "overall.ranking.score";
+			}
+			
 			builder.append("\t " + val);
 		}
 
@@ -137,14 +145,6 @@ public class MedDirWriter extends VariantPoolWriter {
 				g = genes.getGeneByName(geneName);
 		}
 		
-		if (g != null && 
-				( g.getName().equals("SMPD4" )
-						|| g.getName().equals("PMP2")
-						|| g.getName().equals("S1PR5")
-						|| g.getName().equals("GZF1"))) {
-			System.out.println();
-		}
-		
 		if (clinicalOnly) {
 			// If there's no HGMD info, OMIM info, or DBNSFP disease desc, 
 			// don't report it
@@ -153,13 +153,7 @@ public class MedDirWriter extends VariantPoolWriter {
 				&& g == null ) {
 				return;			
 			}
-			
-			String hgmdHit =  rec.getAnnotation(VariantRec.HGMD_HIT);
-			String hgmdInfo = rec.getAnnotation(VariantRec.HGMD_INFO);
-			String geneHGMD = g.getAnnotation(Gene.DBNSFP_DISEASEDESC);
-			String gOMIM = g.getAnnotation(Gene.OMIM_DISEASES);
-			String dbNSFP = g.getAnnotation(Gene.DBNSFP_DISEASEDESC);
-			
+						
 			if ( (rec.getAnnotation(VariantRec.HGMD_HIT) == null || rec.getAnnotation(VariantRec.HGMD_HIT).length() < 2) 
 					&& (rec.getAnnotation(VariantRec.HGMD_INFO) == null || rec.getAnnotation(VariantRec.HGMD_INFO).length() < 2)
 					&& (g.getAnnotation(Gene.DBNSFP_DISEASEDESC) == null || g.getAnnotation(Gene.DBNSFP_DISEASEDESC).length() < 2) 
@@ -167,7 +161,6 @@ public class MedDirWriter extends VariantPoolWriter {
 					&& (g.getAnnotation(Gene.HGMD_INFO) == null || g.getAnnotation(Gene.HGMD_INFO).length() < 2)) {
 				return;
 			}
-				
 		}
 		
 		
@@ -175,7 +168,7 @@ public class MedDirWriter extends VariantPoolWriter {
 		for(String key : keys) {
 			String val = "?";
 			
-			val = rec.getPropertyOrAnnotation(key).trim();
+			val = getAnnotation(key, rec); //Searches for variant annotation, if none found the gene annotation
 			
 			if (key.equals("zygosity")) {
 				val = rec.isHetero() ? "het" : "hom";
@@ -205,6 +198,10 @@ public class MedDirWriter extends VariantPoolWriter {
 					}
 				}
 			}			
+
+			if (key.equals("quality")) {
+				val = "" + rec.getQuality();
+			}
 			
 			if (key.equals("chromosome")) {
 				val = rec.getContig();
@@ -214,63 +211,6 @@ public class MedDirWriter extends VariantPoolWriter {
 				val = "" + rec.getStart();
 			}
 
-
-			if (key.equals(Gene.OMIM_DISEASES)) {
-				if (g!=null)
-					val = g.getAnnotation(Gene.OMIM_DISEASES);
-			}
-			
-			if (key.equals(Gene.OMIM_NUMBERS)) {
-				if (g!=null)
-					val = g.getAnnotation(Gene.OMIM_NUMBERS);
-			}
-			
-			if (key.equals(Gene.GENE_RELEVANCE)) {
-				if (g!=null)
-					val = "" + g.getProperty(Gene.GENE_RELEVANCE);
-			}
-			
-			if (key.equals(Gene.SUMMARY_SCORE)) {
-				if (g!=null)
-					val = "" + g.getProperty(Gene.SUMMARY_SCORE);
-			}
-			
-			if (key.equals(Gene.DBNSFPGENE_SCORE)) {
-				if (g!=null)
-					val = "" + g.getProperty(Gene.DBNSFPGENE_SCORE);
-			}
-			
-			if (key.equals(Gene.PUBMED_SCORE)) {
-				if (g!=null)
-					val = "" + g.getProperty(Gene.PUBMED_SCORE);
-			}
-			
-			if (key.equals(Gene.INTERACTION_SCORE)) {
-				if (g!=null)
-					val = "" + g.getProperty(Gene.INTERACTION_SCORE);
-			}
-			
-			if (key.equals(Gene.EXPRESSION_SCORE)) {
-				if (g!=null)
-					val = "" + g.getProperty(Gene.EXPRESSION_SCORE);
-			}
-			
-			if (key.equals(Gene.GO_SCORE)) {
-				if (g!=null)
-					val = "" + g.getProperty(Gene.GO_SCORE);
-			}
-			
-			if (key.equals(Gene.GO_HITS)) {
-				if (g!=null && g.getAnnotation(Gene.GO_HITS) != null)
-					val = "" + g.getAnnotation(Gene.GO_HITS);
-			}
-			
-			if (key.equals(Gene.EXPRESSION_HITS)) {
-				if (g!=null) {
-					if (g.getAnnotation(Gene.EXPRESSION_HITS) != null)
-						val = "" + g.getAnnotation(Gene.EXPRESSION_HITS);
-				}
-			}
 			
 			if (key.equals("chrom")) {
 				val = rec.getContig();
@@ -278,26 +218,6 @@ public class MedDirWriter extends VariantPoolWriter {
 			
 			if (key.equals("pos")) {
 				val = "" + rec.getStart();
-			}
-			
-			if (key.equals(Gene.PUBMED_HIT)) {
-				if (g!=null)
-					val = g.getAnnotation(Gene.PUBMED_HIT);
-			}
-			
-			if (key.equals(Gene.HGMD_INFO)) {
-				if (g!=null)
-					val = g.getAnnotation(Gene.HGMD_INFO);
-			}
-			
-			if (key.equals(Gene.DBNSFP_DISEASEDESC)) {
-				if (g!=null)
-					val = g.getAnnotation(Gene.DBNSFP_DISEASEDESC);
-			}
-			
-			if (key.equals(Gene.SUMMARY)) {
-				if (g!=null)
-					val = g.getAnnotation(Gene.SUMMARY);
 			}
 			
 			if (key.equals(VariantRec.GENE_NAME)) {
@@ -373,7 +293,7 @@ public class MedDirWriter extends VariantPoolWriter {
 
 	private String createRSNumHyperlink(String rsnum) {
 		if (rsnum == null || rsnum.length() < 3) {
-			return rsnum;
+			return "-";
 		}
 		else {
 			return "=HYPERLINK(\"http://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?searchType=adhoc_search&type=rs&rs=" + rsnum + "\", \"" + rsnum + "\")";
@@ -430,6 +350,20 @@ public class MedDirWriter extends VariantPoolWriter {
 		}
 	}
 	
+	private String getAnnotation(String key, VariantRec var) {
+		String val = var.getAnnotation(key);
+		if (val == null) {
+			val = "" + var.getProperty(key);
+		}
+		
+		if (val == null || val.equals("null")) {
+			Gene g = var.getGene();
+			if (g!= null)
+				val = g.getPropertyOrAnnotation(key);
+		}
+		
+		return val;
+	}
 	
 	/**
 	 * Compares variants by their EFFECT_RELEVANCE_PRODUCT property

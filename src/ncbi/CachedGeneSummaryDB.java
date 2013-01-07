@@ -120,7 +120,7 @@ public class CachedGeneSummaryDB {
 		if (! prohibitNewDownloads) {
 			try {
 
-				//System.out.println("Fetching summary from NCBI for gene : " + symbol);
+				System.out.println("Fetching summary from NCBI for gene : " + symbol);
 				GeneRecord rec = fetcher.fetchInfoForGene(id);
 				String summaryString = rec.getSummary();
 

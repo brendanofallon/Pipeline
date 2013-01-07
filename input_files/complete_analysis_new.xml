@@ -3,7 +3,7 @@
 
 
 <reference class="buffer.ReferenceFile" filename="/home/brendan/resources/human_g1k_v37.fasta" />
-<capture class="buffer.BEDFile" filename="/home/brendan/resources/SureSelect_50mb_with_annotation_b37.bed" />
+<capture class="buffer.BEDFile" filename="/home/brendan/resources/SureSelect_combo.bed" />
 <KnownDBSNP class="buffer.VCFFile" filename="/home/brendan/resources/dbsnp_132.b37.vcf" />
 <HapMap class="buffer.VCFFile" filename="/home/brendan/resources/hapmap_3.3.b37.sites.vcf" />
 <Omni class="buffer.VCFFile" filename="/home/brendan/resources/1000G_omni2.5.b37.sites.vcf" />
@@ -147,11 +147,30 @@
    </output>
  </Index3>
 
+<!-- Merge final, polished bams from each chromosome back together to make one big final bam -->
+ <MergeBAMs class="operator.samtools.MergeFiles">
+   <input>
+     <recalBAMs />
+   </input>
+   <output>
+     <finalBAM class="buffer.BAMFile" filename="$$PREFIX.final.bam" />
+   </output>
+ </MergeBAMs>
+
+<LastIndex class="operator.samtools.Index" >
+  <input>
+    <finalBAM />
+  </input>
+  <output />
+</LastIndex>
+
+
 <!-- Actual variant calling, done independently on each chromosome -->
 <MultiGenotype class="operator.gatk.MultiGenotype">
    <input>
     <reference />
-    <recalBAMs />
+    <finalBAM />
+    <capture />
    </input>
    <output>
      <variants class="buffer.MultiFileBuffer" />
@@ -170,22 +189,7 @@
  </AllVariants>
 
 
-<!-- Merge final, polished bams from each chromosome back together to make one big final bam -->
- <MergeBAMs class="operator.samtools.MergeFiles">
-   <input>
-     <recalBAMs />
-   </input>
-   <output>
-     <finalBAM class="buffer.BAMFile" filename="$$PREFIX.final.bam" />
-   </output>
- </MergeBAMs>
 
-<LastIndex class="operator.samtools.Index" >
-  <input>
-    <finalBAM />
-  </input>
-  <output />
-</LastIndex>
 
 <!-- Push variants into a 'variant pool' that can we easily manipulate -->
 <VariantPool class="buffer.variant.VariantPool">

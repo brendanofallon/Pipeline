@@ -2,23 +2,12 @@ package operator.gene;
 
 import gene.Gene;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import ncbi.CachedGeneSummaryDB;
 import operator.OperationFailedException;
-
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import pipeline.Pipeline;
-import pipeline.PipelineObject;
-import buffer.GeneList;
-import buffer.TextBuffer;
 
 /**
  * An annotator that computes a score for variants based on how many hits a particular term has
@@ -28,15 +17,12 @@ import buffer.TextBuffer;
  * @author brendan
  *
  */
-public class GeneSummaryRanker extends AbstractGeneAnnotator {
+public class GeneSummaryRanker extends AbstractGeneRelevanceRanker  {
 
 	public static final String GENE_INFO_PATH = "gene.info.path";
 	public static final String NO_DOWNLOADS = "no.downloads";
-	protected TextBuffer termsFile = null;
+	
 	protected CachedGeneSummaryDB summaryDB = null;
-	protected Map<String, Integer> rankingMap;
-	protected int examined = 0;
-	protected int scored = 0;
 	
 	public void performOperation() throws OperationFailedException {
 		super.performOperation();
@@ -96,31 +82,7 @@ public class GeneSummaryRanker extends AbstractGeneAnnotator {
 		return score;
 	}
 
-	protected void buildRankingMap() throws IOException {
-		rankingMap = new HashMap<String, Integer>();
-		
-		BufferedReader reader = new BufferedReader(new FileReader(termsFile.getAbsolutePath()));
-		String line = reader.readLine();
-		while(line != null) {
-			if (line.trim().length()==0 || line.startsWith("#")) {
-				line = reader.readLine();
-				continue;
-			}
-			
-			String[] toks = line.split("\t");
-			if (toks.length<2) {
-				System.out.println("Cannot parse summary ranking term for this line: " + line);
-				line = reader.readLine();
-				continue;
-			}
-			Integer score = Integer.parseInt(toks[1].trim());
-			String key = toks[0].trim().toLowerCase();
-			rankingMap.put(key, score);
-			line = reader.readLine();
-		}
-		Logger.getLogger(Pipeline.primaryLoggerName).info("Read " + rankingMap.size() + " terms in from search terms in file: " + termsFile.getAbsolutePath());
-		reader.close();
-	}
+	
 	
 	
 	private void initializeDB() {
@@ -149,39 +111,13 @@ public class GeneSummaryRanker extends AbstractGeneAnnotator {
 			e.printStackTrace();
 		}
 	}
-	
-	public void initialize(NodeList children) {
-		super.initialize(children);
-		
-		for(int i=0; i<children.getLength(); i++) {	
-			Node iChild = children.item(i);
-			if (iChild.getNodeType() == Node.ELEMENT_NODE) {
-				PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
-				
-				if (obj instanceof TextBuffer) {
-					termsFile = (TextBuffer)obj;
-				}
-				if (obj instanceof GeneList) {
-					genes = (GeneList)obj;
-				}
-			}
-		}
-		
-		if (genes == null)
-			throw new IllegalArgumentException("No gene list provided to GeneSummaryRanker");
-		
-		if (termsFile == null)
-			throw new IllegalArgumentException("No term file provided to GeneSummaryRanker");
-		
-	}
 
-	public Map<String, Integer> getRankingMap() {
-		return rankingMap;
+	@Override
+	public String getScoreKey() {
+		return Gene.SUMMARY_SCORE;
 	}
 	
-	public void setRankingMap(Map<String, Integer> newMap) {
-		this.rankingMap = newMap;
-	}
+
 	
 	
 
