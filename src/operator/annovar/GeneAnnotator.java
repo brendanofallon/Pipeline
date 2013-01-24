@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import operator.OperationFailedException;
@@ -21,6 +23,8 @@ import buffer.variant.VariantRec;
  */
 public class GeneAnnotator extends AnnovarAnnotator {
 
+	public static final String NM_DEFS = "nm.Definitions";
+	
 	public void performOperation() throws OperationFailedException {
 		if (variants == null)
 			throw new OperationFailedException("Variant pool not initialized", this);
@@ -31,12 +35,20 @@ public class GeneAnnotator extends AnnovarAnnotator {
 		String variantFuncFile =  annovarPrefix + ".variant_function";
 		String exonFuncFile = annovarPrefix + ".exonic_variant_function";
 		
+		Map<String,String> nmMap = new HashMap<String, String>();
+		String nmFile = this.getPipelineProperty("nm.Definitions");
+		if(nmFile != null) {
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Reading in defined NM #s for genes.");
+			nmMap = readNMMap(new File(nmFile));
+		}
+		
 		try {
-			addAnnotations(variantFuncFile, exonFuncFile);
+			addAnnotations(variantFuncFile, exonFuncFile, nmMap);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new OperationFailedException("Error reading variant function files", this);
 		}
+		
 		
 		//Cleanup old annovar files
 		File variantFunc = new File(variantFuncFile);
@@ -46,7 +58,7 @@ public class GeneAnnotator extends AnnovarAnnotator {
 	}
 	
 	
-	private void addAnnotations(String variantFilePath, String exonicFuncFilePath) throws IOException {
+	private void addAnnotations(String variantFilePath, String exonicFuncFilePath, Map<String, String> nmMap) throws IOException {
 		//Add gene annotations
 		int totalVars =0 ;
 		int errorVars = 0;
@@ -63,10 +75,6 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			String contig = toks[2];
 			String ref = toks[5];
 			String alt = toks[6];
-			
-//			if (gene.length() > 8 || gene.contains(",") || gene.contains(";")) {
-//				gene = "-";
-//			}
 			
 			if (gene.contains(";")) {
 				String before = gene;
@@ -119,15 +127,38 @@ public class GeneAnnotator extends AnnovarAnnotator {
 				String cDot = "NA";
 				String pDot = "NA";
 	
-				String[] details = toks[2].split(":");
+				// We should split by comma, find which has the NM # (string.contains)
+				// and then split by colon
+				String[] nms = toks[2].split(",");
+				String gene,tmpNM;
+				int nmRec = 0; // iif the user hasn't specified an NM #, just take the first
+				for(int i = 0; i < nms.length; i++){
+					String[] details = nms[i].split(":");
+					gene = details[0];
+					tmpNM = details[1];
+					System.out.println("Gene: " + gene);
+					System.out.println("NM: " + tmpNM);
+					if(nmMap.containsKey(gene)){ // if the user has specifed a specific nm #, get it
+						System.out.println("Contains gene: " + gene);
+						System.out.println("nmMap.get(gene):" + nmMap.get(gene));
+						if(tmpNM.equals(nmMap.get(gene))){
+							System.out.println("Setting nmRec to: " + i);
+							nmRec = i;
+							System.out.println("nmRec: " + nmRec);
+						}
+					}
+				}
+				
+				System.out.println("nmRec: " + nmRec);
+				String[] details = nms[nmRec].split(":");
 				if (details.length>4) {
 					NM = details[1];
 					exonNum = details[2];
 					cDot = details[3];
 					pDot = details[4];
-					int idx = pDot.indexOf(",");
-					if (idx > 0)
-						pDot = pDot.substring(0, idx);
+					//int idx = pDot.indexOf(",");
+					//if (idx > 0)
+						//pDot = pDot.substring(0, idx);
 				}
 				
 				String contig = toks[3];
@@ -162,5 +193,26 @@ public class GeneAnnotator extends AnnovarAnnotator {
 		}
 	}
 
-	
+	private HashMap<String,String> readNMMap(File file){
+		BufferedReader br;
+		try {
+			br = new BufferedReader(new FileReader(file));
+			String line;
+			HashMap<String,String> nms = new HashMap<String,String>();
+			
+			while((line = br.readLine()) != null){
+				//System.out.println(line);
+				String[] values = line.split("\t");
+				//System.out.println(values.toString());
+				nms.put(values[0], values[1]);
+			}
+			br.close();
+			return nms;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		
+		return null;
+	}
 }
