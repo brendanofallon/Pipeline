@@ -12,7 +12,6 @@ import org.w3c.dom.NodeList;
 
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
-import buffer.GeneList;
 import buffer.TextBuffer;
 
 /**
@@ -70,9 +69,6 @@ public abstract class AbstractGeneRelevanceRanker extends AbstractGeneAnnotator 
 				
 				if (obj instanceof TextBuffer) {
 					termsFile = (TextBuffer)obj;
-				}
-				if (obj instanceof GeneList) {
-					genes = (GeneList)obj;
 				}
 			}
 		}

@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -66,6 +67,13 @@ public class DBNSFPGene {
 		reader.close();
 	}
 	
+	/**
+	 * Return all gene names for which there's an entry
+	 * @return
+	 */
+	public Collection<String> getGeneNames() {
+		return map.keySet();
+	}
 	
 	public class GeneInfo {
 		public String geneName = null;

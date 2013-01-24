@@ -79,6 +79,16 @@ public class QCReport extends Operator {
 		return outputDir;
 	}
 	
+	/**
+	 * Set the directory to which results will be written. 
+	 * Note: This is currently used only by the ReviewDirGenerator,
+	 * which moves the QC dir to a new location
+	 * @return
+	 */
+	public void setOutputDir(File newDir) {
+		this.outputDir = newDir;
+	}
+	
 	@Override
 	public void performOperation() throws OperationFailedException {
 		Logger logger = Logger.getLogger(Pipeline.primaryLoggerName);

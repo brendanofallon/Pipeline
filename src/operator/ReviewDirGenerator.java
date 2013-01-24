@@ -6,7 +6,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.logging.Logger;
+
+import operator.qc.QCReport;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -14,6 +17,8 @@ import org.w3c.dom.NodeList;
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
 import buffer.BAMFile;
+import buffer.BEDFile;
+import buffer.CSVFile;
 import buffer.FileBuffer;
 import buffer.InstanceLogFile;
 import buffer.MultiFileBuffer;
@@ -28,23 +33,24 @@ public class ReviewDirGenerator extends Operator {
 
 	public static final String DEST_DIR = "destination.dir";
 	
+	String sampleName = "unknown";
+	String submitter = "unknown";
+	String analysisType = "unknown";
 	String rootPath = null;
 	VCFFile variantFile = null;
 	BAMFile finalBAM = null;
+	CSVFile annotatedVariants = null;
 	InstanceLogFile logFile = null;
 	MultiFileBuffer fastqs1 = null;
 	MultiFileBuffer fastqs2 = null;
+	QCReport qcReport = null;
+	BEDFile capture = null;
 	
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
 		Logger.getLogger(Pipeline.primaryLoggerName).info("Creating GenomicsReview directory in " + rootPath);
-		
-		
-		if (!rootPath.startsWith("/")) {
-			throw new OperationFailedException("Root path MUST be absolute", this);
-		}
-		
+
 		//Create directory structure
 		createDir("", rootPath);
 		createDir(rootPath, "bam");
@@ -56,14 +62,36 @@ public class ReviewDirGenerator extends Operator {
 		createDir(rootPath, "fastq");
 		createDir(rootPath, "array");
 		
+
+		//This should happen before files get moved around
+		createSampleManifest("sampleManifest.txt");
+		
+		if (qcReport != null) {
+			File dest = new File(rootPath +"/qc/");
+			moveFile(qcReport.getOutputDir(), dest);
+			qcReport.setOutputDir(new File(dest.getAbsolutePath()));
+		}
+		
+		if (annotatedVariants != null) {
+			moveFile(annotatedVariants, new File(rootPath + "/var/"));
+		}
+		
 		try {
 			File varDestination = new File(rootPath + "/var/" + variantFile.getFilename());
 			copyTextFile(variantFile.getFile(), varDestination);
 
+			File inputDestination = new File(rootPath + "/log/pipeline_input.xml");
+			copyTextFile(this.getPipelineOwner().getSourceFile(), inputDestination);
+			
 			File logDestination = new File(rootPath + "/log/" + logFile.getFilename());
 			copyTextFile(logFile.getFile(), logDestination);
 
 			File newBAMLocation = new File(rootPath + "/bam/");
+			String indexPath = finalBAM.getAbsolutePath() + ".bai";
+			File indexFile = new File(indexPath);
+			if (indexFile.exists()) {
+				moveFile(indexFile, newBAMLocation);
+			}
 			moveFile(finalBAM, newBAMLocation);
 			
 			
@@ -83,6 +111,58 @@ public class ReviewDirGenerator extends Operator {
 			throw new OperationFailedException("Error moving files to review dir destination : " + e.getMessage(), this);
 		}
 		
+	}
+	
+
+	private void createSampleManifest(String filename) {
+		File manifestFile = new File(rootPath + "/" +filename);
+		try {
+			manifestFile.createNewFile();
+			BufferedWriter writer = new BufferedWriter(new FileWriter(manifestFile));
+			
+			writer.write("sample.name=" + sampleName + "\n");
+			writer.write("pipeline.version=" +  Pipeline.PIPELINE_VERSION + "\n");
+			writer.write("submitter=" +  submitter + "\n");
+			writer.write("analysis.type=" +  analysisType + "\n");
+			if (annotatedVariants != null)
+				writer.write("annotated.vars=var/" + annotatedVariants.getFilename() + "\n");
+			if (annotatedVariants != null)
+				writer.write("vcf.file=var/" + variantFile.getFilename() + "\n");
+			if (finalBAM != null)
+				writer.write("bam.file=bam/" + finalBAM.getFilename() + "\n");
+			if (qcReport != null) {
+				writer.write("qc.dir=" +  qcReport.getOutputDir() + "\n");
+				writer.write("qc.link=" +  "results/" + sampleName + "-QC/qc-report/qc-metrics.html" + "\n");
+			}
+			
+			writer.write("analysis.start.time=" +  this.getPipelineOwner().getStartTime().getTime() + "\n");
+			writer.write("current.time=" +  (new Date()).getTime() + "\n");
+			if (capture != null) {
+				writer.write("capture=" +  capture.getAbsolutePath() + "\n");
+			}
+			writer.write("working.dir=" +  this.getProjectHome() + "\n");
+			if (fastqs1 != null) {
+				for(FileBuffer fqBuf : fastqs1.getFileList()) {
+					writer.write("fastq.1.src=" +  fqBuf.getAbsolutePath() + "\n");
+				}
+			}
+			if (fastqs2 != null) {
+				for(FileBuffer fqBuf : fastqs2.getFileList()) {
+					writer.write("fastq.2.src=" +  fqBuf.getAbsolutePath() + "\n");
+				}
+			}
+			
+			writer.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+
+
+	public String getRootPath() {
+		return rootPath;
 	}
 
 	/**
@@ -132,6 +212,17 @@ public class ReviewDirGenerator extends Operator {
 		sourceFile.setFile(destinationFile);
 	}
 	
+	/**
+	 * Move the given file to the new destination directory, preserving the short file name
+	 * @param sourceFile
+	 * @param newParentDir
+	 */
+	private void moveFile(File sourceFile, File newParentDir) {
+		File destinationFile = new File(newParentDir + "/" + sourceFile.getName());
+		Logger.getLogger(Pipeline.primaryLoggerName).info("Renaming " + sourceFile.getAbsolutePath() + " to " + destinationFile.getAbsolutePath());
+		sourceFile.renameTo(destinationFile);
+	}
+	
 	private boolean createDir(String parent, String dirName) {
 		File dir = new File(parent + "/" + dirName);
 		boolean ok = dir.mkdir();
@@ -145,6 +236,14 @@ public class ReviewDirGenerator extends Operator {
 		if (rootPath == null) {
 			throw new IllegalArgumentException("No root path specified, not sure where to make files");
 		}
+		if (!rootPath.startsWith("/")) {
+			throw new IllegalArgumentException("Root path MUST be absolute");
+		}
+		
+		
+		sampleName = this.getAttribute("sample");
+		submitter = this.getAttribute("submitter");
+		analysisType = this.getAttribute("analysis.type");
 		
 		for(int i=0; i<children.getLength(); i++) {
 			Node iChild = children.item(i);
@@ -167,6 +266,18 @@ public class ReviewDirGenerator extends Operator {
 						fastqs1 = (MultiFileBuffer)obj;
 					else
 						fastqs2 = (MultiFileBuffer)obj;
+				}
+				
+				if (obj instanceof CSVFile) {
+					annotatedVariants = (CSVFile)obj;
+				}
+				
+				if (obj instanceof QCReport) {
+					qcReport = (QCReport)obj;
+				}
+				
+				if (obj instanceof BEDFile) {
+					capture = (BEDFile)obj;
 				}
 			}
 		}

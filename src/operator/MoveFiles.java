@@ -85,8 +85,6 @@ public class MoveFiles extends Operator {
 			}
 		}
 		
-		
-		
 		for(FileBuffer file : files) {
 			Logger.getLogger(Pipeline.primaryLoggerName).info("Moving file : " + file.getAbsolutePath());
 			String filename = file.getFilename();

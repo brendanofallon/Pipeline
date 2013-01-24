@@ -133,8 +133,12 @@ public class BamMetrics extends IOOperator {
 				//int bq = (int)baseQuals[i];
 				baseQHisto.addValue( bq );
 				
-				if (i < posHisto.length)
-					posHisto[i].addValue( bq );
+				if (i < posHisto.length) {
+					int index = i;
+					if (samRecord.getSecondOfPairFlag()) //invert for reverse orientation
+						index = posHisto.length - i -1;
+					posHisto[index].addValue( bq );
+				}
 			}
 			
 			totalBaseCount += baseQuals.length;
@@ -145,7 +149,7 @@ public class BamMetrics extends IOOperator {
 			else {
 				insertSizeHisto.addValue(insertSize);
 			}				
-		}
+		} //end loop over all reads
 
 
 		inputSam.close();

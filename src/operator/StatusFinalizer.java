@@ -1,5 +1,6 @@
 package operator;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -26,9 +27,13 @@ public class StatusFinalizer extends Operator {
 
 	public static final String CREATE_LINKS = "create.links";
 	public static final String SAMPLE = "sample";
-	static final String WEB_ROOT = "/usr/local/apache2/htdocs/";
-	static final String RESULT_DIR = "results/";
-	static final String SERVER_URL = "http://10.90.68.168/";
+	public static final String WEBROOT = "web.root";
+	public static final String RESULT_DIR = "result.dir";
+	public static final String SERVER_URL = "server.url";
+	
+	private String webRoot = "/usr/local/apache2/htdocs/";
+	private String resultDir = "results/";
+	private String serverURL = "http://10.90.68.168/";
 	
 	StatusLogger statusLogger = null;
 	QCReport qcMetrics = null;
@@ -36,6 +41,16 @@ public class StatusFinalizer extends Operator {
 	BAMFile finalBam = null;
 	CSVFile annotatedVars = null;
 	private boolean createLinks = true;
+	private String sampleID = null;
+	
+	public String getSampleID() {
+		return sampleID;
+	}
+	
+	public String getQCLink() {
+		String linkDir = getSampleID() + "-QC";
+		return resultDir + linkDir + "/qc-report/qc-metrics.html";
+	}
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -43,11 +58,6 @@ public class StatusFinalizer extends Operator {
 		String createLinksAttr = this.getAttribute(CREATE_LINKS);
 		if (createLinksAttr != null && createLinksAttr.length()>0) {
 			createLinks = Boolean.parseBoolean(createLinksAttr);
-		}
-		
-		String sampleID = this.getAttribute(SAMPLE);
-		if (sampleID == null) {
-			sampleID = "sample-" + ("" + System.currentTimeMillis()).substring(5);
 		}
 		
 		
@@ -60,11 +70,11 @@ public class StatusFinalizer extends Operator {
 			String linkName = "quality-metrics-" +sampleID + ".html";
 			String linkDir = sampleID + "-QC"; //Can't have trailing slash!
 			String linkTarget = qcMetrics.getOutputDir().getAbsolutePath() + "/qc-metrics.html";
-			writer.addMessage("QC report",  SERVER_URL + RESULT_DIR + linkDir + "/" + linkName );
+			writer.addMessage("QC report",  serverURL + getQCLink());
 			
 			if (createLinks) {
-				createLink(qcMetrics.getOutputDir().getAbsolutePath(), WEB_ROOT + RESULT_DIR + linkDir);
-				createLink(linkTarget, WEB_ROOT + RESULT_DIR + linkDir + "/" + linkName );
+				createLink(qcMetrics.getOutputDir().getAbsolutePath(), webRoot + resultDir + linkDir);
+				createLink(linkTarget, webRoot + resultDir + linkDir + "/" + linkName );
 			}
 		}
 		
@@ -73,9 +83,9 @@ public class StatusFinalizer extends Operator {
 			String linkName = sampleID + ".final.vcf"; 
 			String linkTarget = vcfFile.getAbsolutePath();
 			
-			writer.addMessage("Final VCF", SERVER_URL + RESULT_DIR + linkName );
+			writer.addMessage("Final VCF", serverURL + resultDir + linkName );
 			if (createLinks) {
-				createLink(linkTarget, WEB_ROOT + RESULT_DIR + linkName );
+				createLink(linkTarget, webRoot + resultDir + linkName );
 			}
 		}
 		
@@ -84,11 +94,11 @@ public class StatusFinalizer extends Operator {
 			String linkName = sampleID + ".final.bam"; 
 			String linkTarget = finalBam.getAbsolutePath();
 
-			writer.addMessage("Final BAM",  SERVER_URL + RESULT_DIR + linkName );
+			writer.addMessage("Final BAM",  serverURL + resultDir + linkName );
 			
 			if (createLinks) {
-				createLink(linkTarget, WEB_ROOT +  RESULT_DIR + linkName );
-				createLink(linkTarget + ".bai", WEB_ROOT +  RESULT_DIR + linkName + ".bai" );
+				createLink(linkTarget, webRoot +  resultDir + linkName );
+				createLink(linkTarget + ".bai", webRoot +  resultDir + linkName + ".bai" );
 			}
 		}
 		
@@ -96,9 +106,9 @@ public class StatusFinalizer extends Operator {
 			String linkName = sampleID + ".annotated.csv"; 
 			String linkTarget = annotatedVars.getAbsolutePath();
 			
-			writer.addMessage("Annotated variants", SERVER_URL + RESULT_DIR + linkName );
+			writer.addMessage("Annotated variants", serverURL + resultDir + linkName );
 			if (createLinks) {
-				createLink(linkTarget, WEB_ROOT + RESULT_DIR + linkName );
+				createLink(linkTarget, webRoot + resultDir + linkName );
 			}			
 		}
 		
@@ -135,10 +145,28 @@ public class StatusFinalizer extends Operator {
 	@Override
 	public void initialize(NodeList inputChildren) {
 		
-		System.out.println("Number of chlidren: " + inputChildren.getLength());
-		for(int i=0; i<inputChildren.getLength(); i++) {
-			Node iChild = inputChildren.item(i);
-			System.out.println("child name:" + iChild.getNodeName() + ":" + iChild.getNodeValue());
+		sampleID = this.getAttribute(SAMPLE);
+		if (sampleID == null) {
+			sampleID = "sample-" + ("" + System.currentTimeMillis()).substring(5);
+		}
+		
+		if (this.getAttribute(WEBROOT) != null && this.getAttribute(WEBROOT).length()>1) {
+			webRoot = this.getAttribute(WEBROOT);
+			//test to see if this exists
+			File testFile = new File(webRoot);
+			if (!testFile.exists()) {
+				throw new IllegalArgumentException("web root file " + testFile.getAbsolutePath() + " does not exist");
+			}
+		}
+		if (this.getAttribute(RESULT_DIR) != null && this.getAttribute(RESULT_DIR).length()>1) {
+			resultDir = this.getAttribute(RESULT_DIR);
+			File testFile = new File(webRoot + "/" + resultDir);
+			if (!testFile.exists()) {
+				throw new IllegalArgumentException("web root results file " + testFile.getAbsolutePath() + " does not exist");
+			}
+		}
+		if (this.getAttribute(SERVER_URL) != null && this.getAttribute(SERVER_URL).length()>1) {
+			serverURL = this.getAttribute(SERVER_URL);
 		}
 		
 		for(int i=0; i<inputChildren.getLength(); i++) {

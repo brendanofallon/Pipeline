@@ -22,9 +22,15 @@
 	<VariantPool />
 </GeneAnnotate>
 
-<!-- dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+<VarsToGenes class="operator.gene.GeneListFromVariants">
  <VariantPool />
-</dbNSFPAnnotate -->
+ <Genes class="buffer.GeneList" />
+</VarsToGenes>
+
+
+<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+ <VariantPool />
+</dbNSFPAnnotate>
 
 
 <!-- New 1000Genomes v3 annotator! -->
@@ -36,12 +42,12 @@
 <!-- dbSNP class="operator.annovar.DBSNPAnnotator">
  <AnnoInput />
  <VariantPool />
-</dbSNP>
+</dbSNP -->
 
 <ESPAnnotate class="operator.annovar.Exomes5400Annotator">
  <AnnoInput /> 
  <VariantPool />
-</ESPAnnotate -->
+</ESPAnnotate>
 
 <ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
  <VariantPool />
@@ -51,9 +57,30 @@
   <VariantPool />
 </HGMDVar>
 
+<HGMDGene class="operator.gene.HGMDAnnotator">
+ <Genes />
+</HGMDGene>
+
+
+<OMIM class="operator.gene.OMIMAnnotator">
+ <Genes />
+</OMIM>
+
+<dbNSFPGene class="operator.gene.DBNSFPGeneAnnotator">
+ <Genes />
+</dbNSFPGene>
+
 <ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />
-	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.annotated.csv" />
+	<Genes />
+	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.annotated.xl.csv" />
 </ToFile>
+
+<ToFile2 class="operator.variant.MedDirWriter">
+	<VariantPool />
+	<Genes />
+	<CSVFile2 class="buffer.CSVFile" filename="$$PREFIX.annotated.csv" />
+</ToFile2>
+
 
 </Pipeline>

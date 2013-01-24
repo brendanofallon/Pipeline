@@ -34,7 +34,7 @@ public class CachedGeneSummaryDB {
     public static int expirationDays = 90; // Force re-downloading of records older than a few months
     private int missesSinceLastWrite = 0; //Number of cache misses since last writeToFile
     
-    public static final int maxToDownload = 10; //Don't ever expire more than this number of records in any single run 
+    public static final int maxToDownload = 19; //Don't ever expire more than this number of records in any single run 
     //public int newRecordsDownloaded = 0; //Number of new records so far downloaded
     
     private boolean prohibitNewDownloads = false; //If true, nothing new will be downloaded

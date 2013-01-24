@@ -25,8 +25,6 @@ public abstract class AbstractGeneAnnotator extends Operator implements GeneAnno
 
 	GeneList genes = null;
 	
-	
-
 	@Override
 	public void performOperation() throws OperationFailedException {
 		if (genes == null) {

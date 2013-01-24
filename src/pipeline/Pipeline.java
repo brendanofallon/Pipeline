@@ -371,7 +371,7 @@ public class Pipeline {
 				String suffix = "" + day + month + year + "-" + hour + "-" + min;
 				
 				this.instanceLogPath = projHome + "pipeinstancelog-" + suffix + ".txt";
-				FileHandler fileHandler = new FileHandler(instanceLogPath);
+				FileHandler fileHandler = new FileHandler(instanceLogPath, false);
 				fileHandler.setFormatter( new SimpleFormatter() );
 				primaryLogger.addHandler(fileHandler);
 				

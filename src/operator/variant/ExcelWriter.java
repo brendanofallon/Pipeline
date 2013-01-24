@@ -3,6 +3,7 @@ package operator.variant;
 import gene.Gene;
 
 import java.io.PrintStream;
+import java.util.Comparator;
 
 import buffer.variant.VariantRec;
 
@@ -20,32 +21,40 @@ public class ExcelWriter extends VariantPoolWriter {
 								 VariantRec.EXON_NUMBER,
 								 VariantRec.VARIANT_TYPE, 
 								 VariantRec.EXON_FUNCTION,
-								 //VariantRec.EFFECT_PREDICTION2,
+								 VariantRec.SVM_EFFECT,
 								 //VariantRec.INTERACTION_SCORE,
 								 //VariantRec.GO_EFFECT_PROD,
-								 //VariantRec.EFFECT_RELEVANCE_PRODUCT,
+								 VariantRec.EFFECT_RELEVANCE_PRODUCT,
 								 VariantRec.POP_FREQUENCY,
 								 //VariantRec.AMR_FREQUENCY,
 								 VariantRec.EXOMES_FREQ,
-								 VariantRec.ARUP_TOT,
-								 VariantRec.ARUP_FREQ,
+								 //VariantRec.ARUP_TOT,
+								 //VariantRec.ARUP_FREQ,
 								 //VariantRec.CG69_FREQUENCY,
 								 VariantRec.RSNUM, 
-								 VariantRec.OMIM_ID,
-								 VariantRec.HGMD_HIT,
+								 //VariantRec.OMIM_ID,
+								 //VariantRec.HGMD_HIT,
 //								 
 								 };
 	
+	public ExcelWriter() {
+		System.setProperty("java.util.Arrays.useLegacyMergeSort", "true");
+		this.setComparator(new EffectProdSorter());
+	}
+	
 	public static String[] geneKeys = {
-		Gene.HGMD_INFO,
+//		Gene.HGMD_INFO,
 		Gene.GENE_RELEVANCE,
-		Gene.OMIM_DISEASES,
-		Gene.OMIM_NUMBERS,
-		Gene.OMIM_INHERITANCE,
-		Gene.OMIM_PHENOTYPES
-//		Gene.SUMMARY_SCORE, 
-//		Gene.PUBMED_SCORE, 
-//		Gene.INTERACTION_SCORE, 
+//		Gene.OMIM_DISEASES,
+//		Gene.OMIM_NUMBERS,
+//		Gene.OMIM_INHERITANCE,
+//		Gene.OMIM_PHENOTYPES
+		Gene.SUMMARY_SCORE, 
+		Gene.PUBMED_SCORE, 
+		Gene.INTERACTION_SCORE, 
+		Gene.DBNSFPGENE_SCORE,
+		Gene.GO_SCORE,
+		Gene.OMIM_PHENOTYPE_SCORE
 //		Gene.DBNSFP_MIMDISEASE, 
 //		Gene.DBNSFP_DISEASEDESC, 
 //		Gene.PUBMED_HIT
@@ -96,5 +105,31 @@ public class ExcelWriter extends VariantPoolWriter {
 	}
 
 	
+	/**
+	 * Compares variants by their EFFECT_RELEVANCE_PRODUCT property
+	 * @author brendan
+	 *
+	 */
+	class EffectProdSorter implements Comparator<VariantRec> {
+
+		@Override
+		public int compare(VariantRec v0, VariantRec v1) {
+			Double s0 = v0.getProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT);
+			Double s1 = v1.getProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT);
+			
+			if (s0 == null && s1 == null)
+				return 0;
+			if (s0 == null && s1 != null) {
+				return -1;
+			}
+			if (s0 != null && s1 == null) {
+				return 1;
+			}
+			
+			return s0 > s1 ? -1 : 1;
+			
+		}
+		
+	}
 
 }

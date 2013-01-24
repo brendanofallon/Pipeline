@@ -2250,6 +2250,8 @@ public class VarUtils {
 				int count = 0;
 				do {
 					VariantRec var = reader.toVariantRec();
+					if (var == null)
+						continue;
 					Double varVal;
 					if (prop.startsWith("quality"))
 						varVal = var.getQuality();

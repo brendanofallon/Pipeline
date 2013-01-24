@@ -55,7 +55,6 @@ public class GeneSummaryRanker extends AbstractGeneRelevanceRanker  {
 		}
 		
 		examined++;
-		//this.getPipelineOwner().fireMessage("Examining summary for gene : " + g.getName());
     	String summary = summaryDB.getSummaryForGene( g.getName() );
     	if (summary == null)
     		return;
