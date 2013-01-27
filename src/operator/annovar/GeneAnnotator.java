@@ -36,7 +36,7 @@ public class GeneAnnotator extends AnnovarAnnotator {
 		String exonFuncFile = annovarPrefix + ".exonic_variant_function";
 		
 		Map<String,String> nmMap = new HashMap<String, String>();
-		String nmFile = this.getPipelineProperty("nm.Definitions");
+		String nmFile = this.getAttribute("nm.Definitions");
 		if(nmFile != null) {
 			Logger.getLogger(Pipeline.primaryLoggerName).info("Reading in defined NM #s for genes.");
 			nmMap = readNMMap(new File(nmFile));
@@ -130,24 +130,26 @@ public class GeneAnnotator extends AnnovarAnnotator {
 				// We should split by comma, find which has the NM # (string.contains)
 				// and then split by colon
 				String[] nms = toks[2].split(",");
-				String gene,tmpNM;
+				String gene = null;
+				String tmpNM;
 				int nmRec = 0; // iif the user hasn't specified an NM #, just take the first
 				for(int i = 0; i < nms.length; i++){
 					String[] details = nms[i].split(":");
+					//Sometimes theres no gene, so don't try to parse any info
+					if (details.length==1 && details[0].contains("UNKNOWN")) {
+						break;
+					}
+					
 					gene = details[0];
 					tmpNM = details[1];
-					System.out.println("Gene: " + gene);
-					System.out.println("NM: " + tmpNM);
 					if(nmMap.containsKey(gene)){ // if the user has specifed a specific nm #, get it
-						System.out.println("Contains gene: " + gene);
-						System.out.println("nmMap.get(gene):" + nmMap.get(gene));
 						if(tmpNM.equals(nmMap.get(gene))){
-							System.out.println("Setting nmRec to: " + i);
 							nmRec = i;
-							System.out.println("nmRec: " + nmRec);
+							Logger.getLogger(Pipeline.primaryLoggerName).info("Using transcript " + tmpNM + " for gene " + gene);
 						}
 					}
 				}
+				
 				
 				System.out.println("nmRec: " + nmRec);
 				String[] details = nms[nmRec].split(":");
@@ -201,9 +203,10 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			HashMap<String,String> nms = new HashMap<String,String>();
 			
 			while((line = br.readLine()) != null){
-				//System.out.println(line);
+				if (line.length()==0)
+					continue;
+				
 				String[] values = line.split("\t");
-				//System.out.println(values.toString());
 				nms.put(values[0], values[1]);
 			}
 			br.close();

@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.logging.Logger;
 
 import operator.qc.QCReport;
+import operator.qc.QCtoJSON;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -44,6 +45,7 @@ public class ReviewDirGenerator extends Operator {
 	MultiFileBuffer fastqs1 = null;
 	MultiFileBuffer fastqs2 = null;
 	QCReport qcReport = null;
+	QCtoJSON qcJsonFile = null;
 	BEDFile capture = null;
 	
 	
@@ -70,6 +72,11 @@ public class ReviewDirGenerator extends Operator {
 			File dest = new File(rootPath +"/qc/");
 			moveFile(qcReport.getOutputDir(), dest);
 			qcReport.setOutputDir(new File(dest.getAbsolutePath()));
+		}
+		
+		if (qcJsonFile != null) {
+			File dest = new File(rootPath +"/qc/");
+			moveFile(qcJsonFile.getOutputFile(), dest);
 		}
 		
 		if (annotatedVariants != null) {
@@ -128,13 +135,22 @@ public class ReviewDirGenerator extends Operator {
 				writer.write("annotated.vars=var/" + annotatedVariants.getFilename() + "\n");
 			if (annotatedVariants != null)
 				writer.write("vcf.file=var/" + variantFile.getFilename() + "\n");
-			if (finalBAM != null)
+			if (finalBAM != null) {
 				writer.write("bam.file=bam/" + finalBAM.getFilename() + "\n");
+				//WARNING: Bad code here. This should be updated to make sure we're getting the correct
+				//link location from the status finalizer, which actually creates this link
+				writer.write("bam.link=results/" + finalBAM.getFilename() + "\n");
+			}
 			if (qcReport != null) {
 				writer.write("qc.dir=" +  qcReport.getOutputDir() + "\n");
+				//WARNING: Bad code here. This should be updated to make sure we're getting the correct
+				//link location from the qc writer and/or status finalizer that creates the link. Changes
+				//in those classes will not be automatically reflected here
 				writer.write("qc.link=" +  "results/" + sampleName + "-QC/qc-report/qc-metrics.html" + "\n");
 			}
-			
+			if (qcJsonFile != null) {
+				writer.write("qc.json=qc/" + qcJsonFile.getOutputFile().getName());
+			}
 			writer.write("analysis.start.time=" +  this.getPipelineOwner().getStartTime().getTime() + "\n");
 			writer.write("current.time=" +  (new Date()).getTime() + "\n");
 			if (capture != null) {
@@ -274,6 +290,10 @@ public class ReviewDirGenerator extends Operator {
 				
 				if (obj instanceof QCReport) {
 					qcReport = (QCReport)obj;
+				}
+				
+				if (obj instanceof QCtoJSON) {
+					qcJsonFile = (QCtoJSON)obj;
 				}
 				
 				if (obj instanceof BEDFile) {

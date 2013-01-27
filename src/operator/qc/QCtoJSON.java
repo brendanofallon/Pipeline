@@ -20,6 +20,7 @@ import buffer.BEDFile;
 import buffer.DOCMetrics;
 import buffer.VCFFile;
 import buffer.variant.VariantPool;
+import buffer.variant.VariantRec;
 
 /**
  * Writes various QC info bits to a JSON formatted output file
@@ -28,7 +29,6 @@ import buffer.variant.VariantPool;
  */
 public class QCtoJSON extends Operator {
 
-
 	DOCMetrics rawCoverageMetrics = null;
 	DOCMetrics finalCoverageMetrics = null;
 	BAMMetrics rawBAMMetrics = null;
@@ -36,6 +36,14 @@ public class QCtoJSON extends Operator {
 	VariantPool variantPool = null;
 	BEDFile captureBed = null;
 	File jsonFile = null;
+	
+	/**
+	 * Get the file to which the JSON output is written
+	 * @return
+	 */
+	public File getOutputFile() {
+		return jsonFile;
+	}
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
@@ -83,6 +91,20 @@ public class QCtoJSON extends Operator {
 			}
 		}
 		
+		try {
+			qcObj.put("variant.metrics", variantPoolToJSON(variantPool));
+		} catch (JSONException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		try {
+			qcObj.put("capture.bed", captureBed.getFilename());
+		} catch (JSONException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
 		File outputFile;
 		if (outputPath.startsWith("/"))
 			outputFile = new File( outputPath );  //output path is absolute
@@ -101,8 +123,95 @@ public class QCtoJSON extends Operator {
 		
 	}
 
+	
+	private String variantPoolToJSON(VariantPool vp) throws JSONException {
+		JSONObject obj = new JSONObject();
+		if (vp == null) {
+			obj.put("error", "no variant pool specified");
+			return obj.toString();
+		}
+		
+		try {
+			obj.put("total.vars", vp.size());
+			obj.put("total.tt.ratio", vp.computeTTRatio());
+			obj.put("total.snps", vp.countSNPs());
+			obj.put("total.insertions", vp.countInsertions());
+			obj.put("total.deletions", vp.countDeletions());
+			int knowns = countKnownVars(vp);
+			obj.put("total.known", knowns);
+			double[] ttRatios = computeTTForKnownsNovels(vp);
+			obj.put("known.tt", ttRatios[0]);
+			obj.put("novel.tt", ttRatios[1]);
+			
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return obj.toString();
+	}
+
+	/**
+	 * Compute TT ratio in known and novel snps, 
+	 * @param vp
+	 * @return
+	 */
+	private double[] computeTTForKnownsNovels(VariantPool vp) {
+		VariantPool knowns = new VariantPool();
+		VariantPool novels= new VariantPool();
+		for(String contig : vp.getContigs()) {
+			for(VariantRec var : vp.getVariantsForContig(contig)) {
+				Double tgpFreq = var.getProperty(VariantRec.POP_FREQUENCY);
+				Double espFreq = var.getProperty(VariantRec.EXOMES_FREQ);
+				if ( (tgpFreq != null && tgpFreq > 0) || (espFreq != null && espFreq > 0)) {
+					knowns.addRecordNoSort(var);
+				}
+				else {
+					novels.addRecordNoSort(var);
+				}
+			}
+		}
+		
+		knowns.sortAllContigs();
+		novels.sortAllContigs();
+		double[] ttRatios = new double[2];
+		if (knowns.countSNPs()>0) {
+			ttRatios[0] = knowns.computeTTRatio();
+		}
+		if (novels.countSNPs()>0) {
+			ttRatios[1] = novels.computeTTRatio();
+		}
+		return ttRatios;
+	}
+
+
+	/**
+	 * Compute number of variants previously seen in 1000 Genomes
+	 * @param vp
+	 * @return
+	 */
+	private int countKnownVars(VariantPool vp) {
+		int knowns = 0;
+		for(String contig : vp.getContigs()) {
+			for(VariantRec var : vp.getVariantsForContig(contig)) {
+				Double tgpFreq = var.getProperty(VariantRec.POP_FREQUENCY);
+				Double espFreq = var.getProperty(VariantRec.EXOMES_FREQ);
+				if ( (tgpFreq != null && tgpFreq > 0) || (espFreq != null && espFreq > 0)) {
+					knowns++;
+				}
+			}
+		}
+		return knowns;
+	}
+
+
 	@Override
 	public void initialize(NodeList children) {
+		String outputPath = this.getAttribute("filename");
+		if (outputPath == null) {
+			throw new IllegalArgumentException("No output path specified (use filename=path attribute)");
+		}
+		
 		for(int i=0; i<children.getLength(); i++) {
 			Node iChild = children.item(i);
 			if (iChild.getNodeType() == Node.ELEMENT_NODE) {
