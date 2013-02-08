@@ -560,6 +560,7 @@ public class VariantRec {
 	public static final String HGMD_HIT = "hgmd.hit";
 	public static final String ARUP_FREQ = "ARUP.freq";
 	public static final String ARUP_TOT = "ARUP.tot";
+	public static final String VARBIN_BIN = "varbin.bin";
 	
 	
 }

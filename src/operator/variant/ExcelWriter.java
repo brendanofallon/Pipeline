@@ -28,12 +28,17 @@ public class ExcelWriter extends VariantPoolWriter {
 								 VariantRec.POP_FREQUENCY,
 								 //VariantRec.AMR_FREQUENCY,
 								 VariantRec.EXOMES_FREQ,
-								 //VariantRec.ARUP_TOT,
-								 //VariantRec.ARUP_FREQ,
+								 VariantRec.ARUP_TOT,
+								 VariantRec.ARUP_FREQ,
 								 //VariantRec.CG69_FREQUENCY,
+								 VariantRec.VARBIN_BIN,
 								 VariantRec.RSNUM, 
-								 //VariantRec.OMIM_ID,
-								 //VariantRec.HGMD_HIT,
+								 VariantRec.SIFT_SCORE,
+								 VariantRec.POLYPHEN_SCORE,
+								 VariantRec.MT_SCORE,
+								 VariantRec.GERP_SCORE,
+								 VariantRec.OMIM_ID,
+								 VariantRec.HGMD_HIT,
 //								 
 								 };
 	
@@ -43,10 +48,10 @@ public class ExcelWriter extends VariantPoolWriter {
 	}
 	
 	public static String[] geneKeys = {
-//		Gene.HGMD_INFO,
+		Gene.HGMD_INFO,
 		Gene.GENE_RELEVANCE,
 //		Gene.OMIM_DISEASES,
-//		Gene.OMIM_NUMBERS,
+		Gene.OMIM_NUMBERS,
 //		Gene.OMIM_INHERITANCE,
 //		Gene.OMIM_PHENOTYPES
 		Gene.SUMMARY_SCORE, 
@@ -54,8 +59,8 @@ public class ExcelWriter extends VariantPoolWriter {
 		Gene.INTERACTION_SCORE, 
 		Gene.DBNSFPGENE_SCORE,
 		Gene.GO_SCORE,
-		Gene.OMIM_PHENOTYPE_SCORE
-//		Gene.DBNSFP_MIMDISEASE, 
+		Gene.OMIM_PHENOTYPE_SCORE,
+		Gene.DBNSFP_MIMDISEASE, 
 //		Gene.DBNSFP_DISEASEDESC, 
 //		Gene.PUBMED_HIT
 		};

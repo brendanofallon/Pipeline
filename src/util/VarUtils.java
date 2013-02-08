@@ -21,6 +21,7 @@ import operator.qc.BamMetrics;
 import operator.variant.CompareVCF;
 import operator.variant.CompoundHetFinder;
 import operator.variant.FPComputer;
+import operator.variant.MedDirWriter;
 import util.flatFilesReader.DBNSFPReader;
 import buffer.BAMFile;
 import buffer.BAMMetrics;
@@ -209,24 +210,23 @@ public class VarUtils {
 			int found = 0;
 			for(String contig : vPool.getContigs()) {
 				for(VariantRec var : vPool.getVariantsForContig(contig)) {
-					//Double prod = var.getProperty(VariantRec.GO_EFFECT_PROD);
+					Double prod = var.getProperty(VariantRec.EFFECT_RELEVANCE_PRODUCT);
 					boolean passes = true;
-					passes = var.getQuality() > 25.0;
+					passes = var.getQuality() > 20.0;
 					
-//					String func = var.getAnnotation(VariantRec.EXON_FUNCTION);
-					
+					String func = var.getAnnotation(VariantRec.EXON_FUNCTION);					
 					String type = var.getAnnotation(VariantRec.VARIANT_TYPE);
-					if (type == null || (!type.contains("UTR3"))) {
-						passes = false;
-					}
-					
-					Double freq = var.getProperty(VariantRec.POP_FREQUENCY);
-					if (freq != null && freq > 0.01)
-						passes = false;
-					
-//					if (type == null || (!type.contains("exonic"))) {
+//					if (type == null || (!type.contains("UTR3"))) {
 //						passes = false;
 //					}
+					
+//					Double freq = var.getProperty(VariantRec.POP_FREQUENCY);
+//					if (freq != null && freq > 0.05)
+//						passes = false;
+					
+					if (type == null || (!type.contains("exonic"))) {
+						passes = false;
+					}
 					
 //					String gene = var.getAnnotation(VariantRec.GENE_NAME);
 //					if (gene == null || (! gene.contains("MIR"))) {
@@ -235,32 +235,23 @@ public class VarUtils {
 					
 					
 					
-//					if (func != null && (func.contains("nonsyn") 
-//							|| func.contains("splic")
-//							|| func.contains("stopgain")
-//							|| func.contains("stoploss")
-//							|| func.contains("frameshift"))) {
-//						
-//						Double freq = var.getProperty(VariantRec.POP_FREQUENCY);
-//						if (freq != null && freq > 0.01)
-//							passes = false;
-//						
-//						if (passes) {
-//							Double cgFreq = var.getProperty(VariantRec.CG69_FREQUENCY);
-//							if (cgFreq != null && cgFreq > 0.02)
-//								passes = false;
-//						}
-//						
-//						if (! var.isHetero()) {
-//							passes = false;
-//						}
+					if (func != null && (func.contains("nonsyn") 
+							|| func.contains("splic")
+							|| func.contains("stopgain")
+							|| func.contains("stoploss")
+							|| func.contains("frameshift"))) {
+						
+						Double freq = var.getProperty(VariantRec.POP_FREQUENCY);
+						if (freq != null && freq > 0.05)
+							passes = false;
+						
 //						
 //						
 //						
-//					}
-//					else {
-//						passes = false;
-//					}
+					}
+					else {
+						passes = false;
+					}
 					
 					if (passes) {
 						genePool.addRecordNoWarn(var);
@@ -288,10 +279,11 @@ public class VarUtils {
 		annoKeys.add(VariantRec.EFFECT_PREDICTION2);
 		annoKeys.add(Gene.GENE_RELEVANCE);
 //		annoKeys.add(VariantRec.SUMMARY_SCORE);
-//		annoKeys.add(VariantRec.PUBMED_SCORE);
-//		annoKeys.add(VariantRec.PUBMED_HIT);
+		annoKeys.add(VariantRec.HGMD_INFO);
+		annoKeys.add(VariantRec.HGMD_HIT);
+		annoKeys.add(VariantRec.RSNUM);
 		annoKeys.add(VariantRec.GO_EFFECT_PROD);
-		annoKeys.add(VariantRec.VQSR);
+		annoKeys.add(VariantRec.SVM_EFFECT);
 		annoKeys.add(VariantRec.SIFT_SCORE);
 		annoKeys.add(VariantRec.POLYPHEN_SCORE);
 		annoKeys.add(VariantRec.MT_SCORE);
@@ -300,7 +292,7 @@ public class VarUtils {
 		annoKeys.add(VariantRec.LRT_SCORE);
 		annoKeys.add(VariantRec.SIPHY_SCORE);
 		
-		genePool.listGenesWithMultipleVars(System.out, cutoff, annoKeys);
+		genePool.listGenesWithMultipleVars(System.out, cutoff, new MedDirWriter());
 		
 	}
 
@@ -759,13 +751,23 @@ public class VarUtils {
 		}
 
 		if (firstArg.equals("buildroc")) {
-			performBuildROC(args);
+			performBuildROC(args, false);
+			return;
+		}
+		
+		if (firstArg.equals("buildrocVQSR")) {
+			performBuildROC(args, true);
 			return;
 		}
 		
 		
 		if (firstArg.equals("geneExtract")) {
 			performGenePropExtract(args, false);
+			return;
+		}
+		
+		if (firstArg.equals("tkgDelHits")) {
+			performTKGGenePropExtract(args);
 			return;
 		}
 		
@@ -894,8 +896,6 @@ public class VarUtils {
 			System.out.println("Enter the name of the file to filter for snps");
 			return;
 		}
-		
-		
 		
 		try {
 			GenePool genePool = new GenePool(new File(args[1]));
@@ -1187,53 +1187,116 @@ public class VarUtils {
 			System.out.println("Enter the name of the file containing gene names, then one property to extract, then the variant files");
 			return;
 		}
+		DecimalFormat formatter = new DecimalFormat("0.00000");
 		try {
 			String key = args[2];
 			GenePool genes = new GenePool(new File(args[1]));
 			int hitsInTarget = 0;
 			int hitsNonTarget = 0;
-			double cutoff = 0.5;
-			for(int i=3; i<args.length; i++) {
-//				VariantLineReader reader = getReader(args[i]);
-//				do {
-//					VariantRec var = reader.toVariantRec();
-//					Double prop = var.getProperty(key);
-//					String gene = var.getAnnotation(VariantRec.GENE_NAME);
-//					if (gene != null && prop != null) {
-//						if (genes.containsGene(gene)) {
-//							if (prop > cutoff)
-//								hitsInTarget++;
-//						}
-//						else {
-//							if (prop > cutoff)
-//								hitsNonTarget++;
-//						}
-//						
-//					}
-//						
-//				} while(reader.advanceLine());
-				VariantPool vars = getPool(new File(args[i]));
-				VariantPool geneVars = filterByGene(vars, genes, reverse);
-				for(String contig : geneVars.getContigs()) {
-					for(VariantRec var : geneVars.getVariantsForContig(contig)) {
-						if (var.isHetero())
-							System.out.println("1\t" + var.getPropertyOrAnnotation(key));
-						else 
-							System.out.println("2\t" + var.getPropertyOrAnnotation(key));
+			double cutoff = Double.parseDouble(args[3]);
+			double sampleCount = 0.0;
+			for(int i=4; i<args.length; i++) {
+				VariantLineReader reader = getReader(args[i]);
+				sampleCount++;
+				do {
+					VariantRec var = reader.toVariantRec();
+					Double prop = var.getProperty(key);
+					String gene = var.getAnnotation(VariantRec.GENE_NAME);
+					int alleles = 1;
+					if (! var.isHetero())
+						alleles = 2;
+					
+					if (gene != null && prop != null) {
+						if (genes.containsGene(gene)) {
+							if (prop > cutoff)
+								hitsInTarget += alleles;
+						}
+						else {
+							if (prop > cutoff)
+								hitsNonTarget += alleles;
+						}	
 					}
-				}
+						
+				} while(reader.advanceLine());
+				
+//				VariantPool vars = getPool(new File(args[i]));
+//				VariantPool geneVars = filterByGene(vars, genes, reverse);
+//				for(String contig : geneVars.getContigs()) {
+//					for(VariantRec var : geneVars.getVariantsForContig(contig)) {
+//						if (var.isHetero())
+//							System.out.println("1\t" + var.getPropertyOrAnnotation(key));
+//						else 
+//							System.out.println("2\t" + var.getPropertyOrAnnotation(key));
+//					}
+//				}
 				
 			}
-//			System.out.println("Hits in target: " + hitsInTarget);
-//			System.out.println("Hits non target: " + hitsNonTarget);
-//			System.out.println(" Fraction      : " + ((double)hitsInTarget / (double)hitsNonTarget));
+			System.out.println("Hits in target:/ non target: \t" + hitsInTarget + "\t" + hitsNonTarget + "\t" +formatter.format((double)hitsInTarget / (double)hitsNonTarget));
+			System.out.println("Samples : " + sampleCount + " Alleles: " + sampleCount*2);
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	
+	/**
+	 * An HHT-study specific function, assumes arg 4 is a tkgdata file
+	 * @param args
+	 */
+	private static void performTKGGenePropExtract(String[] args) {
+		if (args.length < 4) {
+			System.out.println("Enter the name of the file containing gene names, then one property to extract, then the variant files");
+			return;
+		}
+		try {
+			String key = args[2];
+			GenePool genes = new GenePool(new File(args[1]));
+			double popInTarget = 0;
+			double popNonTarget = 0;
+			double amrInTarget = 0;
+			double amrNonTarget = 0;
+			double eurInTarget = 0;
+			double eurNonTarget = 0;
+			double cutoff = Double.parseDouble(args[3]);
+			VariantLineReader reader = getReader(args[4]);
+			do {
+				VariantRec var = reader.toVariantRec();
+				Double prop = var.getProperty(key);
+				Double tkgFreq = var.getProperty("tkg.freq");
+				Double eurFreq = var.getProperty("eur.freq");
+				Double amrFreq = var.getProperty("amr.freq");
+				String gene = var.getAnnotation(VariantRec.GENE_NAME);
+
+				if (gene != null && prop != null && tkgFreq != null) {
+					if (genes.containsGene(gene)) {
+						if (prop > cutoff) {
+							popInTarget += tkgFreq;
+							amrInTarget += amrFreq;
+							eurInTarget += eurFreq;
+						}
+					}
+					else {
+						if (prop > cutoff) {
+							popNonTarget += tkgFreq;
+							amrNonTarget += amrFreq;
+							eurNonTarget += eurFreq;
+						}
+					}
+
+				} 
+			} while(reader.advanceLine());
+
+			System.out.println("TKG hits in target / nontarget : " + popInTarget + "\t" + popNonTarget + "\t" + popInTarget/popNonTarget);
+			System.out.println("AMR hits in target / nontarget : " + amrInTarget + "\t" + amrNonTarget + "\t" + amrInTarget/amrNonTarget);
+			System.out.println("EUR hits in target / nontarget : " + eurInTarget + "\t" + eurNonTarget + "\t" + eurInTarget/eurNonTarget);
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 	private static void performHapCompare(String[] args) {
 		if (args.length != 3) {
 			System.out.println("Enter the names of the sample-from-hapmap csv file and the query file to compare");
@@ -1586,7 +1649,7 @@ public class VarUtils {
 		}
 	}
 	
-	private static void performBuildROC(String[] args) {
+	private static void performBuildROC(String[] args, boolean useVQSR) {
 		if (args.length != 4) {
 			System.out.println("Enter the name of the BED file, then the TRUE variant then query variant file");
 			return;
@@ -1600,23 +1663,39 @@ public class VarUtils {
 			VariantPool trueVars = getPool(new File(args[2]));
 			VariantPool qVars = getPool(new File(args[3]));
 						
+			double minQuality = Double.MAX_VALUE;
 			double maxQuality = 0.0;
 //			//find maximum quality
 			for(String contig : qVars.getContigs()) {
 				for(VariantRec var : qVars.getVariantsForContig(contig)) {
-					if (var.getQuality() > maxQuality)
-						maxQuality = var.getQuality();
+					double qual = var.getQuality();
+					if (useVQSR) {
+						if (var.getProperty(VariantRec.VQSR) == null) 
+							continue;
+						qual = var.getProperty(VariantRec.VQSR);
+						
+					}
+					if (qual > maxQuality)
+						maxQuality = qual;
+					if (qual < minQuality) 
+						minQuality = qual;
 				}
 			}
+			
+			if (minQuality < -25.0) {
+				minQuality = -25.0;
+			}
+			System.out.println("Min quality: " + minQuality);
 			System.out.println("Max quality: " + maxQuality);
 			
-			double qualityStep = maxQuality / 100.0;
+			double qualityStep = (maxQuality-minQuality) / 500.0;
 			
 			List<Double> xVals = new ArrayList<Double>();
 			List<Double> yVals = new ArrayList<Double>();
 			
-			
-			for(double qCutoff = 0; qCutoff < maxQuality; qCutoff += qualityStep) {
+			double prevSpec = 0.0;
+			double prevSens = 0.0;
+			for(double qCutoff = minQuality; qCutoff < maxQuality; qCutoff += qualityStep) {
 				
 				int falsePositives = 0;
 				int truePositives = 0;
@@ -1628,7 +1707,18 @@ public class VarUtils {
 					for(VariantRec tVar : trueVars.getVariantsForContig(contig)) {
 						if (bedFile.contains(contig, tVar.getStart())) {
 							VariantRec qVar = qVars.findRecordNoWarn(contig, tVar.getStart());
-							if (qVar != null && qVar.getQuality() >= qCutoff)
+							if (qVar == null) {
+								falseNegatives++;
+								continue;
+							}
+							double qual = qVar.getQuality();
+							if (useVQSR) {
+								if (qVar.getProperty(VariantRec.VQSR) == null) 
+									continue;
+								qual = qVar.getProperty(VariantRec.VQSR);
+							}
+							
+							if (qVar != null && qual >= qCutoff)
 								truePositives++;
 							else 
 								falseNegatives++;
@@ -1639,7 +1729,13 @@ public class VarUtils {
 				//Compute false positives, true negs don't exist!
 				for(String contig : qVars.getContigs()) {
 					for(VariantRec qVar : qVars.getVariantsForContig(contig)) {
-						if (qVar.getQuality() >= qCutoff) {
+						double qual = qVar.getQuality();
+						if (useVQSR) {
+							if (qVar.getProperty(VariantRec.VQSR) == null) 
+								continue;
+							qual = qVar.getProperty(VariantRec.VQSR);
+						}
+						if (qual >= qCutoff) {
 							if (bedFile.contains(contig, qVar.getStart())) {
 								if (! trueVars.contains(contig, qVar.getStart()))
 									falsePositives++;
@@ -1653,7 +1749,11 @@ public class VarUtils {
 				double sensitivity = (double)truePositives / (double)(truePositives + falseNegatives);
 				double specificity = (double)trueNegatives / (double)(trueNegatives + falsePositives);
 
-				System.out.println(formatter.format(1.0-specificity) +"\t" + sensitivity);
+				if (prevSpec != specificity || prevSens != sensitivity) {
+					System.out.println(formatter.format(1.0-specificity) +"\t" + sensitivity);
+				}
+				prevSpec = specificity;
+				prevSens = sensitivity;
 				xVals.add(1.0-specificity);
 				yVals.add(sensitivity);
 			}

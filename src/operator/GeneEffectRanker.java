@@ -5,7 +5,6 @@ import gene.Gene;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +17,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import pipeline.PipelineObject;
-import util.Jackknifeable;
 import buffer.GeneList;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
@@ -192,52 +190,6 @@ public class GeneEffectRanker extends Operator {
 		
 	}
 	
-	class SearchTermJackknife implements Jackknifeable {
-
-		List<String> orderedKeys;
-		Map<String, Integer> modMap; //Modified map
-		String removedTerm = null;
-		Integer removedScore = null;
-		
-		public SearchTermJackknife() {
-			orderedKeys = new ArrayList<String>();
-			for(String key : searchTerms.keySet()) {
-				orderedKeys.add(key);
-			}
-		}
-		
-		@Override
-		public void restore() {
-		
-			summaryRanker.setRankingMap(searchTerms);
-			dbnsfpRanker.setRankingMap(searchTerms);
-			//pubmedRanker.setRankingMap(searchTerms)
-		}
-
-		@Override
-		public void removeElement(int which) {
-			removedTerm = orderedKeys.get(which);
-			removedScore = searchTerms.get(removedTerm);
-			System.out.println("Removing term : " + removedTerm);
-			modMap = new HashMap<String, Integer>();
-			for(String key : searchTerms.keySet()) {
-				if (!key.equals(removedTerm)) {
-					modMap.put(key, searchTerms.get(key));
-				}
-			}
-			
-			summaryRanker.setRankingMap(modMap);
-			dbnsfpRanker.setRankingMap(modMap);
-			//pubmedranker...
-			
-		}
-
-		@Override
-		public int getRemoveableElementCount() {
-			return searchTerms.size();
-		}
-		
-	}
 	
 	class ScoreComparator implements Comparator<VariantRec> {
 

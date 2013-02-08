@@ -31,6 +31,7 @@ public class VarViewerWriter extends VariantPoolWriter {
 			 VariantRec.EXOMES_FREQ,
 			 VariantRec.RSNUM,
 			 VariantRec.ARUP_FREQ,
+			 VariantRec.VARBIN_BIN,
 			 VariantRec.SVM_EFFECT,
 			 VariantRec.SIFT_SCORE, 
 			 VariantRec.POLYPHEN_SCORE, 

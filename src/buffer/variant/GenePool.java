@@ -20,6 +20,7 @@ import java.util.logging.Logger;
 
 import operator.OperationFailedException;
 import operator.Operator;
+import operator.variant.VariantPoolWriter;
 
 import org.w3c.dom.NodeList;
 
@@ -242,14 +243,10 @@ public class GenePool extends Operator {
 		}
 	}
 
-	public void listGenesWithMultipleVars(PrintStream out, int cutoff, List<String> annoKeys) {
+	public void listGenesWithMultipleVars(PrintStream out, int cutoff, VariantPoolWriter writer) {
 		List<List<VariantRec>> geneList = new ArrayList<List<VariantRec>>();
+		writer.writeHeader(out);
 		
-		StringBuilder headerB = new StringBuilder();
-		for(String key : annoKeys)
-			headerB.append("\t" + key);
-		
-		out.println("source\t" + VariantRec.getSimpleHeader() + headerB);
 		for(String key : pool.keySet()) {
 			List<VariantRec> vars = pool.get(key);
 			int sourceCount =  countSources(key);
@@ -268,15 +265,12 @@ public class GenePool extends Operator {
 		for(List<VariantRec> vars : geneList) {
 			Collections.sort(vars, VariantRec.getPositionComparator());
 			String key = vars.get(0).getAnnotation(VariantRec.GENE_NAME);
-//			String pdot = vars.get(0).getAnnotation(VariantRec.PDOT);
-//			String hgmd = vars.get(0).getAnnotation(VariantRec.HGMD_INFO);
-//			String nm = vars.get(0).getAnnotation(VariantRec.NM_NUMBER);
 			out.print(key + "\t Mean Effect:" +  computeMeanProd(vars) + "\n");
 			for(VariantRec var : vars) {
-				//out.print(var.getAnnotation(VariantRec.SOURCE).replace(".all.csv", ":") + var.getAnnotation(VariantRec.PDOT) + "\t");
-				out.println(var.getAnnotation(VariantRec.SOURCE) + "\t" + var.toSimpleString() + "\t" + var.getPropertyString(annoKeys));
+				out.print(var.getAnnotation(VariantRec.SOURCE) + "\t");
+				writer.writeVariant(var, out);
 			}
-			out.println();
+		
 		}
 	}
 	

@@ -1,7 +1,8 @@
 package operator.qc;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -17,7 +18,9 @@ import pipeline.PipelineObject;
 import buffer.BAMFile;
 import buffer.BAMMetrics;
 import buffer.BEDFile;
+import buffer.CSVFile;
 import buffer.DOCMetrics;
+import buffer.TextBuffer;
 import buffer.VCFFile;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
@@ -34,29 +37,28 @@ public class QCtoJSON extends Operator {
 	BAMMetrics rawBAMMetrics = null;
 	BAMMetrics finalBAMMetrics = null;
 	VariantPool variantPool = null;
+	CSVFile noCallCSV = null;
 	BEDFile captureBed = null;
-	File jsonFile = null;
+	TextBuffer jsonFile = null;
 	
 	/**
 	 * Get the file to which the JSON output is written
 	 * @return
 	 */
-	public File getOutputFile() {
+	public TextBuffer getOutputFile() {
 		return jsonFile;
 	}
 	
 	@Override
 	public void performOperation() throws OperationFailedException {
-	
-		String outputPath = this.getAttribute("filename");
-		if (outputPath == null) {
-			throw new OperationFailedException("No output path specified (use filename=path attribute)", this);
+		if (jsonFile == null) {
+			throw new OperationFailedException("Output file is null", this);
 		}
 		
 		JSONObject qcObj = new JSONObject();
 		if (rawCoverageMetrics != null) {
 			try {
-				qcObj.put("raw.coverage.metrics", rawCoverageMetrics.toJSONString());
+				qcObj.put("raw.coverage.metrics", new JSONObject(rawCoverageMetrics.toJSONString()));
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -65,7 +67,7 @@ public class QCtoJSON extends Operator {
 		
 		if (finalCoverageMetrics != null) {
 			try {
-				qcObj.put("final.coverage.metrics", finalCoverageMetrics.toJSONString());
+				qcObj.put("final.coverage.metrics", new JSONObject(finalCoverageMetrics.toJSONString()));
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -75,7 +77,7 @@ public class QCtoJSON extends Operator {
 		
 		if (rawBAMMetrics != null) {
 			try {
-				qcObj.put("raw.bam.metrics", rawBAMMetrics.toJSONString());
+				qcObj.put("raw.bam.metrics", new JSONObject(rawBAMMetrics.toJSONString()));
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -84,7 +86,7 @@ public class QCtoJSON extends Operator {
 		
 		if (finalBAMMetrics != null) {
 			try {
-				qcObj.put("final.bam.metrics", finalBAMMetrics.toJSONString());
+				qcObj.put("final.bam.metrics", new JSONObject(finalBAMMetrics.toJSONString()));
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -92,7 +94,14 @@ public class QCtoJSON extends Operator {
 		}
 		
 		try {
-			qcObj.put("variant.metrics", variantPoolToJSON(variantPool));
+			qcObj.put("variant.metrics", new JSONObject(variantPoolToJSON(variantPool)));
+		} catch (JSONException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		try {
+			qcObj.put("nocalls", new JSONObject(noCallsToJSON(noCallCSV)));
 		} catch (JSONException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -100,29 +109,50 @@ public class QCtoJSON extends Operator {
 		
 		try {
 			qcObj.put("capture.bed", captureBed.getFilename());
+			qcObj.put("capture.extent", captureBed.getExtent());
 		} catch (JSONException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		
-		File outputFile;
-		if (outputPath.startsWith("/"))
-			outputFile = new File( outputPath );  //output path is absolute
-		else
-			outputFile = new File(this.getProjectHome() + "/" + outputPath); //output path relative to proj home
-		
 		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+			BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile.getFile()));
 			writer.write( qcObj.toString() );
 			writer.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			throw new OperationFailedException("Could not write to output file " + outputFile.getAbsolutePath(), this);
+			throw new OperationFailedException("Could not write to output file " + jsonFile.getAbsolutePath(), this);
 		}
 		
 	}
 
+	private String noCallsToJSON(CSVFile noCallCSV) throws JSONException {
+		JSONObject obj = new JSONObject();
+		if (noCallCSV == null) {
+			obj.put("error", "no no-call file specified");
+			return obj.toString();
+		}
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(noCallCSV.getAbsolutePath()));
+			String line = reader.readLine();
+			while(line != null) {
+				String[] toks = line.split(" ");
+				if (toks.length == 4) {
+					if (! toks[3].equals("CALLABLE")) {
+						obj.put(toks[0] + ":" + toks[1] + "-" + toks[2], toks[3]);
+					}
+				}
+				line = reader.readLine();
+			}
+			
+			reader.close();
+		}
+		catch(Exception ex) {
+			
+		}
+		return obj.toString();
+	}
 	
 	private String variantPoolToJSON(VariantPool vp) throws JSONException {
 		JSONObject obj = new JSONObject();
@@ -207,10 +237,7 @@ public class QCtoJSON extends Operator {
 
 	@Override
 	public void initialize(NodeList children) {
-		String outputPath = this.getAttribute("filename");
-		if (outputPath == null) {
-			throw new IllegalArgumentException("No output path specified (use filename=path attribute)");
-		}
+		
 		
 		for(int i=0; i<children.getLength(); i++) {
 			Node iChild = children.item(i);
@@ -246,10 +273,16 @@ public class QCtoJSON extends Operator {
 				if (obj instanceof VariantPool) {
 					variantPool = (VariantPool)obj;
 				}
-				
+				if (obj instanceof TextBuffer) {
+					jsonFile = (TextBuffer) obj;
+				}
 				if (obj instanceof BEDFile) {
 					captureBed = (BEDFile) obj;
 				}
+				if (obj instanceof CSVFile) {
+					noCallCSV = (CSVFile)obj;
+				}
+				
 				// ?
 			}
 		}

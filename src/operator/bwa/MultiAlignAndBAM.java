@@ -248,10 +248,11 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 			if (!skipSAIGen) {
 				submitAlignmentJob((FastQFile)reads1);
 			}
+			String projHome = this.getProjectHome();
 			StringPair outputNames = new StringPair();
 			outputNames.readsOne = reads1.getAbsolutePath(); 
 			outputNames.readsTwo = null;
-			outputNames.saiOne = reads1.getAbsolutePath() + ".sai";
+			outputNames.saiOne = projHome + "/" + reads1.getFilename() + ".sai";
 			outputNames.saiTwo = null;
 			saiFileNames.add(outputNames);
 		}

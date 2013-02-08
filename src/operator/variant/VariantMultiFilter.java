@@ -278,7 +278,7 @@ public class VariantMultiFilter extends IOOperator {
 		return true;
 	}
 
-	private Double readDoubleAttribute(String anno) {
+	protected Double readDoubleAttribute(String anno) {
 		String val = this.getAttribute(anno);
 		if (val == null)
 			return null;

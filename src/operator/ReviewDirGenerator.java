@@ -10,7 +10,6 @@ import java.util.Date;
 import java.util.logging.Logger;
 
 import operator.qc.QCReport;
-import operator.qc.QCtoJSON;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -23,6 +22,7 @@ import buffer.CSVFile;
 import buffer.FileBuffer;
 import buffer.InstanceLogFile;
 import buffer.MultiFileBuffer;
+import buffer.TextBuffer;
 import buffer.VCFFile;
 
 /**
@@ -45,7 +45,7 @@ public class ReviewDirGenerator extends Operator {
 	MultiFileBuffer fastqs1 = null;
 	MultiFileBuffer fastqs2 = null;
 	QCReport qcReport = null;
-	QCtoJSON qcJsonFile = null;
+	TextBuffer qcJsonFile = null;
 	BEDFile capture = null;
 	
 	
@@ -63,6 +63,7 @@ public class ReviewDirGenerator extends Operator {
 		createDir(rootPath, "report");
 		createDir(rootPath, "fastq");
 		createDir(rootPath, "array");
+		createDir(rootPath, "bed");
 		
 
 		//This should happen before files get moved around
@@ -76,7 +77,7 @@ public class ReviewDirGenerator extends Operator {
 		
 		if (qcJsonFile != null) {
 			File dest = new File(rootPath +"/qc/");
-			moveFile(qcJsonFile.getOutputFile(), dest);
+			moveFile(qcJsonFile, dest);
 		}
 		
 		if (annotatedVariants != null) {
@@ -89,6 +90,11 @@ public class ReviewDirGenerator extends Operator {
 
 			File inputDestination = new File(rootPath + "/log/pipeline_input.xml");
 			copyTextFile(this.getPipelineOwner().getSourceFile(), inputDestination);
+			
+			if (capture != null) {
+				File bedDestination = new File(rootPath + "/bed/" + capture.getFilename());
+				copyTextFile(capture.getFile(), bedDestination);
+			}
 			
 			File logDestination = new File(rootPath + "/log/" + logFile.getFilename());
 			copyTextFile(logFile.getFile(), logDestination);
@@ -133,8 +139,12 @@ public class ReviewDirGenerator extends Operator {
 			writer.write("analysis.type=" +  analysisType + "\n");
 			if (annotatedVariants != null)
 				writer.write("annotated.vars=var/" + annotatedVariants.getFilename() + "\n");
-			if (annotatedVariants != null)
+			if (variantFile != null) {
 				writer.write("vcf.file=var/" + variantFile.getFilename() + "\n");
+				//WARNING: Bad code here. This should be updated to make sure we're getting the correct
+				//link location from the status finalizer, which actually creates this link
+				writer.write("vcf.link=results/" + variantFile.getFilename() + "\n");
+			}
 			if (finalBAM != null) {
 				writer.write("bam.file=bam/" + finalBAM.getFilename() + "\n");
 				//WARNING: Bad code here. This should be updated to make sure we're getting the correct
@@ -148,8 +158,9 @@ public class ReviewDirGenerator extends Operator {
 				//in those classes will not be automatically reflected here
 				writer.write("qc.link=" +  "results/" + sampleName + "-QC/qc-report/qc-metrics.html" + "\n");
 			}
+			
 			if (qcJsonFile != null) {
-				writer.write("qc.json=qc/" + qcJsonFile.getOutputFile().getName());
+				writer.write("qc.json=qc/" + qcJsonFile.getFilename() + "\n");
 			}
 			writer.write("analysis.start.time=" +  this.getPipelineOwner().getStartTime().getTime() + "\n");
 			writer.write("current.time=" +  (new Date()).getTime() + "\n");
@@ -222,8 +233,6 @@ public class ReviewDirGenerator extends Operator {
 	private void moveFile(FileBuffer sourceFile, File newParentDir) {
 		File destinationFile = new File(newParentDir + "/" + sourceFile.getFilename());
 		Logger.getLogger(Pipeline.primaryLoggerName).info("Renaming " + sourceFile.getFile().getAbsolutePath() + " to " + destinationFile.getAbsolutePath());
-
-		
 		sourceFile.getFile().renameTo(destinationFile);
 		sourceFile.setFile(destinationFile);
 	}
@@ -292,8 +301,8 @@ public class ReviewDirGenerator extends Operator {
 					qcReport = (QCReport)obj;
 				}
 				
-				if (obj instanceof QCtoJSON) {
-					qcJsonFile = (QCtoJSON)obj;
+				if (obj instanceof TextBuffer) {
+					qcJsonFile = (TextBuffer)obj;
 				}
 				
 				if (obj instanceof BEDFile) {

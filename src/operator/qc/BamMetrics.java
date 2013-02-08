@@ -19,7 +19,8 @@ import buffer.FileBuffer;
 import buffer.TextBuffer;
 
 /**
- * Computes some simple summary metrics for a bam file
+ * Computes some simple summary metrics for a bam file. BamMetrics means mostly base quality metrics, but also 
+ * some general stats like number of aligned reads, duplicates, etc. 
  * @author brendan
  *
  */

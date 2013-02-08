@@ -7,10 +7,12 @@ import gui.figure.series.XYSeriesFigure;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.geom.Point2D;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
@@ -33,6 +35,7 @@ import operator.OperationFailedException;
 import operator.Operator;
 import operator.qc.checkers.BAMMetricsChecker;
 import operator.qc.checkers.CoverageChecker;
+import operator.qc.checkers.NoCallChecker;
 import operator.qc.checkers.QCItemCheck;
 import operator.qc.checkers.QCItemCheck.QCCheckResult;
 import operator.qc.checkers.VariantPoolChecker;
@@ -48,8 +51,8 @@ import util.StringWriter;
 import buffer.BAMFile;
 import buffer.BAMMetrics;
 import buffer.BEDFile;
+import buffer.CSVFile;
 import buffer.DOCMetrics;
-import buffer.DOCMetrics.FlaggedInterval;
 import buffer.VCFFile;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
@@ -69,6 +72,7 @@ public class QCReport extends Operator {
 	BAMMetrics finalBAMMetrics = null;
 	VariantPool variantPool = null;
 	BEDFile captureBed = null;
+	CSVFile noCallCSV = null;
 	File outputDir = null; //Directory containing qc info
 
 	/**
@@ -672,6 +676,23 @@ public class QCReport extends Operator {
 			writer.write("<li id=\"warning\"> QC Warning : No variants found, could not assess QC metrics</li>\n");
 		}
 		
+		if (noCallCSV != null) {
+			NoCallChecker noCallChecker = new NoCallChecker(captureBed.getExtent());
+			QCCheckResult result = noCallChecker.checkItem(noCallCSV);
+			
+			if (result.getResult() == QCItemCheck.ResultType.WARNING) {
+				writer.write("<li id=\"warning\"> QC Warning : " + result.getMessage() + "</li>\n");
+			}
+			if (result.getResult() == QCItemCheck.ResultType.SEVERE) {
+				writer.write("<li id=\"error\"> QC Failure : " + result.getMessage() + "</li>\n");
+			}
+			if (result.getResult() == QCItemCheck.ResultType.OK) {
+				writer.write("<li id=\"okitem\"> QC no-calls appear normal </li>\n");
+			}
+		}
+		else {
+			writer.write("<li id=\"warning\"> No 'No-call' information found </li>\n");
+		}
 		writer.write("</ul> <!-- warningslist --> \n");
 	}
 
@@ -811,7 +832,7 @@ public class QCReport extends Operator {
 				for(int i=1; i<Math.min(250, covs.length); i++) {
 					Point2D p = new Point2D.Double(i, covs[i]);
 					finalCov.add(p);
-					System.out.println("Final cov adding point: " + p.getX() + ", " + p.getY());
+					//System.out.println("Final cov adding point: " + p.getX() + ", " + p.getY());
 				}
 				
 				List<Point2D> rawCov = new ArrayList<Point2D>();
@@ -819,7 +840,7 @@ public class QCReport extends Operator {
 				for(int i=1; i<Math.min(250, covs.length); i++) {
 					Point2D p = new Point2D.Double(i, covs[i]);
 					rawCov.add(p);
-					System.out.println("Raw cov adding point: " + p.getX() + ", " + p.getY());
+					//System.out.println("Raw cov adding point: " + p.getX() + ", " + p.getY());
 				}
 	
 				List<List<Point2D>> data = new ArrayList<List<Point2D>>();
@@ -874,30 +895,73 @@ public class QCReport extends Operator {
 			
 			
 			writer.write("<div id=\"separator\">  </div>");
+			
 			//Emit 'flagged' low coverage intervals...
-			if (finalDOCMetrics.getFlaggedIntervals() == null) {
-				writer.write("<p> Number of low coverage intervals : No information found </p>\n");
+//			if (finalDOCMetrics.getFlaggedIntervals() == null) {
+//				writer.write("<p> Number of low coverage intervals : No information found </p>\n");
+//			}
+//			else {
+//				writer.write("<p> <h3> Number of low coverage intervals : " + finalDOCMetrics.getFlaggedIntervals().size() + " </h3> </p>\n");
+//				
+//				TableWriter flagT = new TableWriter(3);
+//				flagT.addRow(Arrays.asList(new String[]{"<b>Interval</b>", "<b>Mean cov.</b>", "<b>% above 15</b>"}));				
+//				for(int i=0; i<Math.min(100, finalDOCMetrics.getFlaggedIntervals().size()); i++) {
+//
+//					FlaggedInterval fInt = finalDOCMetrics.getFlaggedIntervals().get(i);
+//					flagT.addRow(Arrays.asList(new String[]{"chr" + fInt.info, "" + fInt.mean, "" + fInt.frac}));
+//				}
+//				writer.write( flagT.getHTML() );
+//				
+//				if (finalDOCMetrics.getFlaggedIntervals().size() > 100) {
+//					int dif = finalDOCMetrics.getFlaggedIntervals().size() - 100;
+//					writer.write("<p><b> ..Additional " + dif + " low coverage intervals not shown </b></p>");
+//				}
+//			
+//			}
+			
+			//New version, emit no-call intervals from the CSVFile, if found
+			if (noCallCSV == null) {
+				writer.write("<p> No call intervals : No information found </p>\n");
 			}
 			else {
-				writer.write("<p> <h3> Number of low coverage intervals : " + finalDOCMetrics.getFlaggedIntervals().size() + " </h3> </p>\n");
-				
-				TableWriter flagT = new TableWriter(3);
-				flagT.addRow(Arrays.asList(new String[]{"<b>Interval</b>", "<b>Mean cov.</b>", "<b>% above 15</b>"}));				
-				for(int i=0; i<Math.min(100, finalDOCMetrics.getFlaggedIntervals().size()); i++) {
-
-					FlaggedInterval fInt = finalDOCMetrics.getFlaggedIntervals().get(i);
-					flagT.addRow(Arrays.asList(new String[]{"chr" + fInt.info, "" + fInt.mean, "" + fInt.frac}));
+				//Read info from CSV file
+				try {
+					BufferedReader reader = new BufferedReader(new FileReader(noCallCSV.getAbsolutePath()));
+					String line = reader.readLine();
+					TableWriter flagT = new TableWriter(2);
+					flagT.addRow(Arrays.asList(new String[]{"<b>Interval</b>", "<b>Mean cov.</b>", "<b>% above 15</b>"}));
+					int noCallIntervals = 0;
+					int noCallPositions = 0;
+					while(line != null) {
+						String[] toks = line.split(" ");
+						if (toks.length == 4) {
+							if (! toks[3].equals("CALLABLE")) {
+								
+								noCallIntervals++;
+								try {
+									long startPos = Long.parseLong(toks[1]);
+									long endPos = Long.parseLong(toks[2]);
+									long length = endPos - startPos;
+									if (length > 2)
+										flagT.addRow(Arrays.asList(new String[]{"chr" + toks[0] + ":" + toks[1] + " - " + toks[2], toks[3]}));
+									noCallPositions += length;
+								} catch (NumberFormatException nfe) {
+									//dont stress it
+								}
+							}
+						}
+						line = reader.readLine();
+					}
+					
+					reader.close();
+					writer.write("<p> No call intervals : " + noCallIntervals + " intervals found spanning " + noCallPositions + " total bases </p>\n");
+					writer.write( flagT.getHTML() );
+					
 				}
-				writer.write( flagT.getHTML() );
-				
-				if (finalDOCMetrics.getFlaggedIntervals().size() > 100) {
-					int dif = finalDOCMetrics.getFlaggedIntervals().size() - 100;
-					writer.write("<p><b> ..Additional " + dif + " low coverage intervals not shown </b></p>");
+				catch(Exception ex) {
+					
 				}
-			
 			}
-			
-			
 		}		
 		
 	}
@@ -943,6 +1007,9 @@ public class QCReport extends Operator {
 				
 				if (obj instanceof BEDFile) {
 					captureBed = (BEDFile) obj;
+				}
+				if (obj instanceof CSVFile) {
+					noCallCSV = (CSVFile)obj;
 				}
 				// ?
 			}

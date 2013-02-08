@@ -160,9 +160,6 @@ public class DepthOfCoverage extends IOOperator {
 			
 			
 			
-			
-			
-			
 			//Read output from interval summary file. Right now we assume that the second line of the
 			//file is the proportion of reads with coverage greater than i, where i is tab-delimited
 			//index number

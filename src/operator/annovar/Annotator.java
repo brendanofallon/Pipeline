@@ -47,6 +47,8 @@ public abstract class Annotator extends Operator {
 		DecimalFormat formatter = new DecimalFormat("#0.00");
 		int tot = variants.size();
 		
+	
+		prepare();
 		
 		int varsAnnotated = 0;
 		
@@ -59,12 +61,25 @@ public abstract class Annotator extends Operator {
 				if (displayProgress() && varsAnnotated % 2000 == 0) {
 					System.out.println("Annotated " + varsAnnotated + " of " + tot + " variants  (" + formatter.format(prog) + "% )");	
 				}
-				
-				
 			}
 		}
 			
+		cleanup();
 	}
+	
+	/**
+	 * This method is called prior to annotation of the variants. It's a no-op by default,
+	 * but various subclasses may override if they need to do some work before 
+	 * the annotation process begins (looking at you, VarBinAnnotator)
+	 */
+	protected void prepare() throws OperationFailedException {
+		//Blank on purpose, subclasses may override 
+	}
+	
+	protected void cleanup() throws OperationFailedException {
+		//Blank on purpose, subclasses may override
+	}
+	
 	@Override
 	public void initialize(NodeList children) {
 		for(int i=0; i<children.getLength(); i++) {

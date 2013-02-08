@@ -39,10 +39,12 @@ public class BAMMetrics extends FileBuffer implements JSONString {
 			obj = new JSONObject();
 			obj.put("total.reads", totalReads);
 			obj.put("unmapped.reads", unmappedReads);
-			obj.put("bases.read", unmappedReads);
+			obj.put("bases.read", basesRead);
 			obj.put("bases.above.q30", basesQAbove30);
 			obj.put("bases.above.q20", basesQAbove20);
 			obj.put("bases.above.q10", basesQAbove10);
+			if (insertSizeHistogram != null)
+				obj.put("mean.insert.size", insertSizeHistogram.getMean());
 			
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block

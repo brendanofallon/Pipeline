@@ -38,7 +38,7 @@ public class GeneAnnotator extends AnnovarAnnotator {
 		Map<String,String> nmMap = new HashMap<String, String>();
 		String nmFile = this.getAttribute("nm.Definitions");
 		if(nmFile != null) {
-			Logger.getLogger(Pipeline.primaryLoggerName).info("Reading in defined NM #s for genes.");
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Reading in defined NM #s from file: " + nmFile);
 			nmMap = readNMMap(new File(nmFile));
 		}
 		
@@ -84,7 +84,7 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			
 			int pos = Integer.parseInt(toks[3]);
 			
-			VariantRec rec = findVariant(contig, pos, ref, alt); //variants.findRecord(contig, pos);
+			VariantRec rec = findVariant(contig, pos, ref, alt); 
 
 			if (rec == null) {
 				errorVars++;
@@ -111,6 +111,8 @@ public class GeneAnnotator extends AnnovarAnnotator {
 		errorVars = 0;
 		reader.close();
 		
+		
+		
 		//Add exonic variants functions to records where applicable
 		reader = new BufferedReader(new FileReader(exonicFuncFilePath));
 		logger.info("Reading annovar exonic variants from file " + exonicFuncFilePath);
@@ -127,6 +129,10 @@ public class GeneAnnotator extends AnnovarAnnotator {
 				String cDot = "NA";
 				String pDot = "NA";
 	
+				String contig = toks[3];
+				int pos = Integer.parseInt( toks[4] );
+				VariantRec rec = findVariant(contig, pos, ref, alt);
+				
 				// We should split by comma, find which has the NM # (string.contains)
 				// and then split by colon
 				String[] nms = toks[2].split(",");
@@ -151,23 +157,18 @@ public class GeneAnnotator extends AnnovarAnnotator {
 				}
 				
 				
-				System.out.println("nmRec: " + nmRec);
 				String[] details = nms[nmRec].split(":");
 				if (details.length>4) {
 					NM = details[1];
 					exonNum = details[2];
 					cDot = details[3];
 					pDot = details[4];
-					//int idx = pDot.indexOf(",");
-					//if (idx > 0)
-						//pDot = pDot.substring(0, idx);
 				}
 				
-				String contig = toks[3];
-				int pos = Integer.parseInt( toks[4] );
+				
 				
 				totalVars++;
-				VariantRec rec = findVariant(contig, pos, ref, alt);
+				
 				if (rec != null) {
 					rec.addAnnotation(VariantRec.EXON_FUNCTION, exonicFunc);
 					rec.addAnnotation(VariantRec.NM_NUMBER, NM);
@@ -207,7 +208,11 @@ public class GeneAnnotator extends AnnovarAnnotator {
 					continue;
 				
 				String[] values = line.split("\t");
-				nms.put(values[0], values[1]);
+				if (values.length != 2) {
+					Logger.getLogger(Pipeline.primaryLoggerName).warning("Could not parse preferred NM# from line: " + line);
+					continue;
+				}
+				nms.put(values[0].toUpperCase().trim(), values[1].toUpperCase().trim());
 			}
 			br.close();
 			return nms;
