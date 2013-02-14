@@ -222,16 +222,21 @@ public class QCJsonReader {
 		for(String path : paths) {
 			try {
 				JSONObject obj = toJSONObj(path);
-				JSONObject finalCov = obj.getJSONObject("final.coverage.metrics");
-				JSONArray fracAbove = finalCov.getJSONArray("fraction.above.index");
-				Double mean = finalCov.getDouble("mean.coverage");
-				String[] covs = new String[5];
-				covs[0] = formatter.format(mean);
-				covs[1] = formatter.format(fracAbove.getDouble(5));
-				covs[2] = formatter.format(fracAbove.getDouble(10));
-				covs[3] = formatter.format(fracAbove.getDouble(20));
-				covs[4] = formatter.format(fracAbove.getDouble(50));
-				data.addColumn(toSampleName(path), covs);
+				if (obj.has("final.coverage.metrics")) {
+					JSONObject finalCov = obj.getJSONObject("final.coverage.metrics");
+					JSONArray fracAbove = finalCov.getJSONArray("fraction.above.index");
+					Double mean = finalCov.getDouble("mean.coverage");
+					String[] covs = new String[5];
+					covs[0] = formatter.format(mean);
+					covs[1] = formatter.format(fracAbove.getDouble(5));
+					covs[2] = formatter.format(fracAbove.getDouble(10));
+					covs[3] = formatter.format(fracAbove.getDouble(20));
+					covs[4] = formatter.format(fracAbove.getDouble(50));
+					data.addColumn(toSampleName(path), covs);
+				}
+				else {
+					data.addColumn(toSampleName(path), new String[]{"?","?","?","?","?"});
+				}
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -244,12 +249,17 @@ public class QCJsonReader {
 		out.println(data.toString());
 	}
 
-	private static String toSampleName(String path) throws IOException {
+	private static String toSampleName(String path) {
 		File file = new File(path);
 		if (file.isDirectory()) {
 			File manifestFile = new File(file.getPath() + "/sampleManifest.txt");
 			if (manifestFile.exists()) {
-				return sampleIDFromManifest(manifestFile);
+				try {
+					return sampleIDFromManifest(manifestFile);
+				} catch (IOException e) {
+					String shortPath = path.split("/")[0];
+					return shortPath.replace(".reviewdir", "");			
+				}
 			}
 		}
 		
@@ -278,40 +288,45 @@ public class QCJsonReader {
 		for(String path : paths) {
 			try {
 				JSONObject obj = toJSONObj(path);
-				JSONObject vars = obj.getJSONObject("variant.metrics");
 				String[] col = new String[6];
-				col[0] = "" + vars.getInt("total.vars");
-				col[1] = "" + vars.getInt("total.snps");
-				
-				Double totVars = vars.getDouble("total.vars");
-				Double knowns = vars.getDouble("total.known");
-				if (totVars > 0) {
-					Double novelFrac = 1.0 - knowns / totVars;
-					col[2] = "" + formatter.format(novelFrac);
+				if (obj.has("variant.metrics")) {
+					JSONObject vars = obj.getJSONObject("variant.metrics");
+					col[0] = safeInt(vars, "total.vars");
+					col[1] = safeInt(vars, "total.snps");
+
+					Double totVars = vars.getDouble("total.vars");
+					Double knowns = vars.getDouble("total.known");
+					if (totVars != null && knowns != null && totVars > 0) {
+						Double novelFrac = 1.0 - knowns / totVars;
+						col[2] = "" + formatter.format(novelFrac);
+					}
+					else {
+						col[2] = "0";
+					}
+					col[3] = safeDouble(vars, "total.tt.ratio");
+					col[4] = safeDouble(vars, "novel.tt");
+
+					//output.println("Total novels: " + safeDouble(varMetrics, " "));
+
+					if (obj.has("capture.extent")) {
+						long extent = obj.getLong("capture.extent");
+						double varsPerBaseCalled = totVars / (double)extent;
+						col[5] = smallFormatter.format(varsPerBaseCalled);	
+					}
+					else {
+						col[5] = "?";
+					}
+
+					data.addColumn(toSampleName(path), col);
 				}
 				else {
-					col[2] = "0";
+					data.addColumn(toSampleName(path), new String[]{"?","?","?","?","?","?"});
 				}
-				col[3] = formatter.format( vars.getDouble("total.tt.ratio"));
-				col[4] = formatter.format( vars.getDouble("novel.tt"));
-				
-				//output.println("Total novels: " + safeDouble(varMetrics, " "));
-				
-				if (obj.has("capture.extent")) {
-					long extent = obj.getLong("capture.extent");
-					double varsPerBaseCalled = totVars / (double)extent;
-					col[5] = smallFormatter.format(varsPerBaseCalled);	
-				}
-				else {
-					col[5] = "?";
-				}
-				
-				data.addColumn(toSampleName(path), col);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
+				data.addColumn(toSampleName(path), new String[]{"?","?","?","?","?","?"});
 				e.printStackTrace();
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
+				data.addColumn(toSampleName(path), new String[]{"?","?","?","?","?","?"});
 				e.printStackTrace();
 			}
 		}

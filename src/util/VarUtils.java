@@ -2340,12 +2340,12 @@ public class VarUtils {
 				PrintStream outStream = System.out;
 				VariantLineReader reader = getReader(args[i]);
 				
-				if (args.length>4) {
-					String outputFileName = args[i].replace(".vcf", ".flt.vcf").replace(".csv", ".flt.csv");
-					outStream = new PrintStream(new FileOutputStream(outputFileName));
-				}
+//				if (args.length>4) {
+//					String outputFileName = args[i].replace(".vcf", ".flt.vcf").replace(".csv", ".flt.csv");
+//					outStream = new PrintStream(new FileOutputStream(outputFileName));
+//				}
 				
-				
+				outStream.println("\n" + args[i]);
 				outStream.print( reader.getHeader() );
 				int count = 0;
 				do {
@@ -2389,7 +2389,8 @@ public class VarUtils {
 				else 
 					System.err.println("Found " + count + " vars with " + prop + " below " + val);
 
-				outStream.close();
+				if (outStream != System.out)
+					outStream.close();
 			}
 		}
 		catch (IOException ex) {

@@ -84,7 +84,7 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			
 			int pos = Integer.parseInt(toks[3]);
 			
-			VariantRec rec = findVariant(contig, pos, ref, alt); 
+			VariantRec rec = findVariant(contig, pos, ref, alt);  //Make sure we match alt
 
 			if (rec == null) {
 				errorVars++;

@@ -172,6 +172,44 @@ public class VariantPool extends Operator  {
 	}
 	
 	/**
+	 * Search the 'vars' field for a VariantRec at the given contig and position with the given alt
+	 * @param contig
+	 * @param pos
+	 * @return
+	 */
+	public VariantRec findRecord(String contig, int pos, String alt) {
+		contig = contig.replace("chr", "");
+		List<VariantRec> varList = vars.get(contig);
+		if (varList == null) {
+			Logger.getLogger(Pipeline.primaryLoggerName).warning("AnnovarResults could not find contig: " + contig);
+			return null;
+		}
+		
+		qRec.setPosition(contig, pos, pos);
+		
+		int index = Collections.binarySearch(varList, qRec, VariantRec.getPositionComparator());
+		if (index < 0) {
+			return null;
+		}
+		
+		//We want to search all variants at this contig and position, so decrement index while 
+		//varList.get(index).gePos() == pos
+		while(index > 0 && varList.get(index-1).getStart()==pos) {
+			index--;
+		}
+		
+		while(index < varList.size() && varList.get(index).getStart()==pos) {
+			if (varList.get(index).getAlt().equals(alt)) {
+				return varList.get(index);
+			}
+			index++;
+		}
+		
+		//No alt matches found
+		return null;
+	}
+	
+	/**
 	 * Returns true if this pool contains any kind of variant at the given contig and position
 	 * @param contig
 	 * @param pos
