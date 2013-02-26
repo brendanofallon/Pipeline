@@ -893,7 +893,7 @@ public class VarUtils {
 	
 	private static void performHHTComp(String[] args) {
 		if (args.length < 4) {
-			System.out.println("Enter the name of the file to filter for snps");
+			System.out.println("Enter the list of genes file, then the annotation, then the threshold, then one or more annotated files");
 			return;
 		}
 		
@@ -915,16 +915,20 @@ public class VarUtils {
 					if (var != null && var.isSNP()) {
 						String gene = var.getAnnotation(VariantRec.GENE_NAME);
 						Double val = var.getProperty(anno);
+						int count = 1;
+						if (! var.isHetero()) {
+							count = 2;
+						}
 						if (gene != null && val != null) {
 							if (genePool.containsGene(gene)) {
 								if (val > threshold)
-									delTarget++;
-								totTarget++;
+									delTarget += count;
+								totTarget += count;
 							}
 							else {
 								if (val > threshold)
-									delNonTarget++;
-								totNonTarget++;
+									delNonTarget += count;
+								totNonTarget += count;
 							}
 						}
 						else {
@@ -2283,7 +2287,7 @@ public class VarUtils {
 					int end = interval.end;
 					reader.advanceTo(contig, start);
 					while(reader.getCurrentPos() < end) {
-						Double tkgFreq = reader.getValue(DBNSFPReader.TKG_AF);
+						Double tkgFreq = reader.getValue(DBNSFPReader.TKG_AFR);
 						if (tkgFreq == null || Double.isNaN(tkgFreq))
 							tkgFreq = 0.0;
 						
@@ -2345,7 +2349,6 @@ public class VarUtils {
 //					outStream = new PrintStream(new FileOutputStream(outputFileName));
 //				}
 				
-				outStream.println("\n" + args[i]);
 				outStream.print( reader.getHeader() );
 				int count = 0;
 				do {

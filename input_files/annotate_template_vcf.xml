@@ -44,16 +44,12 @@
  <VariantPool />
 </dbSNP -->
 
-<ESPAnnotate class="operator.annovar.Exomes5400Annotator">
- <AnnoInput /> 
- <VariantPool />
-</ESPAnnotate>
 
 <ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
  <VariantPool />
 </ARUPFreqAnno>
 
-<HGMDVar class="operator.variant.HGMDVarAnnotator">
+<!-- HGMDVar class="operator.variant.HGMDVarAnnotator">
   <VariantPool />
 </HGMDVar>
 
@@ -68,7 +64,7 @@
 
 <dbNSFPGene class="operator.gene.DBNSFPGeneAnnotator">
  <Genes />
-</dbNSFPGene>
+</dbNSFPGene -->
 
 <ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />
@@ -76,11 +72,11 @@
 	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.annotated.xl.csv" />
 </ToFile>
 
-<ToFile2 class="operator.variant.MedDirWriter">
+<!-- ToFile2 class="operator.variant.MedDirWriter">
 	<VariantPool />
 	<Genes />
 	<CSVFile2 class="buffer.CSVFile" filename="$$PREFIX.annotated.csv" />
-</ToFile2>
+</ToFile2 -->
 
 
 </Pipeline>

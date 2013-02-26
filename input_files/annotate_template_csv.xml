@@ -38,14 +38,14 @@
 </TKGAnnotate>
 
 
-<ExomesAnnotate class="operator.annovar.Exomes5400Annotator">
+<!-- ExomesAnnotate class="operator.annovar.Exomes5400Annotator">
  <AnnoInput />
  <VariantPool />
-</ExomesAnnotate>
+</ExomesAnnotate -->
 
-<ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
+<!--ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
  <VariantPool />
-</ARUPFreqAnno>
+</ARUPFreqAnno -->
 
 
 <dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">

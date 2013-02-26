@@ -518,6 +518,7 @@ public class VariantRec {
 	public static final String AMR_FREQUENCY = "amr.freq";
 	public static final String EUR_FREQUENCY = "eur.freq";
 	public static final String AFR_FREQUENCY = "afr.freq";
+	public static final String ASN_FREQUENCY = "asn.freq";
 	public static final String CG69_FREQUENCY = "cg69.freq";
 	public static final String SIFT_SCORE = "sift.score";
 	public static final String POLYPHEN_SCORE = "pp.score";
@@ -561,7 +562,8 @@ public class VariantRec {
 	public static final String ARUP_FREQ = "ARUP.freq";
 	public static final String ARUP_TOT = "ARUP.tot";
 	public static final String VARBIN_BIN = "varbin.bin";
-	
+	public static final String CLINVAR_TYPE = "dbsnp.clinvar.type";
+	public static final String CLINVAR_VALIDATED = "dbsnp.clinvar.validated";	
 	
 }
 

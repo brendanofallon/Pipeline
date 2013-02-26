@@ -26,20 +26,25 @@ public class ExcelWriter extends VariantPoolWriter {
 								 //VariantRec.GO_EFFECT_PROD,
 								 VariantRec.EFFECT_RELEVANCE_PRODUCT,
 								 VariantRec.POP_FREQUENCY,
-								 //VariantRec.AMR_FREQUENCY,
+								 VariantRec.AMR_FREQUENCY,
+								 VariantRec.EUR_FREQUENCY,
+								 VariantRec.AFR_FREQUENCY,
 								 VariantRec.EXOMES_FREQ,
 								 VariantRec.ARUP_TOT,
 								 VariantRec.ARUP_FREQ,
 								 //VariantRec.CG69_FREQUENCY,
-								 VariantRec.VARBIN_BIN,
+								 //VariantRec.VARBIN_BIN,
 								 VariantRec.RSNUM, 
 								 VariantRec.SIFT_SCORE,
 								 VariantRec.POLYPHEN_SCORE,
 								 VariantRec.MT_SCORE,
 								 VariantRec.GERP_SCORE,
+								 VariantRec.PHYLOP_SCORE,
+								 VariantRec.MA_SCORE,
 								 VariantRec.OMIM_ID,
 								 VariantRec.HGMD_HIT,
-//								 
+								 VariantRec.CLINVAR_TYPE,
+								 VariantRec.CLINVAR_VALIDATED
 								 };
 	
 	public ExcelWriter() {

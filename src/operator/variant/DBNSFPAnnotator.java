@@ -92,6 +92,21 @@ public class DBNSFPAnnotator extends Annotator {
 				if (! Double.isNaN(amrFreq)) {
 					var.addProperty(VariantRec.AMR_FREQUENCY, amrFreq);
 				}
+				
+				Double eurFreq = reader.getValue(DBNSFPReader.TKG_EUR);
+				if (! Double.isNaN(eurFreq)) {
+					var.addProperty(VariantRec.EUR_FREQUENCY, eurFreq);
+				}
+				
+				Double afrFreq = reader.getValue(DBNSFPReader.TKG_AFR);
+				if (! Double.isNaN(afrFreq)) {
+					var.addProperty(VariantRec.AFR_FREQUENCY, afrFreq);
+				}
+				
+				Double asnFreq = reader.getValue(DBNSFPReader.TKG_ASN);
+				if (! Double.isNaN(asnFreq)) {
+					var.addProperty(VariantRec.ASN_FREQUENCY, asnFreq);
+				}
 
 				Double espFreq = reader.getValue(DBNSFPReader.ESP5400);
 				if (!Double.isNaN(espFreq))

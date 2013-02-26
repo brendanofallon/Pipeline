@@ -124,13 +124,19 @@ public class CompoundHetFinder extends Operator {
 		out.println("gene\t var1.pdot \t var1.cdot \t var1.quality \t var1.depth \t var2.pdot \t var2.cdot \t var2.quality \t var2.depth \t dpnsfp.disease \t dbnsfp.mimdisease \thgmd.info" );
 	}
 	
+//	private void writeHit(PrintStream out, CompoundHetHit hit) {
+//		out.print(hit.gene.getName() + "\t" );
+//		out.print(hit.kidVar1.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar1.getQuality() + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t");
+//		out.print(hit.kidVar2.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar2.getQuality() + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t");
+//		out.print(hit.gene.getAnnotation(Gene.DBNSFP_DISEASEDESC) + "\t");
+//		out.print(hit.gene.getAnnotation(Gene.DBNSFP_MIMDISEASE) + "\t");
+//		out.print(hit.gene.getAnnotation(Gene.HGMD_INFO) + "\n");
+//	}
+	
 	private void writeHit(PrintStream out, CompoundHetHit hit) {
-		out.print(hit.gene.getName() + "\t" );
-		out.print(hit.kidVar1.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar1.getQuality() + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t");
-		out.print(hit.kidVar2.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar2.getQuality() + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t");
-		out.print(hit.gene.getAnnotation(Gene.DBNSFP_DISEASEDESC) + "\t");
-		out.print(hit.gene.getAnnotation(Gene.DBNSFP_MIMDISEASE) + "\t");
-		out.print(hit.gene.getAnnotation(Gene.HGMD_INFO) + "\n");
+		out.println("\n Gene : \t" + hit.gene.getName() + " Disease info: " + hit.gene.getAnnotation(Gene.DBNSFP_MIMDISEASE) );
+		out.println("Variant 1: \t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t" + hit.kidVar1.getContig() + "\t" + hit.kidVar1.getStart() + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.ARUP_FREQ));
+		out.println("Variant 2: \t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t" + hit.kidVar2.getContig() + "\t" + hit.kidVar2.getStart() + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.ARUP_FREQ));
 	}
 
 	

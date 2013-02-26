@@ -174,7 +174,7 @@ public class DBNSFPReader {
 	 public static final int PHYLOP = 34;
 	 public static final int SIPHY = 36;
 	 public static final int TKG = 40;
-	 public static final int TKG_AF = 42;
+	 public static final int TKG_AFR = 42;
 	 public static final int TKG_EUR = 44;
 	 public static final int TKG_AMR = 46;
 	 public static final int TKG_ASN = 48;
