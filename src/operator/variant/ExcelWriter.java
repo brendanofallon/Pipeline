@@ -40,11 +40,11 @@ public class ExcelWriter extends VariantPoolWriter {
 								 VariantRec.MT_SCORE,
 								 VariantRec.GERP_SCORE,
 								 VariantRec.PHYLOP_SCORE,
-								 VariantRec.MA_SCORE,
-								 VariantRec.OMIM_ID,
-								 VariantRec.HGMD_HIT,
-								 VariantRec.CLINVAR_TYPE,
-								 VariantRec.CLINVAR_VALIDATED
+								 VariantRec.MA_SCORE
+								 //VariantRec.OMIM_ID,
+								 //VariantRec.HGMD_HIT,
+								 //VariantRec.CLINVAR_TYPE,
+								 //VariantRec.CLINVAR_VALIDATED
 								 };
 	
 	public ExcelWriter() {

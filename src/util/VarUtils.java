@@ -2,8 +2,10 @@ package util;
 
 import gene.Gene;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
@@ -568,8 +570,18 @@ public class VarUtils {
 			return;
 		}
 		
+		if (firstArg.equals("hhtGeneComp")) {
+			performHHTGeneComp(args);
+			return;
+		}
+		
 		if (firstArg.equals("hhtComp")) {
 			performHHTComp(args);
+			return;
+		}
+		
+		if (firstArg.equals("tkgComp") || firstArg.equals("tgkComp")) {
+			performTKGComp(args);
 			return;
 		}
 		
@@ -889,7 +901,161 @@ public class VarUtils {
 		emitUsage();
 	}
 
+	private static void performTKGComp(String[] args) {
+		if (args.length != 6) {
+			System.out.println("Please enter the gene pool, the score, the threshold, the population (e.g. afr.freq, amr.freq, etc.) and the tkg data file");
+			return;
+		}
+		try {
+			GenePool genePool = new GenePool(new File(args[1]));
+			String score = args[2];
+			Double threshold = Double.parseDouble(args[3]);
+			String populationType = args[4];
+			
+			double totTarget = 0;
+			double totNonTarget = 0;
+			double delTarget = 0;
+			double delNonTarget = 0;
+			
+			VariantLineReader reader = new CSVLineReader(new File(args[5]));
+			VariantRec var = reader.toVariantRec();
+			while(var != null) {
+				Double val = var.getProperty(score);
+				Double freq = var.getProperty(populationType);
+				
+				if (val != null & freq != null) {
+					String gene = var.getAnnotation(VariantRec.GENE_NAME);
+					if (genePool.containsGene(gene)) {
+						if (val > threshold) {
+							delTarget += freq;
+						}
+						totTarget += freq;
+					}
+					else {
+						if (val > threshold) {
+							delNonTarget += freq;
+						}
+						totNonTarget += freq;
+					}
+						
+				}
+				
+				
+				reader.advanceLine();
+				var = reader.toVariantRec();
+			}
+			System.out.println(args[4] + "\t" + totTarget + "\t" + delTarget + "\t" + totNonTarget + "\t" + delNonTarget + "\t" + (double)delTarget / (double)delNonTarget);
+		}
+		catch (IOException ex) {
+			
+		}
+	}
 	
+	private static void performHHTGeneComp(String[] args) {
+		if (args.length < 4) {
+			System.out.println("Enter the list of genes file, then the annotation, then the threshold, then the 1000 Genomes data file, then one or more annotated HHT files");
+			return;
+		}
+		
+		String anno = args[2];
+		Double threshold = Double.parseDouble(args[3]);
+		
+		
+		
+		try {
+			List<String> geneList = new ArrayList<String>();
+			BufferedReader geneReader = new BufferedReader(new FileReader(args[1]));
+			String line = geneReader.readLine();
+			while(line != null) {
+				if (line.length()>0 && (!line.startsWith("#"))) {
+					geneList.add(line.trim());
+				}
+				line = geneReader.readLine();
+			}
+			geneReader.close();
+			
+			for(String gene : geneList) {
+				double tkgTotTarget = 0;
+				double tkgTotNonTarget = 0;
+				double tkgDelTarget = 0;
+				double tkgDelNonTarget = 0;
+				
+				VariantLineReader reader = new CSVLineReader(new File(args[4]));
+				VariantRec var = reader.toVariantRec();
+				while(var != null) {
+					Double val = var.getProperty(anno);
+					Double freq = var.getProperty("pop.freq");
+					
+					if (val != null & freq != null) {
+						String varGene = var.getAnnotation(VariantRec.GENE_NAME);
+						if (varGene.equals(gene)) {
+							if (val > threshold) {
+								tkgDelTarget += freq;
+							}
+							tkgTotTarget += freq;
+						}
+						else {
+							if (val > threshold) {
+								tkgDelNonTarget += freq;
+							}
+							tkgTotNonTarget += freq;
+						}
+							
+					}
+					
+					
+					reader.advanceLine();
+					var = reader.toVariantRec();
+				}
+				
+				//System.out.println(gene + "\t" + totTarget + "\t" + delTarget + "\t" + totNonTarget + "\t" + delNonTarget + "\t" + (double)delTarget / (double)delNonTarget);
+
+				//			
+
+				double hhtTotTarget = 0;
+				double hhtTotNonTarget = 0;
+				double hhtDelTarget = 0;
+				double hhtDelNonTarget = 0;
+				for(int i=5; i<args.length; i++) {
+
+					reader = getReader(args[i]);
+					do {
+						var = reader.toVariantRec();
+						if (var != null && var.isSNP()) {
+							String varGene = var.getAnnotation(VariantRec.GENE_NAME);
+							Double val = var.getProperty(anno);
+							int count = 1;
+							if (! var.isHetero()) {
+								count = 2;
+							}
+							if (varGene != null && val != null) {
+								if (varGene.equals(gene)) {
+									if (val > threshold)
+										hhtDelTarget += count;
+									hhtTotTarget += count;
+								}
+								else {
+									if (val > threshold)
+										hhtDelNonTarget += count;
+									hhtTotNonTarget += count;
+								}
+							}
+						}
+					} while(reader.advanceLine());
+
+				}
+				
+				
+				System.out.println(gene + "\t" + (double)tkgDelTarget / (double)tkgDelNonTarget + "\t" + (double)hhtDelTarget / (double)hhtDelNonTarget + "\t" + (((double)hhtDelTarget / (double)hhtDelNonTarget)-((double)tkgDelTarget / (double)tkgDelNonTarget)));	
+			}
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+	}
 	
 	private static void performHHTComp(String[] args) {
 		if (args.length < 4) {
@@ -901,6 +1067,11 @@ public class VarUtils {
 			GenePool genePool = new GenePool(new File(args[1]));
 			String anno = args[2];
 			Double threshold = Double.parseDouble(args[3]);
+			
+			int allTotTarget = 0;
+			int allTotNonTarget = 0;
+			int allDelTarget = 0;
+			int allDelNonTarget = 0;
 			
 			for(int i=4; i<args.length; i++) {
 				int totTarget = 0;
@@ -943,12 +1114,21 @@ public class VarUtils {
 				//System.out.println("Del. target snps:" + delTarget + "\t" + ((double)delTarget/(double)totTarget));
 				//System.out.println("Del. non-target snps:" + delNonTarget + "\t" + ((double)delNonTarget)/(double)totNonTarget);
 				System.out.println(args[i] + "\t" + totTarget + "\t" + delTarget + "\t" + totNonTarget + "\t" + delNonTarget + "\t" + (double)delTarget / (double)delNonTarget);
+				allTotTarget += totTarget;
+				allTotNonTarget += totNonTarget;
+				allDelTarget += delTarget;
+				allDelNonTarget += delNonTarget;
 			}
-			
+		
+			if (args.length > 5) {
+				System.out.println("\nOverall counts:");
+				System.out.println("all:\t" + allTotTarget + "\t" + allDelTarget + "\t" + allTotNonTarget + "\t" + allDelNonTarget + "\t" + (double)allDelTarget / (double)allDelNonTarget);
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 		
 	}
 

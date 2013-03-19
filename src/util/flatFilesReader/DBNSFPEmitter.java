@@ -33,6 +33,7 @@ public class DBNSFPEmitter {
 
 				String gene = reader.getString(DBNSFPReader.GENE);
 				String tkgStr = reader.getString(DBNSFPReader.TKG);
+				String afrFreq = reader.getString(DBNSFPReader.TKG_AFR);
 				String amrFreq = reader.getString(DBNSFPReader.TKG_AMR);
 				String eurFreq = reader.getString(DBNSFPReader.TKG_EUR);
 				String mtStr = reader.getString(DBNSFPReader.MT);
@@ -78,7 +79,7 @@ public class DBNSFPEmitter {
 					if (eurFreq.equals(".")) {
 						eurFreq = "0.0";
 					}
-					writer.println(var.toSimpleString() + "\t" + gene + "\t" + tkgStr + "\t" + amrFreq + "\t" + eurFreq + "\t" + mtVal + "\t" + siftStr + "\t" + ppStr + "\t" + gerpStr + "\t" + phylopStr);
+					writer.println(var.toSimpleString() + "\t" + gene + "\t" + tkgStr + "\t" + afrFreq + "\t" + amrFreq + "\t" + eurFreq + "\t" + mtVal + "\t" + siftStr + "\t" + ppStr + "\t" + gerpStr + "\t" + phylopStr + "\t" + maStr + "\t" + slrStr);
 
 					i = bases.length; //If we've found one for this position, skip all additional alts at this site
 				}
@@ -205,9 +206,11 @@ public class DBNSFPEmitter {
 				
 		PrintStream writer = new PrintStream(new FileOutputStream("/home/brendan/tkgdata.csv"));
 		PrintStream out = writer; //System.out;
-		out.println(VariantRec.getSimpleHeader() + "gene\tkg.freq\tamr.freq\teur.freq\tmt.score\tsift.score\tpp.score\tgerp.score\tphylop.score");
+		out.println(VariantRec.getSimpleHeader() + "\tgene\ttkg.freq\tamr.freq\teur.freq\tmt.score\tsift.score\tpp.score\tgerp.score\tphylop.score\tmut.assessor.score\tslr.score");
 		//String infilePath = args[0];
-		String infilePath = "/home/brendan/resources/SureSelect_XT_v4.sorted.bed";
+		
+		String infilePath = "PTPN14.bed";
+		//String infilePath = "/home/brendan/resources/SureSelect_XT_v4.sorted.bed";
 		File inFile = new File(infilePath);
 		BufferedReader fileReader = new BufferedReader(new FileReader(inFile));
 		String line = fileReader.readLine();

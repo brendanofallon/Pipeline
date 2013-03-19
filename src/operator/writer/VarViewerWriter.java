@@ -47,10 +47,6 @@ public class VarViewerWriter extends VariantPoolWriter {
 	public final static List<String> geneKeys = new ArrayList<String>( Arrays.asList(new String[]{
 	 Gene.OMIM_DISEASES,
 	 Gene.OMIM_NUMBERS,
-	 Gene.OMIM_INHERITANCE,
-	 Gene.OMIM_PHENOTYPES,
-	 Gene.DBNSFP_DISEASEDESC,
-	 Gene.SUMMARY,
 	 Gene.HGMD_INFO}));
 	
 	@Override

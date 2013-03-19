@@ -28,9 +28,9 @@
 </VarsToGenes>
 
 
-<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+<!-- dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
-</dbNSFPAnnotate>
+</dbNSFPAnnotate -->
 
 
 <!-- New 1000Genomes v3 annotator! -->

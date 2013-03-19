@@ -121,7 +121,7 @@ public class CompoundHetFinder extends Operator {
 	}
 
 	private void writeHeader(PrintStream out) {
-		out.println("gene\t var1.pdot \t var1.cdot \t var1.quality \t var1.depth \t var2.pdot \t var2.cdot \t var2.quality \t var2.depth \t dpnsfp.disease \t dbnsfp.mimdisease \thgmd.info" );
+		//out.println("gene\t var1.pdot \t var1.cdot \t var1.quality \t var1.depth \t var2.pdot \t var2.cdot \t var2.quality \t var2.depth \t dpnsfp.disease \t dbnsfp.mimdisease \thgmd.info" );
 	}
 	
 //	private void writeHit(PrintStream out, CompoundHetHit hit) {
@@ -134,7 +134,7 @@ public class CompoundHetFinder extends Operator {
 //	}
 	
 	private void writeHit(PrintStream out, CompoundHetHit hit) {
-		out.println("\n Gene : \t" + hit.gene.getName() + " Disease info: " + hit.gene.getAnnotation(Gene.DBNSFP_MIMDISEASE) );
+		out.println("\n Gene : \t" + hit.gene.getName() + "\t Score:\t" + hit.kidVar1.getGene().getProperty(Gene.GENE_RELEVANCE) + "\tDisease info: " + hit.gene.getAnnotation(Gene.DBNSFP_DISEASEDESC) );
 		out.println("Variant 1: \t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t" + hit.kidVar1.getContig() + "\t" + hit.kidVar1.getStart() + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.ARUP_FREQ));
 		out.println("Variant 2: \t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t" + hit.kidVar2.getContig() + "\t" + hit.kidVar2.getStart() + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.ARUP_FREQ));
 	}
@@ -283,8 +283,11 @@ public class CompoundHetFinder extends Operator {
 		VariantRec kidHit1 = null;
 		VariantRec kidHit2 = null;
 		
+		
 		for(VariantRec rec : kidList) {
 			if (rec.isHetero()) {
+				//Kid variant is het, determine if this variant is present as a het in
+				//one parent but not the other....
 				boolean par1Het = isHetero(rec.getStart(), par1List);
 				boolean par2Contains = contains(rec.getStart(), par2List);
 				

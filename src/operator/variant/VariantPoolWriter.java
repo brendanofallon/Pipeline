@@ -85,9 +85,6 @@ public abstract class VariantPoolWriter extends Operator {
 			logger.severe("No variant pool found, could not write variants");
 			throw new OperationFailedException("Variant pool not specified", this);
 		}
-		if (outputFile == null) {
-
-			logger.severe("No variant pool found, could not write variants");		}
 		
 		try {
 			PrintStream outStream = System.out;

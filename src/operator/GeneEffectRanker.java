@@ -8,11 +8,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import operator.gene.DBNSFPGeneRanker;
-import operator.gene.GOTermRanker;
-import operator.gene.GeneSummaryRanker;
-import operator.gene.PubmedRanker;
-
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -29,17 +24,10 @@ import buffer.variant.VariantRec;
  *
  */
 public class GeneEffectRanker extends Operator {
-
-	int jackknifeVarCount = 100; //Only jackknife the top # of variants so as to save time
-	int jackknifeReps = 0; //Number of jackknife replicates to perform
 	
 	GeneList genes = null;
 	VariantPool vars = null;
-	
-	GeneSummaryRanker summaryRanker = null;
-	DBNSFPGeneRanker dbnsfpRanker = null;
-	PubmedRanker pubmedRanker = null;
-	GOTermRanker goTermRanker = null;
+
 	
 	Map<String, Integer> searchTerms = null;
 	Map<String, Integer> goTerms = null;
@@ -51,6 +39,8 @@ public class GeneEffectRanker extends Operator {
 
 		List<VariantRec> topHits = new ArrayList<VariantRec>();
 
+		
+		
 		//Ensure each variant is associated with a gene
 		for(String contig : vars.getContigs()) {
 			for(VariantRec var : vars.getVariantsForContig(contig)) {
@@ -96,31 +86,22 @@ public class GeneEffectRanker extends Operator {
 
 			}
 		}
+		
+		if (vars == null || vars.size()==0) {
+			for(Gene g : genes.getAllGenes()) {
+				computeGeneRelevance(g);
+			}
+		}
 
 		System.out.println("Found gene hits for " + geneHits + " of " + genes.size() + " total genes");
 		System.out.println("Skipped " + skipped + " of " + vars.size() + " total variants");
-
 	}
 	
 	/**
-	 * Compute the combined ranking score for the given variant. 
-	 * @param var
-	 * @return
+	 * Compute overall gene 'relevance'
+	 * @param g
 	 */
-	protected double computeScore(VariantRec var) {
-		Double varScore = var.getProperty(VariantRec.EFFECT_PREDICTION2);
-		if (varScore == null) {
-			varScore = var.getProperty(VariantRec.SVM_EFFECT);
-		}
-		
-		if (varScore==null) //Protect against future null pointer exceptions
-			varScore = 0.0;
-		
-		Gene g = var.getGene();
-	
-		if (g==null)
-			return 0.0;
-		
+	private double computeGeneRelevance(Gene g) {
 		Double summaryScore = g.getProperty(Gene.SUMMARY_SCORE);
 		Double abstractsScore = g.getProperty(Gene.PUBMED_SCORE);
 		Double goScore = g.getProperty(Gene.GO_SCORE);
@@ -147,6 +128,30 @@ public class GeneEffectRanker extends Operator {
 		
 		Double relevanceScore = (goScore + summaryScore + abstractsScore/2.0 + dbNSFPScore + 10*interactionScore + expressionScore + omimScore);
 		g.addProperty(Gene.GENE_RELEVANCE, relevanceScore);
+		return relevanceScore;
+	}
+	
+	/**
+	 * Compute the combined ranking score for the given variant. 
+	 * @param var
+	 * @return
+	 */
+	protected double computeScore(VariantRec var) {
+		Double varScore = var.getProperty(VariantRec.EFFECT_PREDICTION2);
+		if (varScore == null) {
+			varScore = var.getProperty(VariantRec.SVM_EFFECT);
+		}
+		
+		if (varScore==null) //Protect against future null pointer exceptions
+			varScore = 0.0;
+		
+		Gene g = var.getGene();
+	
+		if (g==null)
+			return 0.0;
+		
+		double relevanceScore = computeGeneRelevance(g);
+		
 		
 		Double effectProd = varScore * relevanceScore;
 		return effectProd;
@@ -164,19 +169,6 @@ public class GeneEffectRanker extends Operator {
 				}
 				if (obj instanceof GeneList) {
 					genes = (GeneList)obj;
-				}
-				
-				if (obj instanceof GeneSummaryRanker) {
-					summaryRanker = (GeneSummaryRanker)obj;
-				}
-				if (obj instanceof DBNSFPGeneRanker) {
-					dbnsfpRanker = (DBNSFPGeneRanker)obj;
-				}
-				if (obj instanceof GOTermRanker) {
-					goTermRanker = (GOTermRanker)obj;
-				}
-				if (obj instanceof PubmedRanker) {
-					pubmedRanker = (PubmedRanker)obj;
 				}
 			}
 		}

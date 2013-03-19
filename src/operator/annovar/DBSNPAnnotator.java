@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 
 import operator.OperationFailedException;
+
+import org.w3c.dom.NodeList;
+
 import buffer.variant.FileAnnotator;
 import buffer.variant.VariantRec;
 
@@ -39,6 +42,11 @@ public class DBSNPAnnotator extends AnnovarAnnotator {
 		} catch (IOException e) {
 			throw new OperationFailedException("Error occurred during dbSNP annotation: " + e.getMessage(), this);
 		}
+	}
+	
+	
+	public void initialize(NodeList children) {
+		throw new IllegalArgumentException("You're using the old/deprecated version of the dbSNP annotator (operator.annovar.DBSNPAnnotator). Please try using the newer, non-annovar version instead, which is operator.variant.DBSNPAnnotator.");
 	}
 
 }
