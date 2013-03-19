@@ -601,7 +601,7 @@ public class Pipeline {
 		
 		//Assume all args that end in .xml are input files and execute them in order
 		for(int i=0; i<args.length; i++) {
-			if (args[i].endsWith(".xml")) {
+			if (args[i].endsWith(".xml") && (! args[i].equals(propsPath))) {
 				File input = new File(args[i]);
 				Pipeline pipeline = new Pipeline(input, propsPath);
 				
@@ -626,14 +626,16 @@ public class Pipeline {
 				} catch (PipelineDocException e) {
 					e.printStackTrace();
 					System.out.println("ERROR: Could not properly parse input document. \n" + e.getMessage());
-					e.printStackTrace(System.out);
+					System.exit(1);
 				} catch (ObjectCreationException e) {
 					e.printStackTrace();
 					System.out.println("ERROR: Could not create some objects \n" + e.getMessage());
 					e.printStackTrace(System.out);
+					System.exit(1);
 				} catch (OperationFailedException e) {
 					System.out.println("ERROR: Operation " + e.getSourceOperator().getObjectLabel() + " failed. \n" + e.getMessage());
 					e.printStackTrace(System.out);
+					System.exit(1);
 				}
 			}
 		}
