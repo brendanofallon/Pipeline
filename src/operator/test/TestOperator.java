@@ -1,4 +1,4 @@
-package operator;
+package operator.test;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -7,6 +7,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+
+import operator.IOOperator;
+import operator.OperationFailedException;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;

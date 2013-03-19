@@ -1,6 +1,9 @@
-package operator;
+package operator.test;
 
 import java.util.logging.Logger;
+
+import operator.OperationFailedException;
+import operator.Operator;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
