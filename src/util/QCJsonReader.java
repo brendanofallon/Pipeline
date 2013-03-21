@@ -207,6 +207,10 @@ public class QCJsonReader {
 			performSummary(paths, System.out);
 		}
 		
+		if (command.startsWith("valid")) {
+			performTableize(paths, System.out);
+		}
+		
 		if (command.equals("varSummary")) {
 			performVarSummary(paths, System.out);
 		}
@@ -217,6 +221,42 @@ public class QCJsonReader {
 		
 	}
 
+	private static void performTableize(List<String> paths, PrintStream out) {
+		System.out.println("Sample	Total reads	Mean coverage	%Duplicates	%Bases > 15	SNPs	Fraction novel SNPs	Ts / Tv");
+		for(String path : paths) {
+			try {
+				JSONObject obj = toJSONObj(path);
+				JSONObject finalCov = obj.getJSONObject("final.coverage.metrics");
+				JSONArray fracAbove = finalCov.getJSONArray("fraction.above.index");		
+
+				Double mean = finalCov.getDouble("mean.coverage");
+				String above15 = formatter.format(fracAbove.getDouble(15));
+
+				JSONObject rawBam = obj.getJSONObject("raw.bam.metrics");
+				Double rawReadCount = rawBam.getDouble("total.reads");
+
+				JSONObject finalBam = obj.getJSONObject("final.bam.metrics");
+				Double finalReadCount = finalBam.getDouble("total.reads");
+				double percentDups = (rawReadCount - finalReadCount)/rawReadCount;
+				
+				JSONObject variants = obj.getJSONObject("variant.metrics");
+				Double snpCount = variants.getDouble("total.snps");
+				Double knownSnps = variants.getDouble("total.known");
+				Double novelFrac = 1.0 - knownSnps/snpCount;
+				Double tstv = variants.getDouble("total.tt.ratio");
+				
+				System.out.println(toSampleName(path) + "\t" + rawReadCount + "\t" + mean + "\t" + formatter.format(percentDups) + "\t" + above15 + "\t" + snpCount + "\t" + formatter.format(novelFrac) + "\t" + formatter.format(tstv));
+
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
+		}
+	}
+	
 	private static void performCovSummary(List<String> paths, PrintStream out) {
 		TextTable data = new TextTable(new String[]{"Mean", ">5", ">10", ">20", ">50"});
 		for(String path : paths) {

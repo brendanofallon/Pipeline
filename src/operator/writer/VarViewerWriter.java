@@ -69,7 +69,11 @@ public class VarViewerWriter extends VariantPoolWriter {
 		StringBuilder builder = new StringBuilder();
 		builder.append(rec.toSimpleString());
 		for(int i=0; i<keys.size(); i++) {
-			String val = rec.getPropertyOrAnnotation(keys.get(i)).trim();			
+			String val = rec.getPropertyOrAnnotation(keys.get(i)).trim();
+			
+			if (keys.get(i).equals(VariantRec.HGMD_HIT) && val.length() > 5) {
+				val = "true";				
+			}
 			builder.append("\t" + val);
 		}
 		
@@ -84,6 +88,11 @@ public class VarViewerWriter extends VariantPoolWriter {
 			String val = "-";
 			if (g != null) {
 				val = g.getPropertyOrAnnotation(geneKeys.get(i)).trim();
+			}
+			
+			//Special case, if HGMD_INFO, just emit "true" if there is anything
+			if (geneKeys.get(i).equals(Gene.HGMD_INFO) && val.length() > 5) {
+				val = "true";
 			}
 			
 			builder.append("\t" + val);

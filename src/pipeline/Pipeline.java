@@ -1,7 +1,5 @@
 package pipeline;
 
-import gui.PipelineApp;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -563,12 +561,6 @@ public class Pipeline {
 	}
 	
 	public static void main(String[] args) {
-		
-		//If no args, show the GUI window
-		if (args.length == 0) {
-			PipelineApp.showMainWindow();
-			return;
-		}
 		
 		ArgumentParser argParser = new ArgumentParser();
 		argParser.parse(args);
