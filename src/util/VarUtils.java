@@ -872,7 +872,13 @@ public class VarUtils {
 			buildVCFDB(args);
 			return;
 		}
-			
+		
+		
+		if (firstArg.equals("varFreq")) {
+			performVarFreq(args);
+			return;
+		}
+		
 	
 		
 		
@@ -951,6 +957,46 @@ public class VarUtils {
 		}
 	}
 	
+	private static void performVarFreq(String[] args) {
+		String gene = args[1];
+		String pDot = args[2];
+		
+		int alleleCount = 0;
+		int total = 0;
+		Double popFreq = null;
+		Double eurFreq = null;
+		for(int i=3; i<args.length; i++) {
+			VariantLineReader reader;
+			try {
+				reader = getReader(args[i]);
+				VariantRec var = reader.toVariantRec();
+				while(var != null) {
+					if (gene.equals( var.getAnnotation(VariantRec.GENE_NAME)) && pDot.equals( var.getAnnotation(VariantRec.PDOT) )) {
+						popFreq = var.getProperty(VariantRec.POP_FREQUENCY);
+						eurFreq = var.getProperty(VariantRec.EUR_FREQUENCY);
+						int alleles = 1;
+						if (! (var.isHetero())) {
+							alleles = 2;
+						}
+						alleleCount += alleles;
+						break;
+					}
+					reader.advanceLine();
+					var = reader.toVariantRec();
+				}
+				total += 2;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		//System.out.println(" Total samples: " + total/2);
+		double freq = (double)alleleCount / (double)total;
+		System.out.println(" Frequency : " + freq + "\t" + popFreq + "\t" + eurFreq);
+		
+	}
+	
 	private static void performHHTGeneComp(String[] args) {
 		if (args.length < 4) {
 			System.out.println("Enter the list of genes file, then the annotation, then the threshold, then the 1000 Genomes data file, then one or more annotated HHT files");
@@ -984,7 +1030,7 @@ public class VarUtils {
 				VariantRec var = reader.toVariantRec();
 				while(var != null) {
 					Double val = var.getProperty(anno);
-					Double freq = var.getProperty("pop.freq");
+					Double freq = var.getProperty("eur.freq");
 					
 					if (val != null & freq != null) {
 						String varGene = var.getAnnotation(VariantRec.GENE_NAME);
@@ -1046,7 +1092,7 @@ public class VarUtils {
 				}
 				
 				
-				System.out.println(gene + "\t" + (double)tkgDelTarget / (double)tkgDelNonTarget + "\t" + (double)hhtDelTarget / (double)hhtDelNonTarget + "\t" + (((double)hhtDelTarget / (double)hhtDelNonTarget)-((double)tkgDelTarget / (double)tkgDelNonTarget)));	
+				System.out.println(gene + "\t" + tkgDelTarget + "\t" + hhtDelTarget + "\t" + (double)tkgDelTarget / (double)tkgDelNonTarget + "\t" + (double)hhtDelTarget / (double)hhtDelNonTarget + "\t" + (((double)hhtDelTarget / (double)hhtDelNonTarget)-((double)tkgDelTarget / (double)tkgDelNonTarget)));	
 			}
 			
 		} catch (IOException e) {

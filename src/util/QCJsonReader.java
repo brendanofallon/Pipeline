@@ -222,7 +222,7 @@ public class QCJsonReader {
 	}
 
 	private static void performTableize(List<String> paths, PrintStream out) {
-		System.out.println("Sample	Total reads	Mean coverage	%Duplicates	%Bases > 15	SNPs	Fraction novel SNPs	Ts / Tv");
+		System.out.println("Sample	Total reads	Mean coverage	%Duplicates	%Bases > 15	SNPs	Indels	Fraction novel SNPs	Ts / Tv");
 		for(String path : paths) {
 			try {
 				JSONObject obj = toJSONObj(path);
@@ -240,12 +240,14 @@ public class QCJsonReader {
 				double percentDups = (rawReadCount - finalReadCount)/rawReadCount;
 				
 				JSONObject variants = obj.getJSONObject("variant.metrics");
+				Double varCount = variants.getDouble("total.vars");
 				Double snpCount = variants.getDouble("total.snps");
+				int indelCount = (int)(varCount - snpCount);
 				Double knownSnps = variants.getDouble("total.known");
 				Double novelFrac = 1.0 - knownSnps/snpCount;
 				Double tstv = variants.getDouble("total.tt.ratio");
 				
-				System.out.println(toSampleName(path) + "\t" + rawReadCount + "\t" + mean + "\t" + formatter.format(percentDups) + "\t" + above15 + "\t" + snpCount + "\t" + formatter.format(novelFrac) + "\t" + formatter.format(tstv));
+				System.out.println(toSampleName(path) + "\t" + rawReadCount + "\t" + mean + "\t" + formatter.format(percentDups) + "\t" + above15 + "\t" + snpCount + "\t" + indelCount + "\t" + formatter.format(novelFrac) + "\t" + formatter.format(tstv));
 
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block

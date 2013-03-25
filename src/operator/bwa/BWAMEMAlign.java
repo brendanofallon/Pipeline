@@ -56,22 +56,16 @@ public class BWAMEMAlign extends IOOperator {
 		
 		Logger.getLogger(Pipeline.primaryLoggerName).info("BWA-MEM is aligning " + inputBuffers.get(0).getFilename() + " and " + inputBuffers.get(1).getFilename() + " with " + threads + " threads");
 		
-		String finalPrefix = outputBAMBuffer.getAbsolutePath().replace(".bam", "");
-		
 		String command = bwaPath 
 				+ " mem "
 				+ refBuf.getAbsolutePath() + " "
 				+ inputBuffers.get(0).getAbsolutePath() + " "
 				+ inputBuffers.get(1).getAbsolutePath() + " "
 				+ " -t " + threads
-				+ " | " + samtoolsPath + " view -Sub - | " + samtoolsPath + " sort - " + finalPrefix;
+				+ " | " + samtoolsPath + " view -Sb - > " + outputBAMBuffer.getAbsolutePath();
 		
 		executeBASHCommand(command);
 		
-		//CONFUSING! : The last argument to sort is just a file prefix, the new file will be that prefix + .bam. So we
-		//need to make sure that the file with the correct name is associated with the outputbuffer...
-		File newOutputFile = new File(finalPrefix + ".bam");
-		outputBAMBuffer.setFile(newOutputFile);
 	}
 	
 	private void executeBASHCommand(String command) throws OperationFailedException {

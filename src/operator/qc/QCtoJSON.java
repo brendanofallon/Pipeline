@@ -172,6 +172,7 @@ public class QCtoJSON extends Operator {
 			double[] ttRatios = computeTTForKnownsNovels(vp);
 			obj.put("known.tt", ttRatios[0]);
 			obj.put("novel.tt", ttRatios[1]);
+			obj.put("total.het.vars", vp.countHeteros());
 			
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
