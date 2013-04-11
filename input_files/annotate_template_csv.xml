@@ -17,10 +17,10 @@
 	<InputVCF />
 </VariantPool>
 
-<GeneAnnotate class="operator.annovar.GeneAnnotator">
+<!-- GeneAnnotate class="operator.annovar.GeneAnnotator">
 	<AnnoInput />
 	<VariantPool />
-</GeneAnnotate>
+</GeneAnnotate -->
 
 <!-- dbSNP class="operator.annovar.DBSNPAnnotator">
  <AnnoInput />
@@ -33,9 +33,9 @@
 </PopFreqAnnotate -->
 
 <!-- New 1000 Genomes v3 annotator! -->
-<TKGAnnotate class="operator.variant.TGPTabixAnnotator">
+<!-- TKGAnnotate class="operator.variant.TGPTabixAnnotator">
   <VariantPool />
-</TKGAnnotate>
+</TKGAnnotate -->
 
 
 <ExomesAnnotate class="operator.annovar.Exomes5400Annotator">
@@ -43,19 +43,19 @@
  <VariantPool />
 </ExomesAnnotate>
 
-<!--ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
+<ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
  <VariantPool />
-</ARUPFreqAnno -->
+</ARUPFreqAnno>
 
 
-<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+<!-- dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
 </dbNSFPAnnotate>
 
 
 <EffectPred class="operator.variant.SVMDamage" libsvm.path="/home/brendan/libsvm-3.12" svm.model.path="/home/brendan/hgmd_svm/hgmd.b4.model">
  <VariantPool />
-</EffectPred>
+</EffectPred -->
 
 
 <!-- OMIMAnnotate class="operator.annovar.OMIMAnnotator" >
@@ -66,7 +66,7 @@
 
 <ToFile class="operator.variant.ExcelWriter">
 	<VariantPool />
-	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.annotated.csv" />
+	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.arupfreq.csv" />
 </ToFile>
 
 </Pipeline>

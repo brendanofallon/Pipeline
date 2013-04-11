@@ -278,7 +278,6 @@ public class VarUtils {
 		annoKeys.add(VariantRec.PDOT);
 		annoKeys.add(VariantRec.RSNUM);
 		annoKeys.add(VariantRec.POP_FREQUENCY);
-		annoKeys.add(VariantRec.EFFECT_PREDICTION2);
 		annoKeys.add(Gene.GENE_RELEVANCE);
 //		annoKeys.add(VariantRec.SUMMARY_SCORE);
 		annoKeys.add(VariantRec.HGMD_INFO);
@@ -873,6 +872,11 @@ public class VarUtils {
 			return;
 		}
 		
+		if (firstArg.equals("multiqualhist")) {
+			performMultiQualHist(args);
+			return;
+		}
+		
 		
 		if (firstArg.equals("varFreq")) {
 			performVarFreq(args);
@@ -1337,6 +1341,143 @@ public class VarUtils {
 		}
 	}
 	
+	private static void performMultiQualHist(String[] args)  {
+
+		VariantPool hugePool = new VariantPool();
+		Set<String> analysisTypes = new HashSet<String>();
+		
+		for(int i=1; i<args.length; i++) {
+			VariantPool tmpPool = new VariantPool(); //Temp storage for variants we will add to huge pool
+			
+			//Trim analysis string from filename
+			int endPos = args[i].indexOf("_");
+			if (endPos == -1) {
+				endPos = args[i].indexOf(".");
+			}
+			String analysisTypeStr = args[i].substring(0, endPos);
+			analysisTypes.add(analysisTypeStr);
+			try {
+				VariantLineReader reader = getReader(args[i]);
+				System.err.println("Adding variants from " + args[i] + " current pool size is: " + hugePool.size());
+				do {
+					VariantRec var = reader.toVariantRec();
+					VariantRec tableVar = hugePool.findRecordNoWarn(var.getContig(), var.getStart());
+					if (tableVar == null) {
+						var.addProperty(VariantRec.SAMPLE_COUNT, 1.0);
+						var.addProperty(analysisTypeStr, 1.0);
+						var.addAnnotation("qualities", "" + var.getQuality());
+						tmpPool.addRecordNoSort(var);
+					}
+					else {
+						Double count = tableVar.getProperty(VariantRec.SAMPLE_COUNT);
+						tableVar.addProperty(VariantRec.SAMPLE_COUNT, count+1);
+						
+						String currentQuals = tableVar.getAnnotation("qualities");
+						String newQuals = currentQuals + "," + var.getQuality();
+						tableVar.addAnnotation("qualities", newQuals);
+						
+						Double analTypeCount = tableVar.getProperty(analysisTypeStr);
+						if (analTypeCount == null) {
+							tableVar.addProperty(analysisTypeStr, 1.0);
+						}
+						else {
+							tableVar.addProperty(analysisTypeStr, analTypeCount+1);
+						}
+						
+						if (! var.getAlt().equals(tableVar.getAlt())) {
+							tableVar.setAlt(tableVar.getAlt() + "," + var.getAlt());
+						}
+					}
+
+
+				} while(reader.advanceLine());
+				
+				tmpPool.sortAllContigs();
+				hugePool.addAll(tmpPool);
+			}
+			catch(IOException ex) {
+				System.err.println("Warning, could not import variants from file " + args[i] + ":" + ex.getMessage());
+			}
+		}
+		
+		//Emit pool to system.out
+		System.out.print("#contig\tpos\tref\talt\ttot.samples\tmean.quality\tstdev.quality");
+		for(String analysisType : analysisTypes) {
+			System.out.print("\t" + analysisType);
+		}
+		System.out.println();
+		
+		VariantPool finalPool = new VariantPool();
+		
+		for(String contig : hugePool.getContigs()) {
+			for(VariantRec var : hugePool.getVariantsForContig(contig)) {
+				double meanQual = calcMeanQual(var);
+				double stdevQual = calcStdevQual(var, meanQual);
+				if (var.getProperty(VariantRec.SAMPLE_COUNT) > 5.0 && stdevQual / meanQual > 0.5) {
+					finalPool.addRecordNoSort(var);
+					System.out.print(contig + "\t" + var.getStart() + "\t" + var.getRef() + "\t" + var.getAlt() + "\t" + var.getProperty(VariantRec.SAMPLE_COUNT) + "\t" + meanQual + "\t" + stdevQual);
+
+					for(String analysisType : analysisTypes) {
+						Double ac = var.getProperty(analysisType);
+						if (ac == null)
+							ac = 0.0;
+						System.out.print("\t" + ac);
+					}
+					
+					System.out.println();
+				}
+			}
+		}
+		
+		finalPool.sortAllContigs();
+		System.out.println("Size of final pool: " + finalPool.size());
+		System.out.println("TT ratio: " + finalPool.computeTTRatio());
+	}
+	
+	private static double calcStdevQual(VariantRec var, double mean) {
+		String[] qStrs = var.getAnnotation("qualities").split(",");
+		
+		double sumSqrs = 0;
+		double count = 0;
+		for(int i=0; i<qStrs.length; i++) {
+			try {
+				double val = Double.parseDouble(qStrs[i]);
+				sumSqrs += (val-mean)*(val-mean);
+				count++;
+			} catch (NumberFormatException nfe) {
+				//
+			}
+		}
+		if (count == 0) {
+			return Double.NaN;
+		}
+		else {
+			return Math.sqrt(sumSqrs) / count;
+		}
+	}
+
+	private static double calcMeanQual(VariantRec var) {
+		String[] qStrs = var.getAnnotation("qualities").split(",");
+		
+		double sum = 0;
+		double count = 0;
+		for(int i=0; i<qStrs.length; i++) {
+			try {
+				double val = Double.parseDouble(qStrs[i]);
+				sum += val;
+				count++;
+			} catch (NumberFormatException nfe) {
+				//
+			}
+		}
+		if (count == 0) {
+			return Double.NaN;
+		}
+		else {
+			return sum / count;
+		}
+	}
+	
 	private static void performGeneFilter(String[] args) {
 		if (args.length < 3) {
 			System.out.println("Enter the name of the file containing gene names, then one or more variant files");
@@ -1680,7 +1821,7 @@ public class VarUtils {
 			e.printStackTrace();
 		}
 	}
-
+	
 	private static void performComputeFP(String[] args) {
 		try {
 			List<String> annos = new ArrayList<String>();
@@ -1915,17 +2056,24 @@ public class VarUtils {
 			if (minQuality < -25.0) {
 				minQuality = -25.0;
 			}
+			if (maxQuality > 1000.0) {
+				maxQuality = 1000.0;
+			}
+			
+			if (minQuality == 0.0) {
+				minQuality = 0.000001;
+			}
+			
 			System.out.println("Min quality: " + minQuality);
 			System.out.println("Max quality: " + maxQuality);
 			
-			double qualityStep = (maxQuality-minQuality) / 500.0;
 			
 			List<Double> xVals = new ArrayList<Double>();
 			List<Double> yVals = new ArrayList<Double>();
 			
 			double prevSpec = 0.0;
 			double prevSens = 0.0;
-			for(double qCutoff = minQuality; qCutoff < maxQuality; qCutoff += qualityStep) {
+			for(double qCutoff = minQuality; qCutoff < maxQuality; qCutoff *= 1.1) {
 				
 				int falsePositives = 0;
 				int truePositives = 0;
@@ -1980,7 +2128,7 @@ public class VarUtils {
 				double specificity = (double)trueNegatives / (double)(trueNegatives + falsePositives);
 
 				if (prevSpec != specificity || prevSens != sensitivity) {
-					System.out.println(formatter.format(1.0-specificity) +"\t" + sensitivity);
+					System.out.println(formatter.format(qCutoff) + "\t" + formatter.format(1.0-specificity) +"\t" + sensitivity);
 				}
 				prevSpec = specificity;
 				prevSens = sensitivity;

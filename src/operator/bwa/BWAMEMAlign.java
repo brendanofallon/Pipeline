@@ -31,7 +31,6 @@ public class BWAMEMAlign extends IOOperator {
 	public static final String BWA_PATH = "bwa.path";
 	public static final String SAMTOOLS_PATH = "samtools.path";
 	String samtoolsPath = null;
-	String snapIndexPath = null;
 	String bwaPath = null;
 
 	@Override
@@ -49,7 +48,7 @@ public class BWAMEMAlign extends IOOperator {
 		}
 		
 		if (inputBuffers.size() != 2) {
-			throw new OperationFailedException("Exactly two fastq files must be provided to SnapAlign, found " + inputBuffers.size(), this);
+			throw new OperationFailedException("Exactly two fastq files must be provided to this aligner, found " + inputBuffers.size(), this);
 		}
 		
 		int threads = this.getPipelineOwner().getThreadCount();
@@ -62,10 +61,11 @@ public class BWAMEMAlign extends IOOperator {
 				+ inputBuffers.get(0).getAbsolutePath() + " "
 				+ inputBuffers.get(1).getAbsolutePath() + " "
 				+ " -t " + threads
+				+ " 2> .bwa.mem.stderr.txt "
 				+ " | " + samtoolsPath + " view -Sb - > " + outputBAMBuffer.getAbsolutePath();
+				
 		
 		executeBASHCommand(command);
-		
 	}
 	
 	private void executeBASHCommand(String command) throws OperationFailedException {
@@ -80,9 +80,26 @@ public class BWAMEMAlign extends IOOperator {
 		}
 		
 		
-		executeCommand("/bin/bash " + filename);
+		ProcessBuilder procBuilder = new ProcessBuilder("/bin/bash", filename);
+		try {
+			Process proc = procBuilder.start();
+			Logger.getLogger(Pipeline.primaryLoggerName).info("BWA-MEM is executing command: " + command);
+			int exitVal = proc.waitFor();
+			
+			if (exitVal != 0) {
+				throw new OperationFailedException("BWA-MEM process exited with nonzero status, aborting", this);
+			}
+		} catch (IOException e) {
+			throw new OperationFailedException("Error running BWA-MEM : " + e.getLocalizedMessage(), this);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 	}
 
+	
 	
 	@Override
 	public void initialize(NodeList children) {

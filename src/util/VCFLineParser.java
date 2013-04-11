@@ -363,7 +363,12 @@ public class VCFLineParser implements VariantLineReader {
 		
 		public Double getQuality() {
 			if (lineToks != null) {
-				return Double.parseDouble(lineToks[5]);
+				try {
+					return Double.parseDouble(lineToks[5]);
+				}
+				catch (NumberFormatException nfe) {
+					return -1.0;
+				}
 			}
 			else
 				return -1.0;

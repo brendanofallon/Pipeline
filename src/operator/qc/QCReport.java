@@ -72,6 +72,7 @@ public class QCReport extends Operator {
 	BAMMetrics finalBAMMetrics = null;
 	VariantPool variantPool = null;
 	BEDFile captureBed = null;
+	BEDFile secondaryCapture = null;
 	CSVFile noCallCSV = null;
 	File outputDir = null; //Directory containing qc info
 
@@ -1006,7 +1007,12 @@ public class QCReport extends Operator {
 				}
 				
 				if (obj instanceof BEDFile) {
-					captureBed = (BEDFile) obj;
+					if (captureBed == null) {
+						captureBed = (BEDFile) obj;
+					}
+					else {
+						secondaryCapture = (BEDFile) obj;
+					}
 				}
 				if (obj instanceof CSVFile) {
 					noCallCSV = (CSVFile)obj;

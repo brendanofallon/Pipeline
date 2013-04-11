@@ -32,6 +32,7 @@ public class ExcelWriter extends VariantPoolWriter {
 								 VariantRec.EXOMES_FREQ,
 								 VariantRec.ARUP_TOT,
 								 VariantRec.ARUP_FREQ,
+								 VariantRec.VQSR,
 								 //VariantRec.CG69_FREQUENCY,
 								 //VariantRec.VARBIN_BIN,
 								 VariantRec.RSNUM, 

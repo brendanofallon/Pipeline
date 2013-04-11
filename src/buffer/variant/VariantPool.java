@@ -251,6 +251,12 @@ public class VariantPool extends Operator  {
 				}
 			}
 		}
+		if (total == 0.0) {
+			return 0.0;
+		}
+		if (transversions == 0.0) {
+			return Double.NaN;
+		}
 		return transitions / transversions;
 	}
 	
