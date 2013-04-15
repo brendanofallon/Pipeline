@@ -160,28 +160,51 @@ public class QCtoJSON extends Operator {
 			obj.put("error", "no variant pool specified");
 			return obj.toString();
 		}
-		
-		try {
-			obj.put("total.vars", vp.size());
-			obj.put("total.tt.ratio", vp.computeTTRatio());
-			obj.put("total.snps", vp.countSNPs());
-			obj.put("total.insertions", vp.countInsertions());
-			obj.put("total.deletions", vp.countDeletions());
-			int knowns = countKnownVars(vp);
-			obj.put("total.known", knowns);
-			double[] ttRatios = computeTTForKnownsNovels(vp);
-			obj.put("known.tt", ttRatios[0]);
-			obj.put("novel.tt", ttRatios[1]);
-			obj.put("total.het.vars", vp.countHeteros());
-			
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+
+		safePutJSON(obj, "total.vars", vp.size());
+		safePutJSON(obj, "total.tt.ratio", vp.computeTTRatio());
+		safePutJSON(obj, "total.snps", vp.countSNPs());
+		safePutJSON(obj, "total.insertions", vp.countInsertions());
+		safePutJSON(obj,"total.deletions", vp.countDeletions());
+		int knowns = countKnownVars(vp);
+		safePutJSON(obj,"total.known", knowns);
+		double[] ttRatios = computeTTForKnownsNovels(vp);
+		safePutJSON(obj,"known.tt", ttRatios[0]);
+		safePutJSON(obj,"novel.tt", ttRatios[1]);
+		safePutJSON(obj,"total.het.vars", vp.countHeteros());
 
 		return obj.toString();
 	}
 
+	/**
+	 * Adds the given value to the JSON object, catching all JSON exceptions that are thrown.
+	 * If the value is added, return true, otherwise false. 
+	 * @param obj
+	 * @param key
+	 * @param value
+	 * @return
+	 */
+	private boolean safePutJSON(JSONObject obj, String key, double value) {
+		try {
+			obj.put(key, value);
+			return true;
+		}
+		catch (JSONException ex) {
+			return false;
+		}
+	}
+	
+	private boolean safePutJSON(JSONObject obj, String key, int value) {
+		try {
+			obj.put(key, value);
+			return true;
+		}
+		catch (JSONException ex) {
+			return false;
+		}
+	}
+
+	
 	/**
 	 * Compute TT ratio in known and novel snps, 
 	 * @param vp

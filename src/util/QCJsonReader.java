@@ -239,14 +239,46 @@ public class QCJsonReader {
 				Double finalReadCount = finalBam.getDouble("total.reads");
 				double percentDups = (rawReadCount - finalReadCount)/rawReadCount;
 				
-				JSONObject variants = obj.getJSONObject("variant.metrics");
-				Double varCount = variants.getDouble("total.vars");
-				Double snpCount = variants.getDouble("total.snps");
-				int indelCount = (int)(varCount - snpCount);
-				Double knownSnps = variants.getDouble("total.known");
-				Double novelFrac = 1.0 - knownSnps/snpCount;
-				Double tstv = variants.getDouble("total.tt.ratio");
-				
+				int indelCount = -1;
+				Double snpCount = Double.NaN;
+				Double varCount = Double.NaN;
+				Double tstv = Double.NaN;
+				Double knownSnps = Double.NaN;
+				Double novelFrac = Double.NaN;
+				JSONObject variants = null;
+				try {
+					variants = obj.getJSONObject("variant.metrics");
+				}
+				catch (JSONException e) {
+
+				}
+				try {
+					varCount = variants.getDouble("total.vars");
+				}
+				catch (JSONException e) {
+
+				}
+				try {
+					snpCount = variants.getDouble("total.snps");
+				}
+				catch (JSONException e) {
+
+				}
+				indelCount = (int)(varCount - snpCount);
+				try {
+					knownSnps = variants.getDouble("total.known");
+				}
+				catch (JSONException e) {
+
+				}
+				novelFrac = 1.0 - knownSnps/snpCount;
+				try {
+					tstv = variants.getDouble("total.tt.ratio");
+				}
+				catch (JSONException e) {
+
+				}
+
 				System.out.println(toSampleName(path) + "\t" + rawReadCount + "\t" + mean + "\t" + formatter.format(percentDups) + "\t" + above15 + "\t" + snpCount + "\t" + indelCount + "\t" + formatter.format(novelFrac) + "\t" + formatter.format(tstv));
 
 			} catch (JSONException e) {
