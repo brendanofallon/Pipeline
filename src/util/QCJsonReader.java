@@ -358,43 +358,55 @@ public class QCJsonReader {
 	}
 
 	private static void performVarSummary(List<String> paths, PrintStream out) {
-		TextTable data = new TextTable(new String[]{"Total.vars", "SNPS", "% Novel", "Ti/Tv ratio",  "Novel Ti/Tv", "Vars / Base"});
+		TextTable data = new TextTable(new String[]{"Total.vars", "Het%", "SNPS",  "% Novel", "Ti/Tv ratio",  "Novel Ti/Tv", "Vars / Base"});
 		for(String path : paths) {
 			try {
 				JSONObject obj = toJSONObj(path);
-				String[] col = new String[6];
+				String[] col = new String[7];
 				if (obj.has("variant.metrics")) {
 					JSONObject vars = obj.getJSONObject("variant.metrics");
 					col[0] = safeInt(vars, "total.vars");
-					col[1] = safeInt(vars, "total.snps");
+					
+					try {
+						int tot = vars.getInt("total.vars");
+						int hets = vars.getInt("total.het.vars"); 
+						double hetFrac = (double) hets / (double) tot;
+						col[1] = formatter.format(100.0*hetFrac);
+					}
+					catch (JSONException ex) {
+						col[1] = "?";
+					}
+					
+					
+					col[2] = safeInt(vars, "total.snps");
 
 					Double totVars = vars.getDouble("total.vars");
 					Double knowns = vars.getDouble("total.known");
 					if (totVars != null && knowns != null && totVars > 0) {
 						Double novelFrac = 1.0 - knowns / totVars;
-						col[2] = "" + formatter.format(novelFrac);
+						col[3] = "" + formatter.format(novelFrac);
 					}
 					else {
-						col[2] = "0";
+						col[3] = "0";
 					}
-					col[3] = safeDouble(vars, "total.tt.ratio");
-					col[4] = safeDouble(vars, "novel.tt");
+					col[4] = safeDouble(vars, "total.tt.ratio");
+					col[5] = safeDouble(vars, "novel.tt");
 
 					//output.println("Total novels: " + safeDouble(varMetrics, " "));
 
 					if (obj.has("capture.extent")) {
 						long extent = obj.getLong("capture.extent");
 						double varsPerBaseCalled = totVars / (double)extent;
-						col[5] = smallFormatter.format(varsPerBaseCalled);	
+						col[6] = smallFormatter.format(varsPerBaseCalled);	
 					}
 					else {
-						col[5] = "?";
+						col[6] = "?";
 					}
 
 					data.addColumn(toSampleName(path), col);
 				}
 				else {
-					data.addColumn(toSampleName(path), new String[]{"?","?","?","?","?","?"});
+					data.addColumn(toSampleName(path), new String[]{"?","?","?","?","?","?","?"});
 				}
 			} catch (IOException e) {
 				data.addColumn(toSampleName(path), new String[]{"?","?","?","?","?","?"});

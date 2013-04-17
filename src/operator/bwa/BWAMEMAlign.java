@@ -29,8 +29,11 @@ import buffer.ReferenceFile;
 public class BWAMEMAlign extends IOOperator {
 	
 	public static final String BWA_PATH = "bwa.path";
+	public static final String STREAMSORT_PATH = "streamsort.path";
 	public static final String SAMTOOLS_PATH = "samtools.path";
+	String sample = "unknown";
 	String samtoolsPath = null;
+	String streamsortPath = null;
 	String bwaPath = null;
 
 	@Override
@@ -38,7 +41,6 @@ public class BWAMEMAlign extends IOOperator {
 		
 		
 		ReferenceFile refBuf = (ReferenceFile) this.getInputBufferForClass(ReferenceFile.class);
-		
 		
 		List<FileBuffer> inputBuffers = this.getAllInputBuffersForClass(FastQFile.class);
 		
@@ -51,9 +53,15 @@ public class BWAMEMAlign extends IOOperator {
 			throw new OperationFailedException("Exactly two fastq files must be provided to this aligner, found " + inputBuffers.size(), this);
 		}
 		
+		String sampleAttr = getAttribute("sample");
+		if (sampleAttr != null)
+			sample = sampleAttr;
+		
 		int threads = this.getPipelineOwner().getThreadCount();
 		
 		Logger.getLogger(Pipeline.primaryLoggerName).info("BWA-MEM is aligning " + inputBuffers.get(0).getFilename() + " and " + inputBuffers.get(1).getFilename() + " with " + threads + " threads");
+		
+		String tmpDir = System.getProperty("java.io.tmpdir");
 		
 		String command = bwaPath 
 				+ " mem "
@@ -61,10 +69,10 @@ public class BWAMEMAlign extends IOOperator {
 				+ inputBuffers.get(0).getAbsolutePath() + " "
 				+ inputBuffers.get(1).getAbsolutePath() + " "
 				+ " -t " + threads
+				+ " -R \"@RG\\tID:unknown\\tSM:" + sample + "\\tPL:ILLUMINA"
 				+ " 2> .bwa.mem.stderr.txt "
-				+ " | " + samtoolsPath + " view -Sb - > " + outputBAMBuffer.getAbsolutePath();
-				
-		
+				+ " | " + " java -Xmx8g -Djava.io.tmpdir=" + tmpDir + " -jar " + streamsortPath + " 2> .sserr.txt| " + samtoolsPath + " view -Sb - 2> .samtoolserr.txt > " + outputBAMBuffer.getAbsolutePath();
+					
 		executeBASHCommand(command);
 	}
 	
@@ -118,12 +126,29 @@ public class BWAMEMAlign extends IOOperator {
 		this.bwaPath = pathAttr;
 		
 		
+		String ssAttr = this.getAttribute(STREAMSORT_PATH);
+		if (ssAttr == null) {
+			ssAttr = this.getPipelineProperty(STREAMSORT_PATH);
+		}
+		if (ssAttr == null) {
+			throw new IllegalArgumentException("No path to stream sorter.jar found, please specify " + STREAMSORT_PATH);
+		}
+		if (! (new File(ssAttr).exists())) {
+			throw new IllegalArgumentException("No file found at stream sorter path : " + ssAttr);
+		}
+		this.streamsortPath = ssAttr;
+		
 		String samtoolsAttr = this.getAttribute(SAMTOOLS_PATH);
 		if (samtoolsAttr == null) {
 			samtoolsAttr = this.getPipelineProperty(SAMTOOLS_PATH);
 		}
+		if (samtoolsAttr == null) {
+			throw new IllegalArgumentException("No path to samtools found, please specify " + SAMTOOLS_PATH);
+		}
+		if (! (new File(samtoolsAttr).exists())) {
+			throw new IllegalArgumentException("No file found at samtools path : " + samtoolsAttr);
+		}
 		this.samtoolsPath = samtoolsAttr;
-		
 		
 	}
 
