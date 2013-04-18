@@ -3,10 +3,7 @@ package operator.gatk;
 import java.util.List;
 
 import operator.CommandOperator;
-
-import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
-
 import buffer.BAMFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
@@ -75,6 +72,7 @@ public class CountCovariates extends CommandOperator {
 				" -R " + reference + 
 				" -I " + inputFile + 
 				" -T CountCovariates " + 
+				" -rf BadCigar " +
 				covariateList + " "	+ 
 				knownSitesStr.toString() +
 				" -recalFile " + csvOutput;

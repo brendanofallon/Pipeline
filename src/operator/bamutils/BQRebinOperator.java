@@ -1,4 +1,4 @@
-package operator.fqutils;
+package operator.bamutils;
 
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileReader.ValidationStringency;

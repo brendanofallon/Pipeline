@@ -1,7 +1,6 @@
 package operator.gatk;
 
 import operator.CommandOperator;
-import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.CSVFile;
@@ -48,7 +47,12 @@ public class IndelRealign extends CommandOperator {
 			jvmARGStr = "";
 		}
 		
-		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + " -R " + reference + " -I " + inputFile + " -T IndelRealigner -targetIntervals " + intervalsFile + " -o " + realignedBam;
+		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath 
+				+ " -R " + reference 
+				+ " -I " + inputFile
+				+ " -rf BadCigar "
+				+ " -T IndelRealigner -targetIntervals " 
+				+ intervalsFile + " -o " + realignedBam;
 		return command;
 	}
 

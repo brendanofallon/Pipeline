@@ -73,6 +73,7 @@ public class Genotyper extends CommandOperator {
 		command = command + " -glm BOTH";
 		command = command + " -stand_call_conf 30.0";
 		command = command + " -stand_emit_conf 10.0";
+		command = command + " -rf BadCigar ";
 		command = command + " -nt " + threads;
 		if (bedFile != null)
 			command = command + " -L:intervals,BED " + bedFilePath;

@@ -69,7 +69,7 @@ public class BWAMEMAlign extends IOOperator {
 				+ inputBuffers.get(0).getAbsolutePath() + " "
 				+ inputBuffers.get(1).getAbsolutePath() + " "
 				+ " -t " + threads
-				+ " -R \"@RG\\tID:unknown\\tSM:" + sample + "\\tPL:ILLUMINA"
+				+ " -R \"@RG\\tID:unknown\\tSM:" + sample + "\\tPL:ILLUMINA\" "
 				+ " 2> .bwa.mem.stderr.txt "
 				+ " | " + " java -Xmx8g -Djava.io.tmpdir=" + tmpDir + " -jar " + streamsortPath + " 2> .sserr.txt| " + samtoolsPath + " view -Sb - 2> .samtoolserr.txt > " + outputBAMBuffer.getAbsolutePath();
 					
