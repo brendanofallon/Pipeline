@@ -68,6 +68,8 @@ public class MultiGenotype extends MultiOperator {
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
+		if (!jvmARGStr.contains("java.io.tmpdir"))
+			jvmARGStr =jvmARGStr + " -Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir");
 		
 		String callConfStr = properties.get(CALL_CONF);
 		if (callConfStr != null) {

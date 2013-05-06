@@ -1,9 +1,8 @@
 package operator.samtools;
 
-import buffer.FileBuffer;
 import operator.MultiOperator;
-import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
+import buffer.FileBuffer;
 
 /**
  * Uses samtools to index all files

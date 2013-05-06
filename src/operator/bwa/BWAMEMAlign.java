@@ -19,8 +19,9 @@ import buffer.FileBuffer;
 import buffer.ReferenceFile;
 
 /**
- * Uses BWA's fancy new 'mem' algorithm to align. ALso pipes output directly
- * into samtools for sorting and bamification. Should be a bit faster.
+ * Uses BWA's fancy new 'mem' algorithm to align. Output is directed into new parallel sorter 
+ * for faster sorting, then to samtools for immediate bamification of sorted alignment.
+ *  Should be a bit faster.
  * Currently requires paired-end reads and can't handle samples from multiple lanes. 
  *   
  * @author brendan
@@ -28,11 +29,14 @@ import buffer.ReferenceFile;
  */
 public class BWAMEMAlign extends IOOperator {
 	
+	public static final String JVM_ARGS="jvmargs";
 	public static final String BWA_PATH = "bwa.path";
 	public static final String STREAMSORT_PATH = "streamsort.path";
 	public static final String SAMTOOLS_PATH = "samtools.path";
+	public static final String SAMTOOLS_MT_PATH = "samtools-mt.path";
 	String sample = "unknown";
 	String samtoolsPath = null;
+	//String samtoolsMTPath = null;
 	String streamsortPath = null;
 	String bwaPath = null;
 
@@ -61,7 +65,17 @@ public class BWAMEMAlign extends IOOperator {
 		
 		Logger.getLogger(Pipeline.primaryLoggerName).info("BWA-MEM is aligning " + inputBuffers.get(0).getFilename() + " and " + inputBuffers.get(1).getFilename() + " with " + threads + " threads");
 		
-		String tmpDir = System.getProperty("java.io.tmpdir");
+		
+		String jvmARGStr = properties.get(JVM_ARGS);
+		if (jvmARGStr == null || jvmARGStr.length()==0) {
+			jvmARGStr = (String) getPipelineProperty(JVM_ARGS);
+		}
+		//If it's still null then be sure to make it the empty string
+		if (jvmARGStr == null || jvmARGStr.length()==0) {
+			jvmARGStr = "";
+		}
+		if (!jvmARGStr.contains("java.io.tmpdir"))
+				jvmARGStr =jvmARGStr + " -Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir");
 		
 		String command = bwaPath 
 				+ " mem "
@@ -71,7 +85,7 @@ public class BWAMEMAlign extends IOOperator {
 				+ " -t " + threads
 				+ " -R \"@RG\\tID:unknown\\tSM:" + sample + "\\tPL:ILLUMINA\" "
 				+ " 2> .bwa.mem.stderr.txt "
-				+ " | " + " java -Xmx8g -Djava.io.tmpdir=" + tmpDir + " -jar " + streamsortPath + " 2> .sserr.txt| " + samtoolsPath + " view -Sb - 2> .samtoolserr.txt > " + outputBAMBuffer.getAbsolutePath();
+				+ " | " + samtoolsPath + " view -S -u -h - | " + samtoolsPath + " sort - " + outputBAMBuffer.getAbsolutePath().replace(".bam", "") + " 2> .smterr.txt ";
 					
 		executeBASHCommand(command);
 	}
@@ -90,7 +104,15 @@ public class BWAMEMAlign extends IOOperator {
 		
 		ProcessBuilder procBuilder = new ProcessBuilder("/bin/bash", filename);
 		try {
-			Process proc = procBuilder.start();
+			final Process proc = procBuilder.start();
+			
+			//If runtime is going down, destroy the process so it won't become orphaned
+			Runtime.getRuntime().addShutdownHook(new Thread() {
+				public void run() {
+					proc.destroy();
+				}
+			});
+			
 			Logger.getLogger(Pipeline.primaryLoggerName).info("BWA-MEM is executing command: " + command);
 			int exitVal = proc.waitFor();
 			
@@ -150,6 +172,16 @@ public class BWAMEMAlign extends IOOperator {
 		}
 		this.samtoolsPath = samtoolsAttr;
 		
+		
+//		String samtoolsMTAttr = this.getAttribute(SAMTOOLS_MT_PATH);
+//		if (samtoolsMTAttr == null) {
+//			samtoolsMTAttr = this.getPipelineProperty(SAMTOOLS_MT_PATH);
+//		}
+//		if (samtoolsMTAttr == null) {
+//			throw new IllegalArgumentException("No path to multithreaded samtools found, please specify " + SAMTOOLS_MT_PATH);
+//		}
+//
+//		this.samtoolsMTPath = samtoolsMTAttr;
 	}
 
 }

@@ -50,6 +50,8 @@ public class CountCovariates extends CommandOperator {
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
+		if (!jvmARGStr.contains("java.io.tmpdir"))
+			jvmARGStr =jvmARGStr + " -Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir");
 		
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
 		String inputFile = getInputBufferForClass(BAMFile.class).getAbsolutePath();
@@ -72,7 +74,6 @@ public class CountCovariates extends CommandOperator {
 				" -R " + reference + 
 				" -I " + inputFile + 
 				" -T CountCovariates " + 
-				" -rf BadCigar " +
 				covariateList + " "	+ 
 				knownSitesStr.toString() +
 				" -recalFile " + csvOutput;

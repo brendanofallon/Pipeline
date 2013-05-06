@@ -56,6 +56,8 @@ public class BEDFile extends IntervalsFile {
 				String contig = toks[0];
 				if (stripChr)
 					contig = contig.replace("chr", "");
+				toks[1] = toks[1].trim();
+				toks[2] = toks[2].trim();
 				Integer begin = Integer.parseInt(toks[1]);
 				Integer end = Integer.parseInt(toks[2]);
 				Interval interval = new Interval(begin, end);

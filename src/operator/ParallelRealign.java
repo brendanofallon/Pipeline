@@ -60,7 +60,9 @@ public class ParallelRealign extends MultiOperator {
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
-	
+		if (!jvmARGStr.contains("java.io.tmpdir"))
+			jvmARGStr =jvmARGStr + " -Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir");
+		
 		FileBuffer bedFile = getInputBufferForClass(BEDFile.class);
 				
 		String inputPath = inputBuffer.getAbsolutePath();
@@ -86,7 +88,6 @@ public class ParallelRealign extends MultiOperator {
 		String command = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
 				" -R " + reference.getAbsolutePath() + 
 				" -I " + inputPath + 
-				" -rf BadCigar " +
 				" -T RealignerTargetCreator -o " + targetsPath;
 	
 		if (bedFile != null)
@@ -107,7 +108,6 @@ public class ParallelRealign extends MultiOperator {
 		String command2 = "java -Xmx2g " + jvmARGStr + " -jar " + gatkPath + 
 				" -R " + reference.getAbsolutePath() + 
 				" -I " + inputPath +
-				" -rf BadCigar " +
 				" -T IndelRealigner " + 
 				" -targetIntervals " + targetsPath + " -o " + realignedContigPath;
 		if (contig != null)

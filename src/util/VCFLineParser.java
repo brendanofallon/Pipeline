@@ -6,9 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.logging.Logger;
 
-import pipeline.Pipeline;
 import buffer.VCFFile;
 import buffer.variant.VariantLineReader;
 import buffer.variant.VariantRec;
@@ -338,7 +336,7 @@ public class VCFLineParser implements VariantLineReader {
 				return value;
 			}
 			catch (NumberFormatException nfe) {
-				Logger.getLogger(Pipeline.primaryLoggerName).warning("Could not parse depth from vcf line: " );
+				//Logger.getLogger(Pipeline.primaryLoggerName).warning("Could not parse depth from vcf line: " );
 			}
 			return null;
 		}

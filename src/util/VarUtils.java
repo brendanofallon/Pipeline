@@ -43,6 +43,10 @@ import buffer.variant.VariantRec.PositionComparator;
 
 public class VarUtils {
 
+	public static final int A = 0;
+	public static final int C = 1;
+	public static final int G = 2;
+	public static final int T = 3;
 	
 	public static void emitUsage() {
 		System.out.println("\tVariant Utils, v0.01 \n\t Brendan O'Fallon \n\t ARUP Labs");
@@ -574,6 +578,11 @@ public class VarUtils {
 			return;
 		}
 		
+		if (firstArg.equals("tMatrix")) {
+			performComputeTMatrix(args);
+			return;
+		}
+		
 		if (firstArg.equals("hhtComp")) {
 			performHHTComp(args);
 			return;
@@ -722,6 +731,11 @@ public class VarUtils {
 		
 		if (firstArg.equals("hapCompare")) {
 			performHapCompare(args);
+			return;
+		}
+		
+		if (firstArg.equals("collate")) {
+			performCollate(args);
 			return;
 		}
 		
@@ -2161,34 +2175,37 @@ public class VarUtils {
 		int retained = 0;
 		
 		try {
-			VariantLineReader reader = getReader(args[1]);
+			//VariantLineReader reader = getReader(args[1]);
+			BufferedReader reader = new BufferedReader(new FileReader(args[1]));
 			BEDFile bedFile = new BEDFile(new File(args[2]));
 			bedFile.buildIntervalsMap();
 
+			String line = reader.readLine();
+			while(line != null && line.startsWith("#")) {
+				System.out.println(line);
+				line = reader.readLine();
+			}
 			
-			System.out.println(reader.getHeader().trim());
-			
-			do {
+			while(line != null && line.length()>0) {
+				String[] toks = line.split("\t");
+				String contig = toks[0];
+				Integer pos = Integer.parseInt(toks[1]);
 				
-				VariantRec var = reader.toVariantRec();
-				if (var == null)
-					continue;
-				
-//				if (count%5000==0)
-//					System.err.println("Processed " + count + " variants (including " + retained + " so far)");
-				if (bedFile.contains(var.getContig(), var.getStart(), false))	{
+				if (bedFile.contains(contig, pos, false))	{
 					retained++;
-					System.out.println(reader.getCurrentLine());
+					System.out.println(line);
 				}
 				count++;
 
-			} while(reader.advanceLine());
+				line = reader.readLine();
+			};
 						
-	
+			reader.close();	
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 		
 		System.err.println("Retained " + retained + " of " + count + " variants");
 		return;
@@ -2239,6 +2256,65 @@ public class VarUtils {
 		return;
 	}
 
+	public static int toIndex(char c) {
+		if (c=='A') {
+			return A;
+		}
+		if (c=='C') {
+			return C;
+		}
+		if (c=='T') {
+			return T;
+		}
+		if (c=='G') {
+			return G;
+		}
+		return -1;
+	}
+	
+	private static void performComputeTMatrix(String[] args) {
+		if (args.length < 2) {
+			System.out.println("Enter the names of one or more variant (vcf or csv) files for which to build the pool");
+			return;
+		}
+
+		DecimalFormat formatter = new DecimalFormat("0.000");
+		double[][] matrix = new double[4][4];
+		double tot = 0;
+		
+		try {
+			for(int i=1; i<args.length; i++) {
+				VariantPool vars = getPool(new File(args[i]));
+				for(String contig : vars.getContigs()) {
+					for(VariantRec var : vars.getVariantsForContig(contig)) {
+						if (var.isSNP()) {
+							char ref = var.getRef().charAt(0);
+							char alt = var.getAlt().charAt(0);
+							matrix[toIndex(ref)][toIndex(alt)]++;
+							tot++;
+						}
+					}
+				}
+
+			}
+			System.out.println("\tA \t C\t G\t T");
+			for(int i=0; i<4; i++) {
+				
+				for(int j=0; j<4; j++) {
+					System.out.print("\t" + formatter.format(matrix[i][j]/tot));
+				}
+				System.out.println();
+			}
+			
+			System.out.println("Counted " + tot + " snps total");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+	}
+	
 	private static void performGeneComp(String[] args) {
 		if (args.length < 2) {
 			System.out.println("Enter the names of one or more variant (vcf or csv) files for which to build the pool");
@@ -2519,23 +2595,23 @@ public class VarUtils {
 				int heteros = pool.countHeteros();
 				System.out.println(" Heterozygotes : " + heteros + " (" + formatter.format((double)heteros / (double)pool.size()) + "% )");
 				
-				
-				VariantPool q30Pool = new VariantPool(pool.filterPool(new VariantFilter() {
-					public boolean passes(VariantRec rec) {
-						return rec.getQuality() > 29.99;
-					}
-				}));
-				
-				System.out.println("\n Variants with Q > 30 : ");
-				System.out.println("Total variants (q30): " + q30Pool.size());
-				System.out.println("Mean variant quality (q30): " + q30Pool.meanQuality());
-				System.out.println("Total SNPs (q30): " + q30Pool.countSNPs());
-				System.out.println("Total indels (q30): " + (q30Pool.countInsertions() + q30Pool.countDeletions()));
-				System.out.println("\t insertions (q30): " + q30Pool.countInsertions());
-				System.out.println("\t deletions (q30): " + q30Pool.countDeletions());
-				System.out.println(" Ts / Tv ratio (q30): " + q30Pool.computeTTRatio());
-				heteros = q30Pool.countHeteros();
-				System.out.println(" Heterozygotes : " + heteros + " (" + formatter.format((double)heteros / (double)q30Pool.size()) + "% )");
+//				
+//				VariantPool q30Pool = new VariantPool(pool.filterPool(new VariantFilter() {
+//					public boolean passes(VariantRec rec) {
+//						return rec.getQuality() > 29.99;
+//					}
+//				}));
+//				
+//				System.out.println("\n Variants with Q > 30 : ");
+//				System.out.println("Total variants (q30): " + q30Pool.size());
+//				System.out.println("Mean variant quality (q30): " + q30Pool.meanQuality());
+//				System.out.println("Total SNPs (q30): " + q30Pool.countSNPs());
+//				System.out.println("Total indels (q30): " + (q30Pool.countInsertions() + q30Pool.countDeletions()));
+//				System.out.println("\t insertions (q30): " + q30Pool.countInsertions());
+//				System.out.println("\t deletions (q30): " + q30Pool.countDeletions());
+//				System.out.println(" Ts / Tv ratio (q30): " + q30Pool.computeTTRatio());
+//				heteros = q30Pool.countHeteros();
+//				System.out.println(" Heterozygotes : " + heteros + " (" + formatter.format((double)heteros / (double)q30Pool.size()) + "% )");
 
 				
 				//computeVarDepthHisto(pool, varDepthHisto);
@@ -2743,16 +2819,20 @@ public class VarUtils {
 						}
 					}
 
-					if ((!greater) && varVal == null) {
+					if (varVal == null) {
 						outStream.println( reader.getCurrentLine() );
 						count++;
+						continue;
 					}
-					else {
-						if ( (!greater) && varVal < val) {
+					
+					if (!greater) {
+						if (varVal < val) {
 							outStream.println( reader.getCurrentLine() );
 							count++;
 						}
-						if (greater && (varVal != null) && varVal > val) {
+					}
+					else {
+						if (varVal > val) {
 							outStream.println( reader.getCurrentLine() );
 							count++;
 						}
@@ -2867,6 +2947,53 @@ public class VarUtils {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	private static void performCollate(String[] args) {
+		
+		BEDFile bed = new BEDFile(new File(args[1]));
+		try {
+			bed.buildIntervalsMap();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		List<VariantPool> pools = new ArrayList<VariantPool>();
+		for(int i=2; i<args.length; i++) {
+			try {
+				pools.add( getPool(new File(args[i])) );
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		System.out.print("Variant");
+		for(int i=2; i<args.length; i++) {
+			System.out.print("\t" + args[i]);
+		}
+		System.out.println();
+		
+		for(String contig : bed.getContigs()) {
+			for(Interval interval : bed.getIntervalsForContig(contig)) {
+				System.out.print(contig + ":" + interval.begin + "\t");
+				for(VariantPool pool : pools) {
+					VariantRec var = pool.findRecordNoWarn(contig, interval.end);
+					if (var != null) {
+						String hetStr = "het";
+						if (! var.isHetero())
+							hetStr = "hom";
+						System.out.print(hetStr + ";" + var.getQuality() +";" + var.getProperty("depth") + "\t");
+					}
+					else {
+						System.out.print("-\t");
+					}
+				}
+				System.out.println();
+			}
+		}
+		
+		
 	}
 	
 	private static void performEmit(String[] args) {

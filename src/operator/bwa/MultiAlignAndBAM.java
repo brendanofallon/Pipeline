@@ -44,7 +44,7 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 	protected String pathToSamTools = "samtools";
 	protected int defaultThreads = 4;
 	protected String readGroup = "unknown";
-	protected int seedLength = 1000; //Effectively the default
+	//protected int seedLength = 1000; //Effectively the default
 	protected boolean pairedEnd = true; //By default, assume paired ends. SINGLE_END property is queried to set this to false
 	protected int threads = defaultThreads;
 	protected String referencePath = null;
@@ -101,11 +101,11 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 			sampeThreads = Integer.parseInt(sampeThreadStr);
 		}
 			
-		String seedLengthStr = properties.get(SEED_LENGTH);
-		if (seedLengthStr != null) {
-			seedLength = Integer.parseInt(seedLengthStr);
-			logger.info("Using seed length : " + seedLength);	
-		}
+//		String seedLengthStr = properties.get(SEED_LENGTH);
+//		if (seedLengthStr != null) {
+//			seedLength = Integer.parseInt(seedLengthStr);
+//			logger.info("Using seed length : " + seedLength);	
+//		}
 		
 		String rgStr = properties.get(SAMPLE);
 		if (rgStr != null) 
@@ -306,7 +306,7 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		
 		public AlignerJob(FileBuffer inputFile) {
 			baseFilename = inputFile.getFilename();
-			command = pathToBWA + " aln -n " + maxEditDist + " -l " + seedLength + " -t " + Math.max(1, threads) + " " + referencePath + " " + inputFile.getAbsolutePath();
+			command = pathToBWA + " aln -n " + maxEditDist + "  -t " + Math.max(1, threads) + " " + referencePath + " " + inputFile.getAbsolutePath();
 		}
 		
 		@Override

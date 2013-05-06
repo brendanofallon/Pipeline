@@ -11,12 +11,10 @@ import java.util.logging.Logger;
 
 import operator.MultiOperator;
 import operator.OperationFailedException;
-import operator.MultiOperator.TaskOperator;
 import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import util.ElapsedTimeFormatter;
 import buffer.BAMFile;
-import buffer.BEDFile;
 import buffer.CSVFile;
 import buffer.FileBuffer;
 import buffer.ReferenceFile;
@@ -131,6 +129,8 @@ public class MultiRecalibrate extends MultiOperator {
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
+		if (!jvmARGStr.contains("java.io.tmpdir"))
+			jvmARGStr =jvmARGStr + " -Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir");
 		
 		String newPath = inputBuffer.getAbsolutePath().replace(".bam", ".recal.bam");
 		BAMFile recalBamFile = new BAMFile(new File(newPath), inputBuffer.getContig());

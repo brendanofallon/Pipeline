@@ -52,6 +52,8 @@ public class Genotyper extends CommandOperator {
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
+		if (!jvmARGStr.contains("java.io.tmpdir"))
+				jvmARGStr =jvmARGStr + " -Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir");
 		
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
 		String inputFile = getInputBufferForClass(BAMFile.class).getAbsolutePath();
@@ -73,7 +75,6 @@ public class Genotyper extends CommandOperator {
 		command = command + " -glm BOTH";
 		command = command + " -stand_call_conf 30.0";
 		command = command + " -stand_emit_conf 10.0";
-		command = command + " -rf BadCigar ";
 		command = command + " -nt " + threads;
 		if (bedFile != null)
 			command = command + " -L:intervals,BED " + bedFilePath;

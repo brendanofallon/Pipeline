@@ -46,6 +46,8 @@ public class IndelRealign extends CommandOperator {
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
+		if (!jvmARGStr.contains("java.io.tmpdir"))
+			jvmARGStr =jvmARGStr + " -Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir");
 		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath 
 				+ " -R " + reference 

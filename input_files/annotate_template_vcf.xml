@@ -28,9 +28,9 @@
 </VarsToGenes>
 
 
-<dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
+<!-- dbNSFPAnnotate class="operator.variant.DBNSFPAnnotator">
  <VariantPool />
-</dbNSFPAnnotate>
+</dbNSFPAnnotate -->
 
 
 <!-- New 1000Genomes v3 annotator! -->
@@ -44,22 +44,22 @@
 </dbSNP>
 
 
-<ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
+<!-- ARUPFreqAnno class="operator.variant.ARUPDBAnnotate">
  <VariantPool />
-</ARUPFreqAnno>
+</ARUPFreqAnno -->
 
-<HGMDVar class="operator.variant.HGMDVarAnnotator">
+<!-- HGMDVar class="operator.variant.HGMDVarAnnotator">
   <VariantPool />
-</HGMDVar>
+</HGMDVar -->
 
-<HGMDGene class="operator.gene.HGMDAnnotator">
+<!-- HGMDGene class="operator.gene.HGMDAnnotator">
  <Genes />
-</HGMDGene>
+</HGMDGene -->
 
 
-<OMIM class="operator.gene.OMIMAnnotator">
+<!-- OMIM class="operator.gene.OMIMAnnotator">
  <Genes />
-</OMIM>
+</OMIM -->
 
 <!-- dbNSFPGene class="operator.gene.DBNSFPGeneAnnotator">
  <Genes />
@@ -71,11 +71,11 @@
 	<CSVFile class="buffer.CSVFile" filename="$$PREFIX.annotated.xl.csv" />
 </ToFile>
 
-<ToFile2 class="operator.variant.MedDirWriter">
+<!-- ToFile2 class="operator.variant.MedDirWriter">
 	<VariantPool />
 	<Genes />
 	<CSVFile2 class="buffer.CSVFile" filename="$$PREFIX.annotated.csv" />
-</ToFile2>
+</ToFile2 -->
 
 
 </Pipeline>

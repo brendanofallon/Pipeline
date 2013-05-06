@@ -10,6 +10,7 @@ import java.io.OutputStream;
  */
 public class StringOutputStream extends OutputStream {
 
+	
 	StringBuffer buf = new StringBuffer();
 	
 	@Override
