@@ -2578,14 +2578,31 @@ public class VarUtils {
 					System.out.println("\n\n");
 				VariantPool pool = getPool(new File(args[i]));
 				
+				double minQual = Double.MAX_VALUE;
+				double maxQual = Double.MIN_VALUE;
+				for(String contig : pool.getContigs()) {
+					for(VariantRec rec : pool.getVariantsForContig(contig)) {
+						double q = rec.getQuality();
+						if (q< minQual) {
+							minQual = q;
+						}
+						if (q>maxQual) {
+							maxQual = q;
+						}
+					}
+				}
+				
 				System.out.println("Summary for file : " + args[i]);
 				System.out.println("Total variants : " + pool.size());
 				System.out.println("Mean variant quality : " + pool.meanQuality());
+				System.out.println("\t	Min quality : " + minQual);
+				System.out.println("\t	Max quality : " + maxQual);
 				System.out.println("Total SNPs : " + pool.countSNPs());
 				System.out.println("Total indels: " + (pool.countInsertions() + pool.countDeletions()));
 				System.out.println("\t insertions: " + pool.countInsertions());
 				System.out.println("\t deletions: " + pool.countDeletions());
 				System.out.println(" Ts / Tv ratio: " + pool.computeTTRatio());
+				
 				
 				qualitySum += pool.meanQuality()*pool.size();
 				tstvSum += pool.computeTTRatio()*pool.size();

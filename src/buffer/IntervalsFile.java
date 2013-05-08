@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import util.Interval;
+
 /**
  * Any file that describes a list of genomic intervals
  * @author brendan
@@ -107,7 +109,7 @@ public abstract class IntervalsFile extends FileBuffer {
 		
 		for(Interval inter : inters) {
 			Interval last = merged.get( merged.size()-1);
-			if (inter.overlaps(last)) {
+			if (inter.intersects(last)) {
 				Interval newLast = inter.merge(last);
 				merged.remove(last);
 				merged.add(newLast);
@@ -153,22 +155,17 @@ public abstract class IntervalsFile extends FileBuffer {
 	 */
 	public List<Interval> getOverlappingIntervals(String contig, int pos) {
 		List<Interval> cInts = intervals.get(contig);
-		Interval qInterval = new Interval(pos, pos);
 		List<Interval> intervals = new ArrayList<Interval>();
 		
 		if (cInts == null) {
 			return intervals;
 		}
 		else {
-			int index = Collections.binarySearch(cInts, qInterval, intComp);
-			if (index > 0) {
-				//pos is on an interval boundary
+			for (Interval inter : cInts) {
+				if (inter.contains(pos)) {
+					intervals.add(inter);
+				}
 			}
-			else {
-				index = -1*index -1;
-			}
-			
-			
 			
 		}
 		return intervals;
@@ -267,58 +264,7 @@ public abstract class IntervalsFile extends FileBuffer {
 		return size;
 	}
 	
-	public class Interval implements Comparable<Interval> {
-		
-		public final int begin;
-		public final int end;
-		Object info = null; //Optional information associated with this interval. 
-		
-		public Interval(int begin, int end, Object info) {
-			this.begin = begin;
-			this.end = end;
-			this.info = info;
-		}
-		
-		public Interval(int begin, int end) {
-			this.begin = begin;
-			this.end = end;
-		}
-
-		/**
-		 * Returns true if any site falls into both this and the other interval
-		 * @param other
-		 * @return
-		 */
-		public boolean overlaps(Interval other) {
-			if (other.end <= begin ||
-					other.begin >= end)
-				return false;
-			else
-				return true;
-		}
-		
-		/**
-		 * Merge two overlapping intervals into a single interval that includes all sites in both
-		 * @param other
-		 * @return
-		 */
-		public Interval merge(Interval other) {
-			if (! this.overlaps(other)) {
-				throw new IllegalArgumentException("Intervals must overlap to merge");
-			}
-			
-			return new Interval(Math.min(begin, other.begin), Math.max(end, other.end));
-		}
-		
-		@Override
-		public int compareTo(Interval inter) {
-				return this.begin - inter.begin;
-		}
-		
-		public String toString() {
-			return "[" + begin + "-" + end + "]";
-		}
-	}
+	
 	
 	public class IntervalComparator implements Comparator<Interval> {
 

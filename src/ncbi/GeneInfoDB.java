@@ -162,6 +162,7 @@ public class GeneInfoDB {
 			line = reader.readLine();
 		}
 		System.out.println("Built gene info db with " + map.size() + " elements");
+		reader.close();
 	}
 	
 	public class GeneInfo {

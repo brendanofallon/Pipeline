@@ -232,7 +232,6 @@ public class VariantPool extends Operator  {
 	 * @return
 	 */
 	public double computeTTRatio() {
-		double total = 0;
 		double transitions = 0;
 		double transversions = 0;
 		for(String contig : getContigs()) {
@@ -243,17 +242,8 @@ public class VariantPool extends Operator  {
 					if (rec.isTransversion())
 						transversions++;
 					
-					if (! (rec.isTransition() || rec.isTransversion())) {
-						System.err.println("Variant is neither a transition or transversion!" + rec.toSimpleString());
-					}
-					else {
-						total++;
-					}
 				}
 			}
-		}
-		if (total == 0.0) {
-			return 0.0;
 		}
 		if (transversions == 0.0) {
 			return Double.NaN;
