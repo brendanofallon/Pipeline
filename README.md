@@ -1,3 +1,2 @@
 Pipeline is a tool to chain together and execute various modular operations described by an .xml file. Elements in the input file are converted into Java objects, and objects can refer to other objects created in the same file. While in principle Pipeline can be used to chain together operations of any sort, it is currently designed to link together frequently-performed bioinformatics tasks, such as aligning sequence data to a reference and calling variants. 
 
-Pipeline also has a fledgling GUI component that allows users to inject some data into a pre-defined template file and then execute the template graphically.
