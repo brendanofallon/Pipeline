@@ -1,5 +1,7 @@
 package operator.qc.checkers;
 
+import java.text.DecimalFormat;
+
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
@@ -10,6 +12,7 @@ import buffer.variant.VariantRec;
  */
 public class VariantPoolChecker extends AbstractChecker<VariantPool> {
 
+	DecimalFormat formatter = new DecimalFormat("0.000");
 	int basesExamined;
 	
 	public VariantPoolChecker(int basesExamined) {
@@ -30,12 +33,12 @@ public class VariantPoolChecker extends AbstractChecker<VariantPool> {
 		
 		if (dif > 0.25) {
 			result.result = QCItemCheck.ResultType.SEVERE;
-			result.message = result.message + "Very high number of variants called : " + pool.size() + "\n";	
+			result.message = "Very high number of variants called : " + pool.size() + "\n";	
 		}
 		else {
 			if (dif > 0.20) {
 				result.result = QCItemCheck.ResultType.WARNING;
-				result.message = result.message + "High number of variants called : " + pool.size() + "\n";	
+				result.message = "High number of variants called : " + pool.size() + "\n";	
 			}
 		}
 		
@@ -47,12 +50,12 @@ public class VariantPoolChecker extends AbstractChecker<VariantPool> {
 		if (pool.size() < 1000) {
 			if (tt < 1.5) {
 				result.result = QCItemCheck.ResultType.SEVERE;
-				result.message = result.message + "Very low TT ratio : " + tt + "\n";
+				result.message = result.message + "Very low TT ratio : " + formatter.format(tt) + "\n";
 			}
 			else {
 				if (tt < 2.0) {
 					result.result = QCItemCheck.ResultType.WARNING;
-					result.message = result.message + "Low TT ratio : " + tt + "\n";
+					result.message = result.message + "Low TT ratio : " + formatter.format(tt) + "\n";
 				}
 			}
 			
@@ -61,12 +64,12 @@ public class VariantPoolChecker extends AbstractChecker<VariantPool> {
 			
 			if (tt < 2.0) {
 				result.result = QCItemCheck.ResultType.SEVERE;
-				result.message = result.message + "Very low TT ratio : " + tt + "\n";
+				result.message = result.message + "Very low TT ratio : " + formatter.format(tt) + "\n";
 			}
 			else {
 				if (tt < 2.25) {
 					result.result = QCItemCheck.ResultType.WARNING;
-					result.message = result.message + "Low TT ratio : " + tt + "\n";
+					result.message = result.message + "Low TT ratio : " + formatter.format(tt) + "\n";
 				}
 			}
 		}
@@ -76,12 +79,12 @@ public class VariantPoolChecker extends AbstractChecker<VariantPool> {
 		if (pool.size() < 1000) {
 			if (het > 0.85) {
 				result.result = QCItemCheck.ResultType.SEVERE;
-				result.message = result.message + "Very high het % : " + het + "\n";
+				result.message = result.message + "Very high het % : " + formatter.format(het) + "\n";
 			}
 			else {
 				if (het > 0.75) {
 					result.result = QCItemCheck.ResultType.WARNING;
-					result.message = result.message + "High het % : " + het + "\n";
+					result.message = result.message + "High het % : " + formatter.format(het) + "\n";
 				}
 			}
 			

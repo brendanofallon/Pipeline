@@ -75,6 +75,7 @@ public class BamMetrics extends IOOperator {
 		int readCount = 0;
 		int unmappedCount = 0;
 		int unmappedMate = 0;
+		Histogram mqHisto = new Histogram(0, 80, 80);
 		Histogram insertSizeHisto = new Histogram(0, 1000, 100);
 		Histogram baseQHisto = new Histogram(0, 51, 51);
 		int dupCount = 0;
@@ -91,6 +92,8 @@ public class BamMetrics extends IOOperator {
 		for (final SAMRecord samRecord : inputSam) {
 			readCount++;
 						
+			mqHisto.addValue( samRecord.getMappingQuality() );
+			
 			if (samRecord.getMateUnmappedFlag())
 				unmappedMate++;
 			if (samRecord.getReadUnmappedFlag())
@@ -167,6 +170,7 @@ public class BamMetrics extends IOOperator {
 		metrics.basesQAbove10 = basesAbove10;
 		metrics.basesQAbove20 = basesAbove20;
 		metrics.basesQAbove30 = basesAbove30;
+		metrics.mqHistogram = mqHisto;
 		metrics.basesRead = totalBaseCount;
 		metrics.readPosQualHistos = posHisto;
 		return metrics;

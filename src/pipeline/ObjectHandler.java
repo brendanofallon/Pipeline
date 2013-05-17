@@ -57,9 +57,13 @@ public class ObjectHandler {
 		return pipelineOwner;
 	}
 	
-	
+	/**
+	 * Recursively create and initialize all elements found in the input Document. All objects that are
+	 * Operators are added to the operatorList field. 
+	 * 
+	 * @throws ObjectCreationException
+	 */
 	public void readObjects() throws ObjectCreationException {
-		
 		
 		//Instantiate top-level buffers
 		Element root = doc.getDocumentElement();
@@ -158,7 +162,7 @@ public class ObjectHandler {
 				obj.setObjectLabel(el.getNodeName());
 				obj.setObjectHandler(this);
 
-				//Set all attributes found in XML
+				//Set all attributes found in XML to be attributes of the PipelineObject created
 				NamedNodeMap attrs = el.getAttributes();
 				for(int i=0; i<attrs.getLength(); i++) {
 					obj.setAttribute(attrs.item(i).getNodeName(), attrs.item(i).getNodeValue());

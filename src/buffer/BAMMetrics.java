@@ -14,6 +14,7 @@ public class BAMMetrics extends FileBuffer implements JSONString {
 
 	public String path;
 	public int totalReads;
+	public Histogram mqHistogram;
 	public Histogram insertSizeHistogram;
 	public Histogram baseQualityHistogram;
 	public Histogram[] readPosQualHistos;
@@ -43,6 +44,7 @@ public class BAMMetrics extends FileBuffer implements JSONString {
 			obj.put("bases.above.q30", basesQAbove30);
 			obj.put("bases.above.q20", basesQAbove20);
 			obj.put("bases.above.q10", basesQAbove10);
+			obj.put("mq.histo",  mqHistogram.getRawCounts());
 			if (insertSizeHistogram != null)
 				obj.put("mean.insert.size", insertSizeHistogram.getMean());
 			

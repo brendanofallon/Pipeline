@@ -35,20 +35,27 @@ import util.LoggingOutputStream;
 import util.OperatorTimeSummary;
 import util.QueuedLogHandler;
 
+/**
+ * Main entry point for pipeline. In main method we look for arguments that look like XML files 
+ * and pass them to Pipeline contructor for parsing and execution. 
+ * @author brendan
+ *
+ */
 public class Pipeline {
 
 	public static final String PIPELINE_VERSION = "1.1";
 	protected File source;
 	protected Document xmlDoc;
-	public static final String PYTHON_SCRIPTS_DIR="python.scripts.dir";
 	public static final String PROJECT_HOME="home";
 	public static final String START_TIME="start.time";
 	public static final String END_TIME="end.time";
 	public static final String primaryLoggerName = "pipeline.primary";
+
 	protected Logger primaryLogger = Logger.getLogger(primaryLoggerName);
 	protected String defaultLogFilename = "pipelinelog";
 	protected String instanceLogPath = null; //Gets set when pipeinstancelog file handler is created
 	protected ObjectHandler handler = null;
+	
 	private ClassLoader loader = null;
 	private QueuedLogHandler memLogHandler = null; // Stores log records in memory
 	

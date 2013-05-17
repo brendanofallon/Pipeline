@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import pipeline.Pipeline;
+import util.Interval;
 
 public class BEDFile extends IntervalsFile {
 

@@ -126,12 +126,6 @@ public class DepthOfCoverage extends IOOperator {
 			}
 			metrics.setFractionAboveCutoff(fractions);
 			metrics.setCutoffs(cutoffs);
-			System.out.println( metrics );
-			for(int i=0; i<cutoffs.length; i++) {
-				System.out.println(" % bases above " + cutoffs[i] + " : " + metrics.getFractionAboveCutoff()[i]);
-			}
-			
-			
 			
 			//Read output from interval summary file
 			reader.close();
