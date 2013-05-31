@@ -23,12 +23,12 @@ public class BAMMetricsChecker extends AbstractChecker<BAMMetrics> {
 		
 		if (fracUnmapped > 0.50) {
 			result.result = QCItemCheck.ResultType.SEVERE;
-			result.message = "High fraction of unmapped reads : " + ("" + fracUnmapped*100.0).substring(0, 6) + "%\n";	
+			result.message = "High fraction of unmapped reads : " + toPercentage(fracUnmapped) + "%\n";	
 		}
 		else {
 			if (fracUnmapped > 0.25) {
 				result.result = QCItemCheck.ResultType.WARNING;
-				result.message =  "High fraction of unmapped reads : " + ("" + fracUnmapped*100.0).substring(0, 6) + "%\n";	
+				result.message =  "High fraction of unmapped reads : " + toPercentage(fracUnmapped) + "%\n";	
 			}
 		}
 		

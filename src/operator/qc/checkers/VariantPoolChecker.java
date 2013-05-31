@@ -118,16 +118,20 @@ public class VariantPoolChecker extends AbstractChecker<VariantPool> {
 			}
 		}
 		
-		double novelFrac = ((double)pool.size() - knowns) / (double)pool.size();
+		double novelFrac = 100.0*(((double)pool.size() - knowns) / (double)pool.size());
+		String novelStr = "" + novelFrac;
+		if (novelStr.length()>5)
+			novelStr = novelStr.substring(0, 5);
+		
 		if (pool.size() < 1000) {
 			if (novelFrac > 0.10) {
 				result.result = QCItemCheck.ResultType.SEVERE;
-				result.message = result.message + "Very high novel  % : " + ("" + 100.0*novelFrac).substring(0, 5) + "%\n";				
+				result.message = result.message + "Very high novel  % : " + novelStr + "%\n";				
 			}
 			else {
 				if (novelFrac > 0.05) {
 					result.result = QCItemCheck.ResultType.WARNING;
-					result.message = result.message + "High novel  % : " + ("" + 100.0*novelFrac).substring(0, 5) + "%\n";				
+					result.message = result.message + "High novel  % : " + novelStr + "%\n";				
 				}
 			}
 			
@@ -136,12 +140,12 @@ public class VariantPoolChecker extends AbstractChecker<VariantPool> {
 			
 			if (novelFrac > 0.8) {
 				result.result = QCItemCheck.ResultType.SEVERE;
-				result.message = result.message + "Very high novel  % : " + ("" + 100.0*novelFrac).substring(0, 5) + "%\n";				
+				result.message = result.message + "Very high novel  % : " + novelStr + "%\n";				
 			}
 			else {
 				if (novelFrac > 0.04) {
 					result.result = QCItemCheck.ResultType.WARNING;
-					result.message = result.message + "High novel  % : " + ("" + 100.0*novelFrac).substring(0, 5) + "%\n";				
+					result.message = result.message + "High novel  % : " + novelStr + "%\n";				
 				}
 			}
 			

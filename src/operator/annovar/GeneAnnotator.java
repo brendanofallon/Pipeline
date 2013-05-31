@@ -24,12 +24,13 @@ import buffer.variant.VariantRec;
 public class GeneAnnotator extends AnnovarAnnotator {
 
 	public static final String NM_DEFS = "nm.Definitions";
+	protected int splicingThreshold = 10;
 	
 	public void performOperation() throws OperationFailedException {
 		if (variants == null)
 			throw new OperationFailedException("Variant pool not initialized", this);
 		
-		String command = "perl " + annovarPath + "annotate_variation.pl -geneanno --buildver " + buildVer + " " + annovarInputFile.getAbsolutePath() + " --outfile " + annovarPrefix + " " + annovarPath + "humandb/";
+		String command = "perl " + annovarPath + "annotate_variation.pl -geneanno --buildver " + buildVer + " --splicing_threshold " + splicingThreshold +  " " + annovarInputFile.getAbsolutePath() + " --outfile " + annovarPrefix + " " + annovarPath + "humandb/";
 		executeCommand(command);
 		
 		String variantFuncFile =  annovarPrefix + ".variant_function";
@@ -73,28 +74,72 @@ public class GeneAnnotator extends AnnovarAnnotator {
 			String variantType = toks[0];
 			String gene = toks[1];
 			String contig = toks[2];
+			int pos = Integer.parseInt(toks[3]);
 			String ref = toks[5];
 			String alt = toks[6];
 			
-			if (gene.contains(";")) {
-				String before = gene;
-				gene = gene.substring(0, gene.indexOf(";"));
-				logger.info("Converting gene name : " + before + " to: " + gene);				
-			}
-			
-			int pos = Integer.parseInt(toks[3]);
-			
 			VariantRec rec = findVariant(contig, pos, ref, alt);  //Make sure we match alt
-
 			if (rec == null) {
 				errorVars++;
 				if (lastFewErrors.size() < 10)
 					lastFewErrors.add("Variant not found : " + line);
+				line = reader.readLine();
+				continue;
 			}
-			else {
-				rec.addAnnotation(VariantRec.GENE_NAME, gene);
-				rec.addAnnotation(VariantRec.VARIANT_TYPE, variantType);
+			
+			if (gene.contains(";")) {
+				String before = gene;
+				String[] genes = gene.split(";");
+				gene = genes[0]; 
+				if (genes.length > 0 && (!genes[0].equals(genes[1]))) {
+					logger.info("Converting gene name : " + before + " to: " + gene);	
+				}								
 			}
+			//Remove nm and cdot info from gene name
+			if (gene.contains("(")) {
+				gene = gene.substring(0, gene.indexOf("("));
+			}
+			
+			//See if this is a splicing variant. so there may be c.dot information in the gene field (often there's not)
+			//So try to parse it... keeping in mind that the preferred NM may have been provided in the nmMap object
+			if (variantType.contains("splic")) {
+				String info = toks[1];
+				if (info.contains("(")) {
+					info = info.substring(info.indexOf("(")+1);
+					info = info.replace(")", "");
+					String[] infoToks = info.split(","); //Each token will be a colon-separated NM#:exon#:cdot
+					int nmRec = 0;
+					for(int i=0; i<infoToks.length; i++) {
+						String[] nmTok = infoToks[i].split(":");
+						if (nmTok.length != 3) {
+							//Skip it if it doesn't look right
+							continue;
+						}
+						
+						String nm = nmTok[0];
+						
+						if(nmMap.containsKey(gene)){ // if the user has specifed a specific nm #, get it
+							if(nm.equals(nmMap.get(gene))){
+								nmRec = i;
+								Logger.getLogger(Pipeline.primaryLoggerName).info("Using transcript " + nm + " for gene " + gene);
+							}
+						}
+					}
+					
+					String[] splicingDetails = infoToks[nmRec].split(":");
+					String nm = splicingDetails[0];
+					String exon = splicingDetails[1];
+					String cdot = splicingDetails[2];
+					rec.addAnnotation(VariantRec.EXON_NUMBER, exon);
+					rec.addAnnotation(VariantRec.CDOT, cdot);
+					rec.addAnnotation(VariantRec.NM_NUMBER, nm);
+				}
+			}
+			
+
+			rec.addAnnotation(VariantRec.GENE_NAME, gene);
+			rec.addAnnotation(VariantRec.VARIANT_TYPE, variantType);
+			
 			totalVars++;
 			line = reader.readLine();
 		}
@@ -171,9 +216,12 @@ public class GeneAnnotator extends AnnovarAnnotator {
 				
 				if (rec != null) {
 					rec.addAnnotation(VariantRec.EXON_FUNCTION, exonicFunc);
-					rec.addAnnotation(VariantRec.NM_NUMBER, NM);
-					rec.addAnnotation(VariantRec.EXON_NUMBER, exonNum);
-					rec.addAnnotation(VariantRec.CDOT, cDot);
+					if (rec.getAnnotation(VariantRec.NM_NUMBER) == null)
+						rec.addAnnotation(VariantRec.NM_NUMBER, NM);
+					if (rec.getAnnotation(VariantRec.EXON_NUMBER) == null)
+						rec.addAnnotation(VariantRec.EXON_NUMBER, exonNum);
+					if (rec.getAnnotation(VariantRec.CDOT) == null)
+						rec.addAnnotation(VariantRec.CDOT, cDot);
 					rec.addAnnotation(VariantRec.PDOT, pDot);
 				}
 				else {
