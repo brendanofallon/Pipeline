@@ -135,8 +135,64 @@ public class CompoundHetFinder extends Operator {
 	
 	private void writeHit(PrintStream out, CompoundHetHit hit) {
 		out.println("\n Gene : \t" + hit.gene.getName() + "\t Score:\t" + hit.kidVar1.getGene().getProperty(Gene.GENE_RELEVANCE) + "\tDisease info: " + hit.gene.getAnnotation(Gene.DBNSFP_DISEASEDESC) );
-		out.println("Variant 1: \t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t" + hit.kidVar1.getContig() + "\t" + hit.kidVar1.getStart() + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.ARUP_FREQ));
-		out.println("Variant 2: \t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t" + hit.kidVar2.getContig() + "\t" + hit.kidVar2.getStart() + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.ARUP_FREQ));
+		String par1Var1Zyg = "?"; //Zygosity of variant 1 in parent 1
+		String par1Var2Zyg = "?"; //Zygosity of variant 2 in parent 1
+		
+		String par2Var1Zyg = "?"; //Zygosity of variant 1 in parent 2
+		String par2Var2Zyg = "?"; //Zygosity of variant 2 in parent 2
+		
+		
+		if (parent1Pool != null) {
+			VariantRec par1Var1 = parent1Pool.findRecordNoWarn(hit.kidVar1.getContig(), hit.kidVar1.getStart());
+			VariantRec par1Var2 = parent1Pool.findRecordNoWarn(hit.kidVar2.getContig(), hit.kidVar2.getStart());
+			//If par1Var1 exists (variant 1 is in parent 1), then create a string with the zygosity in parent 1
+			if (par1Var1 != null) {
+				if (par1Var1.isHetero()) {
+					par1Var1Zyg = "het";
+				}
+				else {
+					par1Var1Zyg = "hom";
+				}
+			}
+			
+			if (par1Var2 != null) {
+				if (par1Var2.isHetero()) {
+					par1Var2Zyg = "het";
+				}
+				else {
+					par1Var2Zyg = "hom";
+				}
+			}
+		}
+		
+		
+		if (parent2Pool != null) {
+			VariantRec par2Var1 = parent2Pool.findRecordNoWarn(hit.kidVar1.getContig(), hit.kidVar1.getStart());
+			VariantRec par2Var2 = parent2Pool.findRecordNoWarn(hit.kidVar2.getContig(), hit.kidVar2.getStart());
+			
+			//If par1Var1 exists (variant 1 is in parent 1), then create a string with the zygosity in parent 1
+			if (par2Var1 != null) {
+				if (par2Var1.isHetero()) {
+					par2Var1Zyg = "het";
+				}
+				else {
+					par2Var1Zyg = "hom";
+				}
+			}
+			
+			if (par2Var2 != null) {
+				if (par2Var2.isHetero()) {
+					par2Var2Zyg = "het";
+				}
+				else {
+					par2Var2Zyg = "hom";
+				}
+			}
+		}
+		
+			
+		out.println("Variant 1: \t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + par1Var1Zyg + "\t" + par2Var1Zyg + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t" + hit.kidVar1.getContig() + "\t" + hit.kidVar1.getStart() + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + hit.kidVar1.getPropertyOrAnnotation(VariantRec.ARUP_FREQ));
+		out.println("Variant 2: \t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.PDOT) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.CDOT) + "\t" + par1Var2Zyg + "\t" + par2Var2Zyg + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.DEPTH) + "\t" + hit.kidVar2.getContig() + "\t" + hit.kidVar2.getStart() + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.POP_FREQUENCY) + "\t" + hit.kidVar2.getPropertyOrAnnotation(VariantRec.ARUP_FREQ));
 	}
 
 	
@@ -288,11 +344,16 @@ public class CompoundHetFinder extends Operator {
 			if (rec.isHetero()) {
 				//Kid variant is het, determine if this variant is present as a het in
 				//one parent but not the other....
-				boolean par1Het = isHetero(rec.getStart(), par1List);
-				boolean par2Contains = contains(rec.getStart(), par2List);
 				
+				VariantRec par1Var = contains(rec.getStart(), par1List);
+				VariantRec par2Var = contains(rec.getStart(), par2List);
+				
+				boolean par1Contains = par1Var != null;
+				boolean par2Contains = par2Var != null;
+				
+				boolean par1Het = isHetero(rec.getStart(), par1List);
 				boolean par2Het = isHetero(rec.getStart(), par2List);
-				boolean par1Contains = contains(rec.getStart(), par1List);
+				
 				
 				if ( (!hasPar1Het) && (par1Het && (!par2Contains))) {
 					kidHit1 = rec;
@@ -346,7 +407,8 @@ public class CompoundHetFinder extends Operator {
 		for(VariantRec rec : kidList) {
 			if (rec.isHetero()) {
 				boolean parHet = isHetero(rec.getStart(), parList);
-				boolean parContains = contains(rec.getStart(), parList);
+				VariantRec parVar = contains(rec.getStart(), parList);
+				boolean parContains = parVar != null;
 				
 				
 				if ( (!hasPar1Het) && parHet ) {
@@ -396,13 +458,13 @@ public class CompoundHetFinder extends Operator {
 	 * @param list
 	 * @return
 	 */
-	public static boolean contains(int pos, List<VariantRec> list) {
+	public static VariantRec contains(int pos, List<VariantRec> list) {
 		for(VariantRec rec : list) {
 			if (rec.getStart()==pos) {
-				return true;
+				return rec;
 			}
 		}
-		return false;
+		return null;
 	}
 	
 	
