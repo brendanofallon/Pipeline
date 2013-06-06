@@ -908,7 +908,7 @@ public class QCReport extends Operator {
 											features = featureLookup.getInfoForRange(contig, (int)startPos, (int)endPos);							
 										}
 										String featureStr = mergeStrings(features);
-										if (length > 1 && (featureStr.contains("exon") || length > 20)) {
+										if (length > 1 && (featureStr.contains("exon"))) {
 											regions.add(Arrays.asList(new String[]{"chr" + toks[0] + ":" + toks[1] + " - " + toks[2], "" + length, cause, featureStr}) );
 										}
 										noCallPositions += length;

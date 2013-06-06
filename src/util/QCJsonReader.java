@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import json.JSONArray;
 import json.JSONException;
@@ -96,7 +98,8 @@ public class QCJsonReader {
 		for(String path : paths) {
 			try {
 				JSONObject obj = toJSONObj(path);
-				
+				String sampleInfo = sampleIDFromManifest(new File(path + "/sampleManifest.txt"));
+				output.println("\n\nSummary for : " + sampleInfo);
 				output.println("\t Bases & Alignment summary:");
 				if (obj.has("raw.bam.metrics")) {
 					JSONObject rawBamMetrics = obj.getJSONObject("raw.bam.metrics");
@@ -341,20 +344,31 @@ public class QCJsonReader {
 		return shortPath.replace(".reviewdir", "");
 	}
 
-	private static String sampleIDFromManifest(File manifestFile) throws IOException {
+	private static Map<String, String> readManifest(File manifestFile) throws IOException {
 		BufferedReader reader = new BufferedReader(new FileReader(manifestFile));
+		Map<String, String> pairs = new HashMap<String, String>();
 		String line = reader.readLine();
 		while(line != null) {
-			if (line.contains("sample.name")) {
-				String[] toks = line.split("=");
-				if (toks.length==2) {
-					return toks[1];
-				}
+			String[] toks = line.split("=");
+			if (toks.length==2) {
+				pairs.put(toks[0], toks[1]);
 			}
+			
 			line = reader.readLine();
 		}
 		reader.close();
-		return null;
+		return pairs;
+	}
+	
+	private static String sampleIDFromManifest(File manifestFile) throws IOException {
+		Map<String, String> vals = readManifest(manifestFile);
+		String sampleId = vals.get("sample.name");
+		String analysisType = vals.get("analysis.type");
+		if (sampleId == null)
+			sampleId = "?";
+		if (analysisType == null) 
+			analysisType = "?";
+		return sampleId + ", " + analysisType;
 	}
 
 	private static void performVarSummary(List<String> paths, PrintStream out) {
