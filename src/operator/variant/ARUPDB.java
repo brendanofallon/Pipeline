@@ -40,7 +40,7 @@ public class ARUPDB {
 	
 	
 	public String getInfoForPostion(String contig, int pos) throws IOException {
-String queryStr = contig + ":" + pos + "-" + (pos);
+		String queryStr = contig + ":" + pos + "-" + (pos);
 		
 		try {
 			TabixReader.Iterator iter = reader.query(queryStr);
