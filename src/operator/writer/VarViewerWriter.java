@@ -31,6 +31,8 @@ public class VarViewerWriter extends VariantPoolWriter {
 			 VariantRec.EXOMES_FREQ,
 			 VariantRec.RSNUM,
 			 VariantRec.ARUP_FREQ,
+			 VariantRec.ARUP_OVERALL_FREQ,
+			 VariantRec.ARUP_FREQ_DETAILS,
 			 VariantRec.VARBIN_BIN,
 			 VariantRec.SVM_EFFECT,
 			 VariantRec.SIFT_SCORE, 
@@ -74,6 +76,11 @@ public class VarViewerWriter extends VariantPoolWriter {
 			if (keys.get(i).equals(VariantRec.HGMD_HIT) && val.length() > 5) {
 				val = "true";				
 			}
+			
+			if (keys.get(i).equals(VariantRec.GENE_NAME) && val.contains("(")) {
+				val = val.substring(0, val.indexOf("("));
+			}
+			
 			builder.append("\t" + val);
 		}
 		

@@ -561,6 +561,8 @@ public class VariantRec {
 	public static final String HGMD_HIT = "hgmd.hit";
 	public static final String ARUP_FREQ = "ARUP.freq";
 	public static final String ARUP_TOT = "ARUP.tot";
+	public static final String ARUP_OVERALL_FREQ = "ARUP.overall.freq";
+	public static final String ARUP_FREQ_DETAILS = "ARUP.freq.details";
 	public static final String VARBIN_BIN = "varbin.bin";
 	public static final String CLINVAR_TYPE = "dbsnp.clinvar.type";
 	public static final String CLINVAR_VALIDATED = "dbsnp.clinvar.validated";	

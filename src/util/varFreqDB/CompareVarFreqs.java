@@ -147,13 +147,17 @@ public class CompareVarFreqs {
 			for(VariantRec var : everything.getVariantsForContig(contig)) {
 				System.out.print(contig + "\t" + var.getStart() + "\t" + var.getAlt());
 				
+				int totSamples = 0;
 				int totHets = 0;
 				int totHoms = 0;
 				for(String type : types) {
 					VariantPool pool = allVars.get(type).pool;
 					VariantRec tVar = pool.findRecordNoWarn(contig, var.getStart());
 					if (tVar != null) {
-						System.out.print("\t" + tVar.getPropertyOrAnnotation(HETS) + "," + tVar.getPropertyOrAnnotation(HOMS));
+						System.out.print("\t" + tVar.getPropertyOrAnnotation(SAMPLES) + "," + tVar.getPropertyOrAnnotation(HETS) + "," + tVar.getPropertyOrAnnotation(HOMS));
+						totSamples += tVar.getProperty(SAMPLES)!=null 
+								? tVar.getProperty(SAMPLES) 
+								: 0;
 						totHets += tVar.getProperty(HETS)!=null 
 								? tVar.getProperty(HETS) 
 								: 0;
@@ -162,10 +166,10 @@ public class CompareVarFreqs {
 								: 0;
 					}
 					else {
-						System.out.print("\t0.0,0.0");
+						System.out.print("\t0.0,0.0,0.0");
 					}
 				}
-				System.out.print("\t" + totHets + "," + totHoms);
+				System.out.print("\t" + totSamples + "," + totHets + "," + totHoms);
 				System.out.println();
 			}
 		}

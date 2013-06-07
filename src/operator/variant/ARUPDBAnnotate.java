@@ -37,20 +37,13 @@ public class ARUPDBAnnotate extends Annotator {
 			}
 		}
 		
-		String dbInfo;
+		String[] dbInfo;
 		try {
 			dbInfo = arupDB.getInfoForPostion(var.getContig(), var.getStart());
 			if (dbInfo != null) {
-				var.addAnnotation(VariantRec.ARUP_FREQ, dbInfo);
-				//parse total
-				String totStr = dbInfo.split(" ")[0];
-				try {
-					Integer tot = Integer.parseInt(totStr);
-					var.addProperty(VariantRec.ARUP_TOT, new Double(tot));
-				}
-				catch (NumberFormatException nfe) {
-					//don't sweat it
-				}
+				var.addProperty(VariantRec.ARUP_OVERALL_FREQ, Double.parseDouble(dbInfo[0]));
+				var.addAnnotation(VariantRec.ARUP_FREQ_DETAILS, dbInfo[1]);
+				
 			}
 			else {
 				var.addProperty(VariantRec.ARUP_TOT, 0.0);
