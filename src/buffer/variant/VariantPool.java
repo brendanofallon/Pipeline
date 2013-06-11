@@ -341,10 +341,19 @@ public class VariantPool extends Operator  {
 	}
 	
 	/**
-	 * Add all variants from source to this pool
+	 * Add all variants from source to pool, allowing duplicate entries
 	 * @param source
 	 */
 	public void addAll(VariantPool source) {
+		addAll(source, true);
+	}
+	
+	/**
+	 * Add all variants from source to this pool
+	 * @param source Variants to add to this pool
+	 * @param allowDups If duplicate variants should be added
+	 */
+	public void addAll(VariantPool source, boolean allowDups) {
 		for(String contig : source.getContigs()) {
 			List<VariantRec> curVars = this.getVariantsForContig(contig);
 			List<VariantRec> sourceVars = source.getVariantsForContig(contig);
@@ -365,6 +374,18 @@ public class VariantPool extends Operator  {
 				VariantRec sVar = sIt.next();
 				
 				while(cVar != null && sVar != null) {
+					//If we're not allowing duplicates, and sVar and cVar are at the same position,
+					//then advance the source iterator and don't add anything to the mergedVars list
+					if ((!allowDups) && cVar.getStart() == sVar.getStart()) {
+						try {
+							sVar = sIt.next();
+						}
+						catch(NoSuchElementException ex) {
+							sVar = null;
+						}
+						continue;
+					}
+					
 					if (cVar.getStart() < sVar.getStart()) {
 						mergedVars.add(cVar);
 						try {

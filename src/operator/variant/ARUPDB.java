@@ -19,9 +19,6 @@ public class ARUPDB {
 	private File dbFile;
 	private Map<Integer, String> headerToks = new HashMap<Integer, String>();
 	private TabixReader reader = null;
-	private int overallInfoIndex = -1; //Stores column index of "overall" information for speedy lookup
-	private double overallSampleCount = 0;
-	private Map<Integer, Integer> sampleCounts = new HashMap<Integer, Integer>(); //List of sample count totals for all columns
 	
 	public ARUPDB(File dbFile) throws IOException {
 		if (! dbFile.exists()) {
@@ -40,11 +37,6 @@ public class ARUPDB {
 				headerDesc = toks[i].substring(0, toks[i].indexOf("["));
 			}
 			headerToks.put(i, headerDesc);
-			if  (headerDesc.trim().equalsIgnoreCase("overall")) {
-				overallInfoIndex = i;
-				overallSampleCount = parseSampleCount(toks[i]);
-			}
-			sampleCounts.put(i, parseSampleCount(toks[i]));
 		}
 		
 	}
@@ -54,15 +46,15 @@ public class ARUPDB {
 	 * @param header
 	 * @return
 	 */
-	private static int parseSampleCount(String header) {
-		if (header.contains("[") && header.contains("]")) {
-			String count = header.substring(header.indexOf("[") +1, header.indexOf("]"));
-			return Integer.parseInt(count);
-		}
-		else {
-			return 0;
-		}
-	}
+//	private static int parseSampleCount(String header) {
+//		if (header.contains("[") && header.contains("]")) {
+//			String count = header.substring(header.indexOf("[") +1, header.indexOf("]"));
+//			return Integer.parseInt(count);
+//		}
+//		else {
+//			return 0;
+//		}
+//	}
 	
 	public String[] getInfoForPostion(String contig, int pos) throws IOException {
 		String queryStr = contig + ":" + pos + "-" + (pos);
@@ -80,42 +72,21 @@ public class ARUPDB {
 						if (qPos == pos) {
 							//Found one..
 							
-							String[] overallToks = toks[overallInfoIndex].split(","); 
-							double overallHets = Double.parseDouble(overallToks[0]);
-							double overallHoms = Double.parseDouble(overallToks[1]);
-							double overallAF = (overallHets + 2.0*overallHoms)/(double)(2.0*overallSampleCount); 
+							String sampleTotalStr = toks[4];
+							String hetsFoundStr = toks[5];
+							String homsFoundStr = toks[6];
+							
+							double totalSamples = Double.parseDouble(sampleTotalStr);
+							double overallHets = Double.parseDouble(hetsFoundStr);
+							double overallHoms = Double.parseDouble(homsFoundStr);
+							double overallAF = (overallHets + 2.0*overallHoms)/(double)(2.0*totalSamples); 
 							String overallStr = "" + overallAF;
-							//return overallStr;
 							
-							
-
 							//Create fancier details string here...
-							String details = "";
-							for(int i=3; i<toks.length; i++) {
-								int sampleCount = sampleCounts.get(i);
-								String headerDesc = headerToks.get(i);
-								String[] typeToks = toks[i].split(",");
-								double hets = Double.parseDouble(typeToks[0]);
-								double homs = Double.parseDouble(typeToks[1]);
-								double typeFreq = (hets + 2.0*homs) / (double)(2.0*sampleCount);
-								String typeStr = "" + 100.0*typeFreq;
-								if (typeStr.length() > 4) {
-									typeStr = typeStr.substring(0, 4);
-								}
-								details = details + headerDesc + ": " + typeStr + "%; ";
-							}
+							String details = "Total samples: " + totalSamples + " Hets: " + overallHets + " Homs: " + overallHoms;
 							
 							return new String[]{overallStr, details};
 	
-							//Older version, compatible with early / bad version of ARUP freq data
-//							String retStr = Integer.parseInt(toks[4].replace(".0", "")) + " total";
-//							for(int i=5; i<toks.length; i++) {
-//								int count = (int) Double.parseDouble(toks[i]);
-//								if (count > 0) {
-//									retStr = retStr + ", " + count + ":" + headerToks.get(i);
-//								}
-//							}
-//							return retStr;
 						}
 						if (qPos > pos) {
 							break;

@@ -46,7 +46,8 @@ public class ARUPDBAnnotate extends Annotator {
 				
 			}
 			else {
-				var.addProperty(VariantRec.ARUP_TOT, 0.0);
+				var.addProperty(VariantRec.ARUP_OVERALL_FREQ, 0.0);
+				var.addAnnotation(VariantRec.ARUP_FREQ_DETAILS, "Total samples: 0");
 			}
 			
 		} catch (IOException e) {

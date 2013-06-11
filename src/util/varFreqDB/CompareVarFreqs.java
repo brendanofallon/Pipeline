@@ -3,14 +3,12 @@ package util.varFreqDB;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import util.VCFLineParser;
 import util.reviewDir.ReviewDirInfo;
 import util.reviewDir.ReviewDirParseException;
-import buffer.variant.VariantLineReader;
+import buffer.BEDFile;
 import buffer.variant.VariantPool;
 import buffer.variant.VariantRec;
 
@@ -21,9 +19,10 @@ public class CompareVarFreqs {
 	public static final String HETS = "hets";
 	public static final String HOMS = "homs";
 	
-	Map<String, PoolInfo> allVars = new HashMap<String, PoolInfo>();
+	List<PoolInfo> allVars = new ArrayList<PoolInfo>();
 	
-	public void addSample(ReviewDirInfo info) {
+	public boolean addSample(ReviewDirInfo info) throws IOException {
+		System.err.println("Adding sample : " + info.getSampleName() + " :" + info.getAnalysisType());
 		File vcf = info.getVCF();
 		File bed = info.getBED();
 		String analysis = info.getAnalysisType();
@@ -31,59 +30,17 @@ public class CompareVarFreqs {
 			analysis = analysis.substring(0, analysis.indexOf("(")).trim();
 		}
 		
-		PoolInfo pInfo = allVars.get(analysis);
-		
-		if (pInfo == null) {
-			pInfo = new PoolInfo();
-			pInfo.totalSamples = 1;
-			allVars.put(analysis, pInfo);
-		}
-		else {
-			pInfo.totalSamples = pInfo.totalSamples + 1;
+		if (bed == null) {
+			System.err.println("BED file is null for sample: " + info.getSampleName() + ", " + info.getAnalysisType());
+			return false;
 		}
 		
-		VariantPool aVars = pInfo.pool;
-		VariantPool varsToAdd = new VariantPool(); //Newly found vars are placed here, then dumped en masse into aVars when we're done reading
-		try {
-			VariantLineReader variantReader = new VCFLineParser(vcf);
-			VariantRec var = variantReader.toVariantRec();
-			while(var != null) {
-				
-				VariantRec existingVar = aVars.findRecordNoWarn(var.getContig(), var.getStart());
-				if (existingVar != null) {
-					existingVar.addProperty(SAMPLES, existingVar.getProperty(SAMPLES)+1);
-					if (var.isHetero()) {
-						existingVar.addProperty(HETS, existingVar.getProperty(HETS)+1);
-					}
-					else {
-						existingVar.addProperty(HOMS, existingVar.getProperty(HOMS)+1);
-					}
-				}
-				else {
-					VariantRec newVar = new VariantRec(var.getContig(), var.getStart(), var.getEnd(), var.getRef(), var.getAlt());
-					newVar.addProperty(SAMPLES, 1.0);
-					if (var.isHetero()) {
-						newVar.addProperty(HETS, 1.0);
-						newVar.addProperty(HOMS, 0.0);
-					}
-					else {
-						newVar.addProperty(HOMS, 1.0);
-						newVar.addProperty(HETS, 0.0);
-					}
-					varsToAdd.addRecordNoSort(newVar);
-				}
-				
-				
-				variantReader.advanceLine();
-				var = variantReader.toVariantRec();
-			}
-			
-			aVars.addAll(varsToAdd);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-			
+		PoolInfo pInfo = new PoolInfo();
+		pInfo.analysisType = info.getAnalysisType();
+		pInfo.bed = new BEDFile(bed);
+		pInfo.pool = new VariantPool(new VCFLineParser(vcf));
+		allVars.add(pInfo);
+		return true;
 	}
 	
 	public void emitPool(PoolInfo poolInfo) {
@@ -104,7 +61,7 @@ public class CompareVarFreqs {
 			return prop;
 	}
 	
-	public void readSamplesInDir(File dir) throws ReviewDirParseException {
+	public void readSamplesInDir(File dir) throws ReviewDirParseException, IOException {
 		File[] files = dir.listFiles();
 		for(int i=0; i<files.length; i++) {
 			if (files[i].isDirectory()) {
@@ -115,63 +72,60 @@ public class CompareVarFreqs {
 		
 	}
 	
-	public void emitAll() {
-		for(String type : allVars.keySet()) {
-			System.out.println("##type="+ type);
-			emitPool(allVars.get(type));
-		}
-	}
+	
 	
 	public void emitTabulated() {
-		List<String> types = new ArrayList<String>();
-		types.addAll(allVars.keySet());
 		
-		//Make on big pool...
+		//Make on giant pool...
 		System.err.println("Tabulating variants, this may take a moment....");
 		VariantPool everything = new VariantPool();
-		for(String type: types) {
-			everything.addAll(allVars.get(type).pool);
+		for(PoolInfo poolInfo : allVars) {
+			everything.addAll(poolInfo.pool, false); //Do not allow duplicates
 		}
 		
-		int overallTotalSamples = 0;
-		System.out.print("#chr\tpos\talt");
-		for(String type : types) {
-			System.out.print("\t" + type + "[" + allVars.get(type).totalSamples + "]");
-			overallTotalSamples += allVars.get(type).totalSamples;
-		}
-		
-		System.out.print("\toverall[" + overallTotalSamples + "]");
-		System.out.println();
+		System.out.println("#chr\tpos\tref\talt\tsamples.queried\thets\thoms\tfreq");
 		
 		for(String contig: everything.getContigs()) {
 			for(VariantRec var : everything.getVariantsForContig(contig)) {
-				System.out.print(contig + "\t" + var.getStart() + "\t" + var.getAlt());
+				System.out.print(contig + "\t" + var.getStart() + "\t" + var.getRef() + "\t" + var.getAlt());
 				
 				int totSamples = 0;
-				int totHets = 0;
-				int totHoms = 0;
-				for(String type : types) {
-					VariantPool pool = allVars.get(type).pool;
-					VariantRec tVar = pool.findRecordNoWarn(contig, var.getStart());
-					if (tVar != null) {
-						System.out.print("\t" + tVar.getPropertyOrAnnotation(SAMPLES) + "," + tVar.getPropertyOrAnnotation(HETS) + "," + tVar.getPropertyOrAnnotation(HOMS));
-						totSamples += tVar.getProperty(SAMPLES)!=null 
-								? tVar.getProperty(SAMPLES) 
-								: 0;
-						totHets += tVar.getProperty(HETS)!=null 
-								? tVar.getProperty(HETS) 
-								: 0;
-						totHoms += tVar.getProperty(HOMS)!=null 
-								? tVar.getProperty(HOMS) 
-								: 0;
+				int hets = 0;
+				int homs = 0;
+				
+				for(PoolInfo info : allVars) {
+					if (! info.bed.isMapCreated()) {
+						try {
+							info.bed.buildIntervalsMap();
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
-					else {
-						System.out.print("\t0.0,0.0,0.0");
+					if (info.bed.contains(contig, var.getStart(), false)) {
+						totSamples++;
 					}
+					
+					VariantRec queryVar = info.pool.findRecordNoWarn(contig, var.getStart());
+					if (queryVar != null) {
+						if (queryVar.isHetero()) {
+							hets++;
+						}
+						else {
+							homs++;
+						}
+					}
+				} //loop over allVars
+				
+				double freq = (hets + 2.0*homs)/(totSamples*2.0);
+				String freqStr = "" + freq;
+				if (freqStr.length() > 6) {
+					freqStr = freqStr.substring(0, 6);
 				}
-				System.out.print("\t" + totSamples + "," + totHets + "," + totHoms);
-				System.out.println();
+				System.out.print("\t" + totSamples + "\t" + hets + "\t" + homs + "\t" + freqStr);
+				System.out.println();	
 			}
+			
 		}
 		
 		
@@ -180,24 +134,32 @@ public class CompareVarFreqs {
 	public static void main(String[] args) {
 		CompareVarFreqs cFreqs = new CompareVarFreqs();
 		
+		int added = 0;
 		for(int i=0; i<args.length; i++) {
 			
 			try {
-				cFreqs.addSample( ReviewDirInfo.create(args[i]));
+				boolean ok = cFreqs.addSample( ReviewDirInfo.create(args[i]));
+				if (ok) {
+					added++;
+				}
 			} catch (ReviewDirParseException e) {
 				System.err.println("Warning: Skipping file : " + args[i]  + " : " + e.getLocalizedMessage());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}	
 		}
 		
-		//cFreqs.addSample( ReviewDirInfo.create("/home/brendan/MORE_DATA/clinical_exomes/2013-05-20/trioB/13070300197"));
-		//cFreqs.addSample( ReviewDirInfo.create("/home/brendan/MORE_DATA/clinical_exomes/2013-05-20/trioB/13070300200"));
-		//cFreqs.addSample( ReviewDirInfo.create("/home/brendan/MORE_DATA/clinical_exomes/2013-05-20/trioA/13064545653"));
+
+		System.err.println("Found " + added + " valid samples");
 		cFreqs.emitTabulated();
 	}
 	
 	
 	class PoolInfo {
 		int totalSamples = 0;
+		String analysisType = null;
+		BEDFile bed = null;
 		VariantPool pool = new VariantPool();
 	}
 	
