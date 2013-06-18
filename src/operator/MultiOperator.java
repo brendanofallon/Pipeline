@@ -169,17 +169,22 @@ public abstract class MultiOperator extends IOOperator {
 				if (iChild.getNodeType() == Node.ELEMENT_NODE) {
 					PipelineObject obj = getObjectFromHandler(iChild.getNodeName());
 					if (obj == null)
-						throw new IllegalArgumentException("Unknown object reference to MultiOperator " + getObjectLabel());
+						throw new IllegalArgumentException("Unknown object reference to MultiOperator " + getObjectLabel() + " Unknown object is: " + iChild.getNodeName());
 					if (obj instanceof MultiFileBuffer) {
 						inputFiles = (MultiFileBuffer)obj;
 
 					}
 					else {
+						//Potentially error-prone special case here.. if obj is a ReferenceFile, set it to reference
+						//Otherwise, add it to inputBuffer list. 
 						if (obj instanceof ReferenceFile) {
 							reference = (ReferenceFile) obj;
 						}
-						if (obj instanceof FileBuffer) {
-							addInputBuffer( (FileBuffer)obj);
+						else {
+							
+							if (obj instanceof FileBuffer) {
+								addInputBuffer( (FileBuffer)obj);
+							}
 						}
 					}
 				}
