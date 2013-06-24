@@ -45,6 +45,7 @@ import operator.qc.checkers.VariantPoolChecker;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import pipeline.MetaInfo;
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
 import util.ElapsedTimeFormatter;
@@ -562,6 +563,8 @@ public class QCReport extends Operator {
 		String lineSep = System.getProperty("line.separator");
 		
 		sumT.addRow(Arrays.asList(new String[]{"Pipeline version :" , Pipeline.PIPELINE_VERSION } ));
+		sumT.addRow(Arrays.asList(new String[]{"Pipeline pah: " , MetaInfo.getJarFilePath() } ));
+		sumT.addRow(Arrays.asList(new String[]{"Pipeline compile date: " , (new Date(MetaInfo.getManifestModifiedTime())).toString() } ));
 		sumT.addRow(Arrays.asList(new String[]{"Pipeline execution start time :" , startTime.toString() } ));
 		sumT.addRow(Arrays.asList(new String[]{"Pipeline input file : ", ppl.getSourceFile().getName()} ));
 		sumT.addRow(Arrays.asList(new String[]{"Pipeline elapsed time : " , formattedElapsedTime} ));

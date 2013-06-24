@@ -3,7 +3,6 @@ package operator.samtools;
 import java.io.File;
 
 import operator.MultiOperator;
-import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.FileBuffer;
@@ -13,6 +12,11 @@ public class MultiSort extends MultiOperator {
 	public static final String PATH = "path";
 	protected String defaultSamtoolsPath = "samtools";
 	protected String samtoolsPath = defaultSamtoolsPath;
+	
+	@Override
+	public boolean requiresReference() {
+		return false;
+	}
 	
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {

@@ -43,7 +43,7 @@ import util.QueuedLogHandler;
  */
 public class Pipeline {
 
-	public static final String PIPELINE_VERSION = "1.2";
+	public static final String PIPELINE_VERSION = "1.2.1";
 	protected File source;
 	protected Document xmlDoc;
 	public static final String PROJECT_HOME="home";
@@ -282,6 +282,10 @@ public class Pipeline {
 
 		Date beginTime = new Date();
 		primaryLogger.info("Logger initialized at " +  beginTime + "\n Beginning new Pipeline run");
+		
+		primaryLogger.info("Jar file absolute path: " + MetaInfo.getJarFilePath());
+		primaryLogger.info("Jar file compilation time: " + new Date(MetaInfo.getManifestModifiedTime()));
+		
 		
 	}
 	
