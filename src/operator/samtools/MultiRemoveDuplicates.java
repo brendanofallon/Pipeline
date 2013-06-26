@@ -3,15 +3,21 @@ package operator.samtools;
 import java.io.File;
 
 import operator.MultiOperator;
+
+import org.apache.log4j.Logger;
+
+import pipeline.Pipeline;
 import pipeline.PipelineXMLConstants;
 import buffer.BAMFile;
 import buffer.FileBuffer;
 
 public class MultiRemoveDuplicates extends MultiOperator {
 
+	public static final String TREAT_PAIRS_AS_SINGLE = "treat.pairs.as.single";
 	public static final String PATH = "path";
 	protected String defaultSamtoolsPath = "samtools";
 	protected String samtoolsPath = defaultSamtoolsPath;
+	protected boolean treatPairsAsSingle = true;
 	
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
@@ -24,6 +30,13 @@ public class MultiRemoveDuplicates extends MultiOperator {
 			samtoolsPath = samPath;
 		}
 		
+		String treatPairsAsSingleAttr = this.getAttribute(TREAT_PAIRS_AS_SINGLE);
+		if (treatPairsAsSingleAttr != null) {
+			Boolean treatAsSingle = Boolean.parseBoolean(treatPairsAsSingleAttr);
+			treatPairsAsSingle = treatAsSingle;
+			Logger.getLogger(Pipeline.primaryLoggerName).info("Treating pairs as single : " + treatPairsAsSingle);
+		}
+		
 		String inputPath = inputBuffer.getAbsolutePath();
 		int index = inputPath.lastIndexOf(".");
 		String prefix = inputPath;
@@ -34,11 +47,12 @@ public class MultiRemoveDuplicates extends MultiOperator {
 		BAMFile outputBAM = new BAMFile(new File(outputPath), inputBuffer.getContig());
 		addOutputFile(outputBAM);
 		
-		String fileIsSam = "";
-		if (inputPath.endsWith("sam"))
-			fileIsSam = " -S ";
+		String treatAsSingleStr = "";
+		if (treatPairsAsSingle) {
+			treatAsSingleStr = " -S ";
+		}
 		
-		String command = samtoolsPath + " rmdup " + fileIsSam + inputPath + " " + outputPath;
+		String command = samtoolsPath + " rmdup " + treatAsSingleStr + inputPath + " " + outputPath;
 		return new String[]{command};
 	}
 

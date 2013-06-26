@@ -29,7 +29,6 @@ import buffer.BAMFile;
 import buffer.BAMMetrics;
 import buffer.BEDFile;
 import buffer.CSVFile;
-import buffer.IntervalsFile.Interval;
 import buffer.VCFFile;
 import buffer.variant.CSVLineReader;
 import buffer.variant.GenePool;

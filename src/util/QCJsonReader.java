@@ -206,21 +206,27 @@ public class QCJsonReader {
 			paths.add(args[i]);
 		}
 		
-		if (command.equals("summary")) {
+		if (command.startsWith("sum")) {
 			performSummary(paths, System.out);
+			return;
 		}
 		
 		if (command.startsWith("valid")) {
 			performTableize(paths, System.out);
+			return;
 		}
 		
-		if (command.equals("varSummary")) {
+		if (command.startsWith("varSum")) {
 			performVarSummary(paths, System.out);
+			return;
 		}
 		
-		if (command.equals("covSummary")) {
+		if (command.startsWith("covSum")) {
 			performCovSummary(paths, System.out);
+			return;
 		}
+		
+		System.err.println("Unrecognized command");
 		
 	}
 

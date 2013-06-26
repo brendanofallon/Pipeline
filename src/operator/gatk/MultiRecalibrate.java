@@ -173,7 +173,7 @@ public class MultiRecalibrate extends MultiOperator {
 			jvmARGStr = "";
 		}
 		
-		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
+		String referencePath = reference.getAbsolutePath();
 		List<FileBuffer> knownSitesFiles = getAllInputBuffersForClass(VCFFile.class);
 		
 		StringBuffer knownSitesStr = new StringBuffer();
@@ -189,7 +189,7 @@ public class MultiRecalibrate extends MultiOperator {
 		String covariateList = "-cov QualityScoreCovariate -cov DinucCovariate -cov MappingQualityCovariate -cov HomopolymerCovariate ";
 		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath + 
-				" -R " + reference + 
+				" -R " + referencePath + 
 				" -I " + inputBuffer.getAbsolutePath() + 
 				" -T CountCovariates " + 
 				covariateList + " "	+ 

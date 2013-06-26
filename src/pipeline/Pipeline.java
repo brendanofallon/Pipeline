@@ -278,14 +278,7 @@ public class Pipeline {
 		}
 	
 		memLogHandler = new QueuedLogHandler(5000);
-		primaryLogger.addHandler(memLogHandler);
-
-		Date beginTime = new Date();
-		primaryLogger.info("Logger initialized at " +  beginTime + "\n Beginning new Pipeline run");
-		
-		primaryLogger.info("Jar file absolute path: " + MetaInfo.getJarFilePath());
-		primaryLogger.info("Jar file compilation time: " + new Date(MetaInfo.getManifestModifiedTime()));
-		
+		primaryLogger.addHandler(memLogHandler);		
 		
 	}
 	
@@ -304,6 +297,35 @@ public class Pipeline {
 	 */
 	public void initializePipeline() throws PipelineDocException, ObjectCreationException {
 		
+		//Create the file handler for the main logger... this should happen before anything else. 
+		String projHome = props.getProperty(PROJECT_HOME);
+		if (projHome != null && projHome.length()>0 && (!projHome.equals(System.getProperty("user.dir")))) {
+
+			try {
+				if (!projHome.endsWith("/"))
+					projHome = projHome + "/";
+				Calendar cal = Calendar.getInstance();
+				int year = cal.get(Calendar.YEAR);
+				int month = cal.get(Calendar.MONTH);
+				int day = cal.get(Calendar.DATE);
+				int hour = cal.get(Calendar.HOUR);
+				int min = cal.get(Calendar.MINUTE);
+
+				String suffix = "" + day + month + year + "-" + hour + "-" + min;
+
+				this.instanceLogPath = projHome + "pipeinstancelog-" + suffix + ".txt";
+				FileHandler fileHandler = new FileHandler(instanceLogPath, false);
+				fileHandler.setFormatter( new SimpleFormatter() );
+				primaryLogger.addHandler(fileHandler);
+
+			} catch (SecurityException e) {
+				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());
+			} catch (IOException e) {
+				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());
+			}
+
+		}
+
 		//See if we should capture stderr and redirect it to the log file
 		if (props.getProperty(PipelineXMLConstants.CAPTURE_ERR) != null) {
 			System.out.println("Got property for capture err: " + props.getProperty(PipelineXMLConstants.CAPTURE_ERR));
@@ -311,7 +333,6 @@ public class Pipeline {
 			if (capture) {
 				Logger stdErrLog = Logger.getLogger("StdErr");
 				try {
-					String projHome = this.getProjectHome();
 					String errorLogPath = projHome + "/error_log.xml";
 					System.out.println("Writing error log to path: " + errorLogPath);
 
@@ -357,47 +378,23 @@ public class Pipeline {
 		this.addListener(profiler);
 		
 		
-		primaryLogger.info("XML Document found and parsed, attempting to read objects");
+		
 				
 		handler = new ObjectHandler(this, xmlDoc);
 		handler.setClassLoader(loader);
 		
-		//Set the project home field
-		String projHome = props.getProperty(PROJECT_HOME);
-		if (projHome != null && projHome.length()>0 && (!projHome.equals(System.getProperty("user.dir")))) {
-			
-			try {
-				if (!projHome.endsWith("/"))
-					projHome = projHome + "/";
-				Date now = new Date();
-				Calendar cal = Calendar.getInstance();
-				int year = cal.get(Calendar.YEAR);
-				int month = cal.get(Calendar.MONTH);
-				int day = cal.get(Calendar.DATE);
-				int hour = cal.get(Calendar.HOUR);
-				int min = cal.get(Calendar.MINUTE);
-				
-				String suffix = "" + day + month + year + "-" + hour + "-" + min;
-				
-				this.instanceLogPath = projHome + "pipeinstancelog-" + suffix + ".txt";
-				FileHandler fileHandler = new FileHandler(instanceLogPath, false);
-				fileHandler.setFormatter( new SimpleFormatter() );
-				primaryLogger.addHandler(fileHandler);
-				
-			} catch (SecurityException e) {
-				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());
-			} catch (IOException e) {
-				primaryLogger.warning("Could not create handler for proj-home specific log file, reason: " + e.getLocalizedMessage());
-			}
-			
-			initialized = true;
-		}
+		primaryLogger.info("Beginning new Pipeline run");
+		primaryLogger.info("Jar file absolute path: " + MetaInfo.getJarFilePath());
+		primaryLogger.info("Jar file compilation time: " + new Date(MetaInfo.getManifestModifiedTime()));
+		
+		primaryLogger.info("XML Document found and parsed, attempting to read objects");
 		
 		//A quick scan for errors / validity would be a good idea
 		handler.readObjects();
 		System.err.flush(); //Make sure info is written to logger if necessary
 		int opCount = handler.getOperatorList().size();
 		primaryLogger.info("Successfully read objects, found " + opCount + " operators ... pipeline is now initialized");
+		initialized = true;
 	}
 	
 	public Date getStartTime() {
