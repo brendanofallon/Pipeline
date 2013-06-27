@@ -36,10 +36,11 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 	public static final String SAMPE_THREADS = "sampe.threads";
 	public static final String SEED_LENGTH = "seed.length";
 	public static final String SAMPLE = "sample";
+	public static final String MAXEDITDIST = "max.edit.dist";
 	
 	
 	protected int sampeThreads = 1;  //Overridden in performOperation
-	protected String maxEditDist = "3"; //Maximum edit distance for alignment
+	protected String maxEditDist; //Maximum edit distance for alignment
 	protected String pathToBWA = "bwa";
 	protected String pathToSamTools = "samtools";
 	protected int defaultThreads = 4;
@@ -84,6 +85,14 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		String threadsAttr = properties.get(THREADS);
 		if (threadsAttr != null) {
 			threads = Integer.parseInt(threadsAttr);
+		}
+		
+		String maxEditDistAttr = properties.get(MAXEDITDIST);
+		if(maxEditDistAttr != null){
+			maxEditDist = maxEditDistAttr;
+		}
+		else{
+			maxEditDist = null;
 		}
 		
 		String singleEndAttr = properties.get(SINGLE_END);
@@ -306,7 +315,12 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		
 		public AlignerJob(FileBuffer inputFile) {
 			baseFilename = inputFile.getFilename();
-			command = pathToBWA + " aln -n " + maxEditDist + "  -t " + Math.max(1, threads) + " " + referencePath + " " + inputFile.getAbsolutePath();
+			if(maxEditDist != null){
+				command = pathToBWA + " aln -n " + maxEditDist + " -t " + Math.max(1, threads) + " " + referencePath + " " + inputFile.getAbsolutePath();
+			}
+			else{
+				command = pathToBWA + " aln -t " + Math.max(1, threads) + " " + referencePath + " " + inputFile.getAbsolutePath();
+			}
 		}
 		
 		@Override

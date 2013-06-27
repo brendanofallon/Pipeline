@@ -14,8 +14,12 @@ public class Genotyper extends CommandOperator {
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
 	public static final String JVM_ARGS="jvmargs";
+	public static final String CALLCONF = "call_conf";
+	public static final String CALLEMIT = "call_emit";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
+	protected double standCallConf = 30.0;
+	protected double standEmitConf = 10.0;
 	
 	
 	
@@ -41,6 +45,16 @@ public class Genotyper extends CommandOperator {
 		String threadsStr = properties.get(THREADS);
 		if (threadsStr != null) {
 			threads = Integer.parseInt(threadsStr);
+		}
+		
+		String standCallConfString = properties.get(CALLCONF);
+		if(standCallConfString != null){
+			standCallConf = Double.parseDouble(standCallConfString);
+		}
+		
+		String standEmitConfString = properties.get(CALLEMIT);
+		if(standEmitConfString != null){
+			standEmitConf = Double.parseDouble(standEmitConfString);
 		}
 		
 		//Additional args for jvm
@@ -73,8 +87,8 @@ public class Genotyper extends CommandOperator {
 		if (dbsnpFile != null)
 			command = command + " --dbsnp " + dbsnpFile.getAbsolutePath();
 		command = command + " -glm BOTH";
-		command = command + " -stand_call_conf 30.0";
-		command = command + " -stand_emit_conf 10.0";
+		command = command + " -stand_call_conf " + standCallConf;
+		command = command + " -stand_emit_conf " + standEmitConf;
 		command = command + " -nt " + threads;
 		if (bedFile != null)
 			command = command + " -L:intervals,BED " + bedFilePath;

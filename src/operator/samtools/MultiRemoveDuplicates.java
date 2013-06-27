@@ -10,8 +10,11 @@ import buffer.FileBuffer;
 public class MultiRemoveDuplicates extends MultiOperator {
 
 	public static final String PATH = "path";
+	public static final String FORCESINGLEEND = "force.single.end";
+
 	protected String defaultSamtoolsPath = "samtools";
 	protected String samtoolsPath = defaultSamtoolsPath;
+	protected boolean forceSingleEnd = false;
 	
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
@@ -22,6 +25,11 @@ public class MultiRemoveDuplicates extends MultiOperator {
 		String samPath = properties.get(PATH);
 		if (samPath != null) {
 			samtoolsPath = samPath;
+		}
+		
+		String forceSingleEndVal = properties.get(FORCESINGLEEND);
+		if(forceSingleEndVal != null){
+			forceSingleEnd = true;
 		}
 		
 		String inputPath = inputBuffer.getAbsolutePath();
@@ -35,7 +43,7 @@ public class MultiRemoveDuplicates extends MultiOperator {
 		addOutputFile(outputBAM);
 		
 		String fileIsSam = "";
-		if (inputPath.endsWith("sam"))
+		if (inputPath.endsWith("sam") || forceSingleEnd)
 			fileIsSam = " -S ";
 		
 		String command = samtoolsPath + " rmdup " + fileIsSam + inputPath + " " + outputPath;
