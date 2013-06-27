@@ -15,9 +15,12 @@ public class MultiRemoveDuplicates extends MultiOperator {
 
 	public static final String TREAT_PAIRS_AS_SINGLE = "treat.pairs.as.single";
 	public static final String PATH = "path";
+	public static final String FORCESINGLEEND = "force.single.end";
+
 	protected String defaultSamtoolsPath = "samtools";
 	protected String samtoolsPath = defaultSamtoolsPath;
 	protected boolean treatPairsAsSingle = true;
+
 	
 	@Override
 	protected String[] getCommand(FileBuffer inputBuffer) {
@@ -47,10 +50,12 @@ public class MultiRemoveDuplicates extends MultiOperator {
 		BAMFile outputBAM = new BAMFile(new File(outputPath), inputBuffer.getContig());
 		addOutputFile(outputBAM);
 		
+
 		String treatAsSingleStr = "";
 		if (treatPairsAsSingle) {
 			treatAsSingleStr = " -S ";
 		}
+
 		
 		String command = samtoolsPath + " rmdup " + treatAsSingleStr + inputPath + " " + outputPath;
 		return new String[]{command};
