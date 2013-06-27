@@ -9,7 +9,7 @@ import org.broad.tribble.readers.TabixReader;
 
 /**
  * Stores information about variants that have previously been observed at ARUP, right now 
- * this expects things to be in the .csv type flatfile produced by the varUtils tool 'buildvcfdb'
+ * this expects things to be in the .csv type flatfile produced by the CompareVarFreqs class.
  * ... and now *MUST* be tabix-compressed and indexed
  * @author brendan
  *
@@ -41,20 +41,6 @@ public class ARUPDB {
 		
 	}
 
-	/**
-	 * Parse and return the sample count associated with a column header
-	 * @param header
-	 * @return
-	 */
-//	private static int parseSampleCount(String header) {
-//		if (header.contains("[") && header.contains("]")) {
-//			String count = header.substring(header.indexOf("[") +1, header.indexOf("]"));
-//			return Integer.parseInt(count);
-//		}
-//		else {
-//			return 0;
-//		}
-//	}
 	
 	public String[] getInfoForPostion(String contig, int pos) throws IOException {
 		String queryStr = contig + ":" + pos + "-" + (pos);
@@ -83,7 +69,7 @@ public class ARUPDB {
 							String overallStr = "" + overallAF;
 							
 							//Create fancier details string here...
-							String details = "Total samples: " + totalSamples + " Hets: " + overallHets + " Homs: " + overallHoms;
+							String details = "Samples: " + (int)totalSamples + " Hets: " + (int)overallHets + " Homs: " + (int)overallHoms;
 							
 							return new String[]{overallStr, details};
 	
