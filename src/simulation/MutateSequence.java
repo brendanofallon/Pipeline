@@ -10,17 +10,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import javax.swing.SwingWorker;
 
 import util.VCFLineParser;
-
 import buffer.VCFFile;
-
 import cern.jet.random.Exponential;
 import cern.jet.random.Poisson;
 import cern.jet.random.engine.MersenneTwister;
@@ -42,7 +36,7 @@ public class MutateSequence {
 	static final double[] baseFreqs = new double[]{0.3, 0.55, 0.78};
 	
 	//Probability that new mutation is a transition, ttRatio is x/(1-x) 
-	static final double transitionProb = 0.65;
+	static final double transitionProb = 0.72; //0.72 makes ttRatio about 2.57
 	
 	public static char pickChar(char curChar) {
 		curChar = Character.toUpperCase(curChar);
@@ -315,10 +309,7 @@ public class MutateSequence {
 		
 	}
 	
-	public static void usage() {
-		System.out.println("MutateSequence : mutate a given sequence in fasta format ");
-		System.out.println(" mutateSeq.jar [reference.fasta] [mut. rate. (float)] [indel rate (float)] [mean indel size (float)] [outputfilename]");
-	}
+	
 	
 	public static void writeContig(String contig, StringBuilder seq, BufferedWriter writer) throws IOException {
 		writer.write(">" + contig + "\n");
@@ -385,8 +376,11 @@ public class MutateSequence {
 	}
 	
 
-	public static void mutateContig(String key, StringBuilder contSeq,
-			Double mutRate, Double indelRate, Double indelMeanSize) {
+	public static void mutateContig(String key, 
+			StringBuilder contSeq,
+			Double mutRate, 
+			Double indelRate, 
+			Double indelMeanSize) {
 
 		int mutNum = poisGen.nextInt( mutRate * contSeq.length() );
 		int numInserts = poisGen.nextInt( indelRate*contSeq.length() );
@@ -399,6 +393,11 @@ public class MutateSequence {
 		addIndels(contSeq, numInserts, numDels, indelMeanSize);
 		System.out.println("done mutating, now writing...");
 		
+	}
+	
+	public static void usage() {
+		System.out.println("MutateSequence : mutate a given sequence in fasta format ");
+		System.out.println(" mutateSeq.jar [reference.fasta] [mut. rate. (float)] [indel rate (float)] [mean indel size (float)] [outputfilename]");
 	}
 	
 	public static void main(String[] args) {
@@ -418,8 +417,6 @@ public class MutateSequence {
 		File vcfMuts = null;
 		if (args.length==6)
 			vcfMuts = new File(args[5]);
-		
-		
 
 		
 		try {
@@ -433,8 +430,6 @@ public class MutateSequence {
 			Map<String, StringBuilder> contigs = new HashMap<String, StringBuilder>();
 			StringBuilder seq = new StringBuilder();
 			String contig = null;
-			
-			
 			
 			contig = line.replace(">", "").trim();
 			line = reader.readLine();

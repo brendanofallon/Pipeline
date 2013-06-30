@@ -2671,6 +2671,15 @@ public class VarUtils {
 				for(String contig : pool.getContigs()) {
 					for(VariantRec var : pool.getVariantsForContig(contig)) {
 						String val = var.getPropertyOrAnnotation(prop);
+						
+						//Var.freq is special case
+						if (prop.equals("var.freq")) {
+							Double depth = var.getProperty(VariantRec.DEPTH);
+							Double altDepth = var.getProperty(VariantRec.VAR_DEPTH);
+							if (depth != null && altDepth != null) {
+								val = "" + altDepth / depth;
+							}
+						}
 						if (val != null && (!val.equals("-"))) {
 							try {
 								Double x = Double.parseDouble(val);
