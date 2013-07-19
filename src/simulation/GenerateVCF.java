@@ -7,9 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import cern.jet.random.Exponential;
 import cern.jet.random.Poisson;
@@ -136,7 +134,7 @@ public class GenerateVCF {
 	
 	public static List<MutRec> generateIndels(StringBuilder ref, double indelRate, double indelMeanSize) {
 		List<MutRec> indels = new ArrayList<MutRec>(2048);
-		int site = 0;
+		int site = 2; //Starting at two prevents errors when first site is 0
 		expGen = new Exponential(indelRate, rng);
 		site += expGen.nextInt();
 		
@@ -147,20 +145,22 @@ public class GenerateVCF {
 			int size = (int)Math.ceil( expGen.nextDouble(1.0/indelMeanSize) );
 			if (isInsertion) {
 				rec.pos = site;
-				rec.ref = "-";
+				char refChar = Character.toUpperCase(ref.charAt(site-1));
+				rec.ref = "" + refChar;
 				String insert = randomSeq(size);
-				rec.alt = insert;
+				rec.alt = refChar + insert;
 			}
 			else {
 				rec.pos = site;
-				int start = rec.pos-1;
+				int start = rec.pos-2;
 				int end = rec.pos-1+size;
 				rec.ref = ref.substring(start, end);
-				rec.alt = "-";
+				rec.alt = "" + rec.ref.charAt(0);
 			}
 			
-
-			indels.add(rec);
+			//N's in indels tend break FastaAlternateReferenceMaker
+			if (! rec.ref.contains("N"))
+				indels.add(rec);
 			//System.out.println(rec);
 			site += size+expGen.nextInt();
 		}
@@ -198,10 +198,7 @@ public class GenerateVCF {
 			char r = Character.toUpperCase(ref.charAt(site-1));
 			rec.ref = String.valueOf(r);
 			char newBase = 'X';
-			if (r == 'N') {
-				newBase = 'N';
-			}
-			else {
+			if (r != 'N') {
 				newBase = pickChar(r, ttRatio);
 				if ( isTransition(r, newBase)) {
 					transitionCount++;
@@ -209,10 +206,11 @@ public class GenerateVCF {
 				else {
 					transversionCount++;
 				}
+
+				rec.alt = String.valueOf(newBase);
+				rec.pos = site;
+				snps.add(rec);
 			}
-			rec.alt = String.valueOf(newBase);
-			rec.pos = site;
-			snps.add(rec);
 			//System.out.println(rec);
 			site += expGen.nextInt();
 		}
@@ -255,7 +253,8 @@ public class GenerateVCF {
 				line = reader.readLine();
 			}
 
-			Map<String, StringBuilder> contigs = new HashMap<String, StringBuilder>();
+			List<String> contigs = new ArrayList<String>(16);
+			List<StringBuilder> seqs = new ArrayList<StringBuilder>(16);
 			StringBuilder seq = new StringBuilder();
 			String contig = null;
 			
@@ -275,7 +274,9 @@ public class GenerateVCF {
 				seq.append(line.trim());
 				line = reader.readLine();
 				if (line != null && line.contains(">")) {
-					contigs.put(contig, seq);
+					contigs.add(contig);
+					seqs.add(seq);
+					
 					System.err.println("Found contig: " + contig + " of length: " + seq.length());
 					contig = line.replace(">", "").trim(); //New contig
 					index = contig.indexOf(" ");
@@ -289,12 +290,14 @@ public class GenerateVCF {
 			}
 		
 			//don't forget to add the last contig
-			contigs.put(contig, seq);
+			contigs.add(contig);
+			seqs.add(seq);
 			System.err.println("Found contig: " + contig + " of length: " + seq.length());
 
 			
-			for(String key : contigs.keySet()) {
-				StringBuilder contSeq = contigs.get(key);
+			for(int i=0; i<contigs.size(); i++) {
+				String key = contigs.get(i);
+				StringBuilder contSeq = seqs.get(i);
 				System.err.println("Contig " + key + " length: " + contSeq.length());
 
 				List<MutRec> mutants = new ArrayList<MutRec>(1024);

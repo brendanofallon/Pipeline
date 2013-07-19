@@ -137,6 +137,30 @@ public class MultiAlignAndBAM extends PipedCommandOp {
 		
 		List<FileBuffer> files = this.getAllInputBuffersForClass(MultiFileBuffer.class);
 		
+		//If additional fastq's are listed, add them to the multifilebuffers in FileBuffer
+		if (this.getAllInputBuffersForClass(FastQFile.class).size() > 0) {
+			List<FileBuffer> fqs = this.getAllInputBuffersForClass(FastQFile.class);
+			
+			//If no MultifileBuffers provided we need to make them
+			if (files.size()==0 && pairedEnd) {
+				files.add( new MultiFileBuffer());
+				files.add( new MultiFileBuffer());
+			}
+			else {
+				files.add( new MultiFileBuffer());
+			}
+			
+			int index = 0;
+			for(FileBuffer fq : fqs) {
+				((MultiFileBuffer)files.get(index % files.size())).addFile(fq);
+				index++;
+			}
+			
+			
+		}
+		
+		
+		
 		if (files.size() != 2 && pairedEnd) {
 			throw new OperationFailedException("Need exactly two input files of type MultiFileBuffer for paired-end mode", this);
 		}

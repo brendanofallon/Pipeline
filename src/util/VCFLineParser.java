@@ -243,9 +243,10 @@ public class VCFLineParser implements VariantLineReader {
 					if (fsScore != null)
 						rec.addProperty(VariantRec.FS_SCORE, fsScore);
 					
-					Double tfpScore = getTauFPScore();
-					if (tfpScore != null)
-						rec.addProperty(VariantRec.TAUFP_SCORE, fsScore);
+					Double rpScore = getRPScore();
+					if (rpScore != null)
+						rec.addProperty(VariantRec.RP_SCORE, rpScore);
+					
 					
 					Double logFSScore = getLogFSScore();
 					if (logFSScore != null)
@@ -265,6 +266,8 @@ public class VCFLineParser implements VariantLineReader {
 
 
 
+
+		
 
 		/**
 		 * Read one more line of input, returns false if line cannot be read
@@ -547,6 +550,17 @@ public class VCFLineParser implements VariantLineReader {
 			return null;
 		}
 
+		private Double getRPScore() {
+			String[] infoToks = lineToks[7].split(";");
+			for(int i=0; i<infoToks.length; i++) {
+				String tok = infoToks[i];
+				if (tok.startsWith("ReadPosRankSum=")) {
+					Double val = Double.parseDouble(tok.replace("ReadPosRankSum=", ""));
+					return val;
+				}
+			}
+			return null;
+		}
 		
 		private Double getTauFPScore() {
 			String[] infoToks = lineToks[7].split(";");

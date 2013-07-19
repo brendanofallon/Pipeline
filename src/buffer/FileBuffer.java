@@ -4,14 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.w3c.dom.NodeList;
 
-import pipeline.ObjectCreationException;
 import pipeline.Pipeline;
 import pipeline.PipelineObject;
 
@@ -100,20 +99,23 @@ public abstract class FileBuffer extends PipelineObject {
 	public void initialize(NodeList children) throws IllegalStateException {
 		String filename = properties.get(FILENAME_ATTR);
 		if (filename == null || filename.length()==0) {
-			throw new IllegalStateException("Property '" + FILENAME_ATTR + "' required to create file buffer object");
+			Logger.getLogger(Pipeline.primaryLoggerName).warn("No filename attribute found for FileBuffer object " + getObjectLabel() + ", assuming filename will be set at runtime.");
 		}
 		
-		//If the input file path does not start with '/' and the PROJECT_HOME property has been set,
-		//then we append PROJECT_HOME to the file path
-		String pathMod = "";
-		if (! filename.startsWith("/")) {
-			String projHome = properties.get(Pipeline.PROJECT_HOME);
-			if (projHome != null) {
-				pathMod = projHome;
+		if (filename != null) {
+			//If the input file path does not start with '/' and the PROJECT_HOME property has been set,
+			//then we append PROJECT_HOME to the file path
+			String pathMod = "";
+			if (! filename.startsWith("/")) {
+				String projHome = properties.get(Pipeline.PROJECT_HOME);
+				if (projHome != null) {
+					pathMod = projHome;
+				}
 			}
+
+
+			file = new File(pathMod + filename);
 		}
-		
-		file = new File(pathMod + filename);
 	}
 	
 	
