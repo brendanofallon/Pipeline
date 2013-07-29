@@ -66,6 +66,8 @@ public abstract class BAMProcessor extends IOOperator {
 				recordsWritten++;
 			}
 			
+			
+			
 		}
 		
 		Logger.getLogger(Pipeline.primaryLoggerName).info(getObjectLabel() + " wrote " + recordsWritten + " of " + recordsRead + " from file " + inputBAM.getAbsolutePath());
