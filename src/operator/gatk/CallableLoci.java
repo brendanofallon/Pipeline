@@ -17,11 +17,13 @@ import buffer.ReferenceFile;
 public class CallableLoci extends CommandOperator {
 
 	public final String defaultMemOptions = " -Xms2048m -Xmx16g";
+	public static final String MIN_DEPTH = "min.depth";
 	public static final String PATH = "path";
 	public static final String THREADS = "threads";
 	public static final String JVM_ARGS="jvmargs";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
+	protected int minDepth = -1; //-1 is the GATK default
 	
 	@Override
 	public boolean requiresReference() {
@@ -40,6 +42,11 @@ public class CallableLoci extends CommandOperator {
 			gatkPath = path;
 		}
 		
+		String minDepthAttr = this.getAttribute(MIN_DEPTH);
+		if (minDepthAttr != null) {
+			Integer minD = Integer.parseInt(minDepthAttr);
+			this.minDepth = minD;
+		}
 		
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
@@ -50,6 +57,8 @@ public class CallableLoci extends CommandOperator {
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
 			jvmARGStr = "";
 		}
+		
+		
 		
 		String reference = getInputBufferForClass(ReferenceFile.class).getAbsolutePath();
 		String inputFile = getInputBufferForClass(BAMFile.class).getAbsolutePath();	
@@ -67,6 +76,7 @@ public class CallableLoci extends CommandOperator {
 		
 		String command = "java " + defaultMemOptions + " " + jvmARGStr + " -jar " + gatkPath;
 		command = command + " -R " + reference + " -I " + inputFile + " -T CallableLoci ";
+		command = command + " --minDepth " + minDepth;
 		command = command + " -o " + outputFile.getAbsolutePath();
 		command = command + " -summary " + outputFile.getFilename() + ".summary ";
 		if (bedFile != null)
