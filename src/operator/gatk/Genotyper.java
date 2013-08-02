@@ -16,10 +16,12 @@ public class Genotyper extends CommandOperator {
 	public static final String JVM_ARGS="jvmargs";
 	public static final String CALLCONF = "call_conf";
 	public static final String CALLEMIT = "call_emit";
+	public static final String MININDELFRAC = "minIndelFrac";
 	protected String defaultGATKPath = "~/GenomeAnalysisTK/GenomeAnalysisTK.jar";
 	protected String gatkPath = defaultGATKPath;
 	protected double standCallConf = 30.0;
 	protected double standEmitConf = 10.0;
+	protected String minIndelFrac = null;
 	
 	
 	
@@ -57,6 +59,11 @@ public class Genotyper extends CommandOperator {
 			standEmitConf = Double.parseDouble(standEmitConfString);
 		}
 		
+		String minIndelFracString = properties.get(MININDELFRAC);
+		if(minIndelFracString != null){
+			minIndelFrac = minIndelFracString;
+		}
+		
 		//Additional args for jvm
 		String jvmARGStr = properties.get(JVM_ARGS);
 		if (jvmARGStr == null || jvmARGStr.length()==0) {
@@ -92,6 +99,8 @@ public class Genotyper extends CommandOperator {
 		command = command + " -nt " + threads;
 		if (bedFile != null)
 			command = command + " -L:intervals,BED " + bedFilePath;
+		if (minIndelFrac != null)
+			command = command + " -minIndelFrac " + minIndelFrac;
 		return command;
 	}
 
