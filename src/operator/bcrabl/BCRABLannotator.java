@@ -89,8 +89,6 @@ public class BCRABLannotator extends Annotator {
 			throw new OperationFailedException("Annotations not initialized.", this);
 		}
 		
-		
-		
 		String cDot = cDots.get(var.getStart());
 		if (cDot != null) {
 			if (cDot.contains(":")) {
@@ -105,10 +103,9 @@ public class BCRABLannotator extends Annotator {
 		}
 		String pDot = pDots.get(var.getStart());
 		if (pDot.contains(":")) {
-			pDot = pDot.substring(pDot.indexOf(":"), pDot.length());
+			pDot = pDot.substring(pDot.indexOf(":")+1, pDot.length());
 		}
 		var.addAnnotation(VariantRec.PDOT, pDot);
-		
 	}
 
 	
