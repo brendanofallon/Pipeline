@@ -2440,8 +2440,8 @@ public class VarUtils {
 			System.out.println(VariantRec.getSimpleHeader());
 			for(String contig : union.getContigs()) {
 				for(VariantRec var : union.getVariantsForContig(contig)) {
-					if (var.getProperty(VariantRec.SAMPLE_COUNT) > 1) {
-						System.out.println(var.toSimpleString());
+					if (var.getProperty(VariantRec.SAMPLE_COUNT) > 0) {
+						System.out.println(contig + "\t" + var.getStart() + "\t" + var.getRef() + "\t" + var.getAlt() + "\t" + var.getPropertyOrAnnotation(VariantRec.SAMPLE_COUNT));
 					}
 				}
 			}
