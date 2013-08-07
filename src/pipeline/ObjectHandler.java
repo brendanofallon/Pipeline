@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import operator.Operator;
+import operator.hook.OperatorHook;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -27,6 +28,7 @@ public class ObjectHandler {
 
 	protected Document doc;
 	protected List<Operator> operatorList = null;
+	protected List<OperatorHook> hookList = null;
 	
 	protected Map<String, PipelineObject> objectMap = new HashMap<String, PipelineObject>();
 
@@ -72,23 +74,38 @@ public class ObjectHandler {
 			System.out.println("Reading objects... root element is : " + root);
 		}
 		createElement(root); //Recursively creates all child elements
-				
-		//Build operator list. We assume all operators are at top level for now
+		
+		//Build operator list and hook list.  
+		// Hooks are added to every operator by the Pipeline (for now).
+		// We assume all operators and the hooks list are at top level for now
+		hookList = new ArrayList<OperatorHook>();
 		operatorList = new ArrayList<Operator>();
 		NodeList children = root.getChildNodes();
 		for(int i=0; i<children.getLength(); i++) {
 			Node child = children.item(i);
-			if (child.getNodeType() == Node.ELEMENT_NODE) {
-				String label = child.getNodeName();
-				PipelineObject obj = objectMap.get(label);
-				if (obj instanceof Operator) {
-					Operator op = (Operator)obj;
-					if (operatorList.contains(op)) {
-						throw new ObjectCreationException("The input file appears to contain duplicate operators, named: " + op.getObjectLabel(), (Element)child);
-					}
-					Logger.getLogger(Pipeline.primaryLoggerName).info("Adding operator :" + label + " of class " + op.getClass() + " to operator list");
-					operatorList.add( op );
+			
+			// We have a special case for hooks, since all hooks are listed inside the "hooks" node
+			if(child.getNodeType() == Node.ELEMENT_NODE && child.getNodeName().equals("hooks")){
+				NodeList hookChildren = child.getChildNodes();
+				for(int j=0; j<hookChildren.getLength(); j++){
+					addObjectToList(hookChildren.item(j), OperatorHook.class, hookList);
 				}
+			}
+			addObjectToList(child, Operator.class, operatorList);
+		}
+	}
+	
+	public void addObjectToList(Node n, Class<?> c, List list) throws ObjectCreationException{
+		if(n.getNodeType() == Node.ELEMENT_NODE){
+			String label = n.getNodeName();
+			PipelineObject obj = objectMap.get(label);
+			if(c.isInstance(obj)){
+				Object o = c.cast(obj);
+				if(list.contains(o)){
+					throw new ObjectCreationException("The input file appears to contain duplicate " + c.getCanonicalName() + ", named: " + obj.getObjectLabel(), (Element)n);
+				}
+				Logger.getLogger(Pipeline.primaryLoggerName).info("Adding " + c.getCanonicalName() + ": " + label + " of class " + obj.getClass() + " to " + c.getSimpleName() + " list");
+				list.add(o);
 			}
 		}
 	}
@@ -100,6 +117,10 @@ public class ObjectHandler {
 	 */
 	public List<Operator> getOperatorList() {
 		return operatorList;
+	}
+
+	public List<OperatorHook> getHookList(){
+		return hookList;
 	}
 	
 	/**
